@@ -1,0 +1,33 @@
+/* SPDX-License-Identifier: (GPL-2.0-or-later OR MIT) */
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#ifndef DT_BINDINGS_TCC803X_BOOT_MODE_H
+#define DT_BINDINGS_TCC803X_BOOT_MODE_H
+
+#define BOOT_MODE_PREFIX	(0x77665000UL)
+
+#define BOOT_COLD		(BOOT_MODE_PREFIX + 0x000UL)
+
+/* abnormal reboot */
+#define BOOT_WATCHDOG		(BOOT_MODE_PREFIX + 0x001UL)
+#define BOOT_PANIC		(BOOT_MODE_PREFIX + 0x002UL)
+#define BOOT_TEEOS		(BOOT_MODE_PREFIX + 0x003UL)
+
+/* normal reboot */
+#define BOOT_FASTBOOT		(BOOT_MODE_PREFIX + 0x500UL)
+#define BOOT_NORMAL		(BOOT_MODE_PREFIX + 0x501UL)
+#define BOOT_RECOVERY		(BOOT_MODE_PREFIX + 0x502UL)
+#define BOOT_TCUPDATE		(BOOT_MODE_PREFIX + 0x503UL)
+#define BOOT_FASTBOOTD		(BOOT_MODE_PREFIX + 0x504UL)
+#define BOOT_SECUREBOOT_ENABLE	(BOOT_MODE_PREFIX + 0x505UL)
+
+/* blunt */
+#define BOOT_HARD		(BOOT_MODE_PREFIX + 0x700UL)
+
+/* reboot types */
+#define REBOOT_TYPE_COLD	(0x20UL)
+#define REBOOT_TYPE_CORE	(0x21UL)
+
+#endif /* DT_BINDINGS_TCC803X_BOOT_MODE_H */

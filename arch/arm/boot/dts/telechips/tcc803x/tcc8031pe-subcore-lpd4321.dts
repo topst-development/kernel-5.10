@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc803x-subcore.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8031PE LPD4321 Sub-Core";
+	board-id = <BOARD_ID_TCC8030_EVB>;
+	board-rev = <0x1>;
+};
+
+#include "override/tcc8031pe-lpd4321-subcore-uart.dtsi"
+#include "override/tcc8031pe-lpd4321-subcore-i2c.dtsi"
+#include "override/tcc8031pe-lpd4321-subcore-display.dtsi"
+#include "override/tcc8031pe-lpd4321-subcore-camera.dtsi"

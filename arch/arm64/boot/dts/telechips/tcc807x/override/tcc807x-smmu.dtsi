@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&smmu_common {
+	status = "disabled";
+};
+
+&smmu_npu {
+	status = "disabled";
+};
+
+&smmu_gpu {
+	status = "disabled";
+};
+
+&smmu_camera {
+	status = "disabled";
+};
+
+&smmu_video {
+	status = "disabled";
+};
+
+&smmu_display {
+	status = "disabled";
+};
+
+&smmu_pci {
+	status = "disabled";
+};

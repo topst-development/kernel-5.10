@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+
+/ {
+	compatible = "telechips,tcc803x";
+	interrupt-parent = <&gic>;
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	chosen: chosen {
+		bootargs = "vmalloc=480M cgroup_disable=memory console=ttyAMA0,115200n8 initrd=0x87000000,18M";
+		stdout-path = "serial0:115200n8,mmio32,0x16630000";
+	};
+
+	aliases: aliases {};
+
+	memory: memory@80000000 {
+		device_type = "memory";
+		reg = <0x80000000 0x20000000>;
+	};
+
+	psci: psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	reserved_memory: reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+	};
+};
+
+#include "tcc803x-subcore-cpu.dtsi"
+#include "tcc803x-subcore-clk.dtsi"
+#include "tcc803x-subcore-mbox.dtsi"
+#include "tcc803x-subcore-gpio.dtsi"
+#include "tcc803x-subcore-uart.dtsi"
+#include "tcc803x-subcore-wdt.dtsi"
+#include "tcc803x-subcore-i2c.dtsi"
+#include "tcc803x-subcore-ipi.dtsi"
+#include "tcc803x-subcore-hsm.dtsi"
+#include "tcc803x-subcore-tccipc.dtsi"
+#include "tcc803x-subcore-rng.dtsi"
+#include "tcc803x-subcore-gpu.dtsi"

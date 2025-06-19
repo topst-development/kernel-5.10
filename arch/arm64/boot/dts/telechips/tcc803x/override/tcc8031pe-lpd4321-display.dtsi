@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/* Definition for H/W LCD ports */
+#include "tcc803x-disp-target-config.dtsi"
+#include "tcc803x-vioc.dtsi"
+#include "tcc803x-disp.dtsi"
+
+#include "tcc8031pe-linux-ivi-vioc.dtsi"
+
+/* end of file */

@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc805x-clks.h>
+
+&mem_phy_pll_4300 {
+	compatible = "telechips,clk-pll";
+	type-fixed;
+	#clock-cells = <2>;
+	clocks = <&osc24m 0 0>;
+	clock-indices = <PLL_MEM_PHY_1>, <PLL_MEM_PHY_0>;
+	clock-output-names =
+			"pll_mem_phy_1", "pll_mem_phy_0";
+	ccf-flags =	<(CLK_IGNORE_UNUSED)>,	/*PLL_MEM_PHY_1*/
+			<(CLK_IGNORE_UNUSED)>;	/*PLL_MEM_PHY_0*/
+	tc-flags =	<(0)>,	/*PLL_MEM_PHY_1*/
+			<(0)>;	/*PLL_MEM_PHY_0*/
+};

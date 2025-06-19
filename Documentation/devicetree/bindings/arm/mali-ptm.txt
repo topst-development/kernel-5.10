@@ -1,0 +1,317 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
+#
+# (C) COPYRIGHT 2021-2023 ARM Limited. All rights reserved.
+#
+# This program is free software and is provided to you under the terms of the
+# GNU General Public License version 2 as published by the Free Software
+# Foundation, and any use by you of this program is subject to the terms
+# of such GNU license.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, you can access it online at
+# http://www.gnu.org/licenses/gpl-2.0.html.
+#
+#
+
+* ARM Mali Midgard / Bifrost devices
+
+=======================
+gpu "arm,mali-ptm" node
+=======================
+
+Describes the top level GPU (i.e. Interfaces, PTM and GPUs). It is required in
+the device tree as it acts as a bus for the child nodes (i.e. it creates their
+platform device instances), without it they will not probe.
+
+The resource group also uses it to make assumptions about where other pages are
+relative to itself. Another purpose of this node is to provide a device for
+mali_gpu_power to use. The clocks and operating-points properties are for this
+purpose.
+
+Required properties:
+
+- compatible : Should contain "arm,mali-ptm".
+- ranges : Required as an empty property for child nodes
+- #address-cells: Required to define address cell layout for children
+- #size-cells: Required to define size cell layout for children
+
+Optional:
+
+- clocks : Refer to Documentation/devicetree/bindings/arm/mali-midgard.txt
+- operating-points : Entries for frequency (KHz) and voltage (uV)
+
+==================
+gpu_interface node
+==================
+
+Maps an address space onto a AXI bus
+
+Required properties:
+
+- compatible : Should contain "arm,mali-ptm-interface".
+- ranges : Defines the base address that child nodes use as an offset for their
+  register base addresses
+- reg : Physical base address of the device and length of the register area.
+- #address-cells: Required to define address cell layout for children
+- #size-cells: Required to define size cell layout for children
+
+Optional properties:
+- gpu_resource_group : up to 4 resource groups can be defined for an AXI bus
+- gpu_partition_config : up to 4 nodes can be defined for an AXI bus
+- gpu_partition_control : up to 4 nodes can be defined for an AXI bus. This
+			should match the number of gpu_parition_config nodes
+- gpu_aw_message - up to 16 Access Window nodes can be defined for an AXI bus.
+- gpu - up to 16 nodes can be defined for an AXI bus. This provides GPU entries
+	for each Access Window and so should match the number of gpu_aw_message
+	nodes.
+- gpu_system - there should be only one of these nodes across all AXI buses
+- gpu_assign - there should be only one of these nodes across all AXI buses
+
+=======================
+gpu_resource_group node
+=======================
+
+Defines the register mapping for the resource group kernel module.
+
+Required properties:
+- compatible : Should contain "arm,mali-gpu-resource-group"
+- reg : Physical base address of the device and length of the register area.
+- interrupts : Contains the IRQ lines required for the PTM group IRQ
+- interrupt-names : Contains the names of IRQ resources in the order they were
+		provided in the interrupts property
+
+Optional properties:
+- partition-control : ordered list of partition control Phandles.
+- partition-config : ordered list of partition config Phandles.
+
+Notes:
+The number of Phandles in partition-control and partition-config must
+match. The first item corresponds to the partition control/config
+instance used for partition 0, the second item for partition 1, etc.
+
+These indices will be used by the Arbiter, but they may be different from
+the ones described by the hardware specification. The integator must
+ensure that the index of each phandle points to a node that is assigned
+to the resource group. Care must be taken to ensure that the pair of partition
+config and control nodes for each index corresponds to the same hardware pair.
+
+If the optional Phandle properties are not specified, each resource group will
+derive the indices of the partition control and config nodes by plugging each of
+their register start address into the following formula:
+   pcfg_idx = (reg_start - PTM_PARTITION0_CONFIG) / (PTM_PARTITION1_CONFIG -
+   							PTM_PARTITION0_CONFIG)
+   pctl_idx = (reg_start - PTM_PARTITION0_CONTROL) / (PTM_PARTITION1_CONTROL -
+   							PTM_PARTITION0_CONTROL)
+Where the constants are addresses taken from the PARTITION_MANAGER register map
+specification.
+
+=========================
+gpu_partition_config node
+=========================
+
+Defines the register mapping for the partition config kernel module
+
+Required properties:
+- compatible : Should contain "arm,mali-gpu-partition-config"
+- reg : Physical base address of the device and length of the register area.
+
+==========================
+gpu_partition_control node
+==========================
+
+Defines the register mapping for the partition control kernel module
+
+Required properties:
+- compatible : Should contain "arm,mali-gpu-partition-control"
+- reg : Physical base address of the device and length of the register area.
+- interrupts : Contains the IRQ lines required for the PTM partition IRQ
+- interrupt-names : Contains the names of IRQ resources in the order they were
+		provided in the interrupts property
+
+
+===========================
+gpu "arm,mali-midgard" node
+===========================
+
+Describes a virtualized or partitioned GPU. This node, in combination with a
+gpu_aw_message node, can be used standalone in a VM device tree in conjunction
+with a resource group that is defined in the device tree of a separate VM.
+
+Required properties:
+
+- compatible : Should contain "arm,mali-midgard".
+- reg : Physical base address of the device and length of the register area.
+- interrupts : Contains the three IRQ lines required by the gpu devices
+- interrupt-names : Contains the names of IRQ resources in the order they were
+provided in the interrupts property. Must contain: "JOB, "MMU", "GPU".
+- arbiter-if : Phandle to the corresponding gpu_aw_message instance.
+
+Notes:
+When arbiter-if is in use then the following must not be used:
+- power-model                         (no IPA allowed with arbitration)
+- #cooling-cells
+- operating-points-v2                 (no dvfs in kbase with arbitration)
+- system-coherency with a value of 1  (no full coherency with arbitration)
+
+===================
+gpu_aw_message node
+===================
+
+Defines the register mapping for the access window kernel module. Provides a HW
+communication mechanism between the "arm,mali-midgard" and
+"arm,mali-gpu-resource-group" devices. Provides KBASE with an interface to the
+Arbiter.
+
+Required properties:
+- compatible : Should contain "arm,mali-gpu-aw-message"
+- reg : Physical base address of the device and length of the register area.
+- interrupts : Contains the IRQ lines required for the PTM message IRQ
+- interrupt-names : Contains the names of IRQ resources in the order they were
+		provided in the interrupts property
+
+===============
+gpu_system node
+===============
+
+Defines the register mapping and interrupt for the system kernel module
+
+Required properties:
+- compatible : Should contain "arm,mali-gpu-system"
+- reg : Physical base address of the device and length of the register area.
+- interrupts : Contains the IRQ lines required for the PTM_UNCORRECTED_ERROR_IRQ
+		and PTM_DEFERRED_ERROR_IRQ
+- interrupt-names : Contains the names of IRQ resources in the order they were
+		provided in the interrupts property
+
+===============
+gpu_assign node
+===============
+
+Defines the register mapping and interrupt for the assign kernel module
+Required properties:
+- compatible : Should contain "arm,mali-gpu-assign"
+- reg : Physical base address of the device and length of the register area.
+
+
+Example device tree:
+
+/ {
+    gpu@6e000000 {
+        compatible = "arm,mali-ptm";
+        ranges;
+        #address-cells = <2>;
+        #size-cells = <2>;
+        /* power */
+        clocks = <&scpi_dvfs 2>;
+        operating-points = <
+                /* KHz uV */
+                50000 820000
+        >;
+
+        /* bus AXI-A */
+        gpu_interface@6e000000 {
+            compatible = "arm,mali-ptm-interface";
+            ranges = <0x0 0x0 0x0 0x6e000000 0x0 0x2e0000>;
+            reg = <0x0 0x6e000000 0x0 0x2e0000>;
+            #address-cells = <2>;
+            #size-cells = <2>;
+
+            gpu_resource_group@a0000 {
+                    compatible = "arm,mali-gpu-resource-group";
+                    reg = <0x0 0xa0000 0x0 0x10000>;
+		    partition-control = <&gpu_partition_control_a_0>, <&gpu_partition_control_a_1>;
+                    partition-config = <&gpu_partition_config_a_0>, <&gpu_partition_config_a_1>;
+                    interrupts = <0 168 4>;
+                    /* PTM_GROUP_IRQ is a message signalling interrupt
+                     * one per group controlled by PTM_GROUP register page */
+                    interrupt-names = "PTM_GROUP_IRQ";
+            };
+
+            gpu_partition_config_a_0:gpu_partition_config@20000 {
+                    compatible = "arm,mali-gpu-partition-config";
+                    reg = <0x0 0x20000 0x0 0x10000>;
+            };
+
+            gpu_partition_control_a_0:gpu_partition_control@30000 {
+                    compatible = "arm,mali-gpu-partition-control";
+                    reg = <0x0 0x30000 0x0 0x10000>;
+                    interrupts = <0 168 4>;
+                    /* PTM_PARTITION_IRQ is partition error signalling
+                     * interrupt one per partition controlled by
+                     * PARTITION_CONTROL register page */
+                    interrupt-names = "PTM_PARTITION_IRQ";
+            };
+
+	    gpu_partition_config_a_1:gpu_partition_config@40000 {
+                    compatible = "arm,mali-gpu-partition-config";
+                    reg = <0x0 0x40000 0x0 0x10000>;
+            };
+
+            gpu_partition_control_a_1:gpu_partition_control@50000 {
+                    compatible = "arm,mali-gpu-partition-control";
+                    reg = <0x0 0x50000 0x0 0x10000>;
+                    interrupts = <0 168 4>;
+                    interrupt-names = "PTM_PARTITION_IRQ";
+            };
+
+            gpu@e0000 {
+                    compatible = "arm,mali-midgard";
+                    reg = <0x0 0xe0000 0x0 0x1ffc0>;
+                    interrupts = <0 168 4>, <0 168 4>, <0 168 4>;
+                    interrupt-names = "JOB", "MMU", "GPU";
+                    arbiter-if = <&gpu_aw_message_a_0>;
+            };
+            gpu_aw_message_a_0:gpu_aw_message@fffc0 {
+                    compatible = "arm,mali-gpu-aw-message";
+                    reg = <0x0 0xfffc0 0x0 0x40>;
+                    interrupts = <0 168 4>;
+                    interrupt-names = "PTM_MESSAGE";
+            };
+
+            gpu@100000 {
+                    compatible = "arm,mali-midgard";
+                    reg = <0x0 0x100000 0x0 0x1ffc0>;
+                    interrupts = <0 168 4>, <0 168 4>, <0 168 4>;
+                    interrupt-names = "JOB", "MMU", "GPU";
+                    arbiter-if = <&gpu_aw_message_a_1>;
+            };
+            gpu_aw_message_a_1:gpu_aw_message@11ffc0 {
+                    compatible = "arm,mali-gpu-aw-message";
+                    reg = <0x0 0x11ffc0 0x0 0x40>;
+                    interrupts = <0 168 4>;
+                    interrupt-names = "PTM_MESSAGE";
+            };
+
+        };
+
+       /* bus AXI-C */
+        gpu_interface@6e800000 {
+            compatible = "arm,mali-ptm-interface";
+            ranges = <0x0 0x0 0x0 0x6e800000 0x0 0x2e0000>;
+            reg = <0x0 0x6e800000 0x0 0x2e0000>;
+            #address-cells = <2>;
+            #size-cells = <2>;
+
+            gpu_system@0 {
+                    compatible = "arm,mali-gpu-system";
+                    reg = <0x0 0x0 0x0 0x10000>;
+                    interrupts = <0 168 4>, <0 168 4>;
+                    /* PTM_UNCORRECTED_ERROR_IRQ and PTM_DEFERRED_ERROR_IRQ
+                     * controlled by PTM_SYSTEM for reporting all errors */
+                    interrupt-names = "PTM_UNCORRECTED_ERROR_IRQ",
+                                        "PTM_DEFERRED_ERROR_IRQ";
+            };
+
+            gpu_assign@10000 {
+                    compatible = "arm,mali-gpu-assign";
+                    reg = <0x0 0x10000 0x0 0x10000>;
+            };
+
+        };
+    };
+};

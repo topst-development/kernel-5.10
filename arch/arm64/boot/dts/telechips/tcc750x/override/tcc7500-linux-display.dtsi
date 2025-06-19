@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/* Definition for H/W LCD ports */
+/* empty */
+
+#include "tcc750x-vioc.dtsi"
+#include "tcc750x-disp.dtsi"
+
+#include "tcc750x-linux-vioc.dtsi"
+
+/*==============================================================================
+ * TCC750x_Linux_IVI DISPLAY PATH
+ * ---------------------------
+ * VIOC0 : fb0
+ =============================================================================*/
+&pmap_fb_video {
+	reg = <0x0 RSVD_MEM_BASE_32 0x0 PMAP_SIZE_FB_VIDEO>;
+	alignment = <0x1000>;
+	no-map;
+	status = "okay";
+};
+
+/* FB0 */
+&fb0 {
+	status = "okay";
+};
+
+/* end of file */

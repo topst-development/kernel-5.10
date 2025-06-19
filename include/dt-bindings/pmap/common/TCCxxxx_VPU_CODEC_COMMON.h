@@ -1,0 +1,1 @@
+../../../video/telechips/TCCxxxx_VPU_CODEC_COMMON.h

@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	aliases: aliases {
+		gpsb0 = &gpsb0;
+		gpsb1 = &gpsb1;
+		gpsb2 = &gpsb2;
+		gpsb3 = &gpsb3;
+		gpsb4 = &gpsb4;
+	};
+
+	gpsb0: spi@18200000 {
+		compatible = "telechips,tcc750x-spi";
+		reg = <0x0 0x18200000 0x0 0x38>, /* base address */
+		      <0x0 0x18260000 0x0 0x18>; /* Port Configuration register */
+		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_GPSB0 &fbus_smu FBUS_GPSB>;
+		gpsb-id = <0>;
+		status = "disabled";
+	};
+
+	gpsb1: spi@18210000 {
+		compatible = "telechips,tcc750x-spi";
+		reg = <0x0 0x18210000 0x0 0x38>, /* base address */
+		      <0x0 0x18260000 0x0 0x18>; /* Port Configuration register */
+		interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_GPSB1 &fbus_smu FBUS_GPSB>;
+		gpsb-id = <1>;
+		status = "disabled";
+	};
+
+	gpsb2: spi@18220000 {
+		compatible = "telechips,tcc750x-spi";
+		reg = <0x0 0x18220000 0x0 0x38>, /* base address */
+		      <0x0 0x18260000 0x0 0x18>; /* Port Configuration register */
+		interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_GPSB2 &fbus_smu FBUS_GPSB>;
+		gpsb-id = <2>;
+		status = "disabled";
+	};
+
+	gpsb3: spi@18230000 {
+		compatible = "telechips,tcc750x-spi";
+		reg = <0x0 0x18230000 0x0 0x38>, /* base address */
+		      <0x0 0x18260000 0x0 0x18>; /* Port Configuration register */
+		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_GPSB3 &fbus_smu FBUS_GPSB>;
+		gpsb-id = <3>;
+		status = "disabled";
+	};
+
+	gpsb4: spi@18240000 {
+		compatible = "telechips,tcc750x-spi";
+		reg = <0x0 0x18240000 0x0 0x38>, /* base address */
+		      <0x0 0x18260000 0x0 0x18>; /* Port Configuration register */
+		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_GPSB4 &fbus_smu FBUS_GPSB>;
+		gpsb-id = <4>;
+		status = "disabled";
+	};
+};

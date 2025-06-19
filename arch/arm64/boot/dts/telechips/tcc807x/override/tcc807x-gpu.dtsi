@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2024 Telechips Inc.
+ */
+
+&gpu {
+	status = "okay";
+};

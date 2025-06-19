@@ -1,0 +1,1 @@
+source "drivers/char/telechips/mipi_dsi_v2/Kconfig"

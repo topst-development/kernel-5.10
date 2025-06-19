@@ -1,0 +1,88 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	thermal7: thermal7@14700000 {
+		compatible = "telechips,tsens";
+
+		init = "false";
+		reg = <0x0 0x14700000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+		core = <7>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal8: thermal8@14700000 {
+		compatible = "telechips,tsens";
+
+		init = "false";
+		reg = <0x0 0x14700000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+		core = <8>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal_zone: thermal-zones {
+		SP-CA55-0-thermal {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal7 7>;
+			trips {
+				trip0: trip-point@0 {
+					temperature = <75000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+				trip1: trip-point@1 {
+					temperature = <80000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+				trip2: trip-point@2 {
+					temperature = <85000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+			};
+
+			cooling-maps {
+				map0 {
+					trip = <&trip0>;
+					cooling-device =
+						<&A55_0 0 1>;
+				};
+				map1 {
+					trip = <&trip1>;
+					cooling-device =
+						<&A55_0 1 2>;
+				};
+				map2 {
+					trip = <&trip2>;
+					cooling-device =
+						<&A55_0 2 3>;
+				};
+			};
+		};
+		SP-CA55-1-thermal {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal8 8>;
+		};
+	};
+};

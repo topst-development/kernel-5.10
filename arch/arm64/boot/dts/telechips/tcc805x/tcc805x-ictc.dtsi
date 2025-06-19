@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc805x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	ictc: ictc {
+		compatible = "telechips,ictc";
+		reg = <0x0 0x16055000 0x0 0x4d>;
+		interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>;
+		pinctrl-map = <&gpio>;
+		clocks = <&clk_peri PERI_IC_TC>;
+		status = "disabled";
+	};
+};

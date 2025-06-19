@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
+#
+# (C) COPYRIGHT 2022-2023 ARM Limited. All rights reserved.
+#
+#
+
+source "$(MALI_KCONFIG_EXT_PREFIX)drivers/gpu/arm/arbitration/power/mali_gpu_power/Kconfig"

@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/* Definition for H/W LCD ports */
+
+
+#include "tcc803x-subcore-vioc.dtsi"
+#include "tcc803x-subcore-disp.dtsi"
+
+#include "tcc803x-linux-ivi-subcore-vioc.dtsi"
+/*==============================================================================
+ * TCC803x_Linux_IVI SUB-CORE DISPLAY PATH
+ * ---------------------------
+ * VIOC2 : fb0<fb0_display_out>
+ =============================================================================*/
+
+&pmap_fb_video {
+	reg = <FB_VIDEO_BASE PMAP_SIZE_FB_VIDEO>;
+	alignment = <0x1000>;
+	no-map;
+	status = "okay";
+};
+
+/* FB0 */
+&fb0 {
+	status = "okay";
+	memory-region = <&pmap_fb_video>;
+};
+
+/* end of file */

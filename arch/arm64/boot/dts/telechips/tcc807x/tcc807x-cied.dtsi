@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+/ {
+	cied {
+		compatible = "telechips,cied";
+		interrupts = <GIC_SPI 600 IRQ_TYPE_LEVEL_HIGH>;
+		status = "okay";
+	};
+};

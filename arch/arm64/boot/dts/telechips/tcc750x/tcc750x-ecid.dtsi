@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/ {
+	cpu_id: cpu-id@1e020640 {
+		compatible = "telechips,tcc-cpu-id";
+		reg = <0x0 0x1e020640 0x0 0x4>,
+		      <0x0 0x1e020648 0x0 0x4>,
+		      <0x0 0x1e02064C 0x0 0x4>,
+		      <0x0 0x1e800000 0x0 0x4>;
+		status = "okay";
+	};
+};

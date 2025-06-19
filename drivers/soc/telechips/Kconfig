@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+
+menuconfig SOC_TELECHIPS
+	bool "Telechips SOC drivers support"
+	depends on ARCH_TELECHIPS
+
+if SOC_TELECHIPS
+
+config HAVE_TELECHIPS_SIP_SERVICE
+	bool
+
+config HAVE_TELECHIPS_PLAT_CHIPINFO
+	bool
+
+config TELECHIPS_BOOTSTAGE
+	tristate "Telechips bootstage driver"
+	depends on PROC_FS
+	depends on ARCH_TCC750X || ARCH_TCC803X || ARCH_TCC805X || ARCH_TCC807X
+	default y
+	help
+	  Select this option to enable Telechips bootstage driver.
+
+	  Telechips bootstage driver offers procfs to show boot time stamps
+	  from power on to kernel boot for supported Telechips SoCs.
+
+	  If unsure, say Y.
+
+config TELECHIPS_CHIPINFO
+	tristate "Telechips chipinfo driver"
+	depends on HAVE_TELECHIPS_SIP_SERVICE || HAVE_TELECHIPS_PLAT_CHIPINFO
+	default y
+	help
+	  Select this option to enable Telechips chipinfo driver.
+
+	  Telechips chipinfo driver offers procfs to show information related
+	  related to chip such as revision number or boot such as boot config
+	  selection.
+
+	  If unsure, say Y.
+
+config TELECHIPS_PIC
+	tristate "Telechips programmable interrupt controller driver"
+	default y
+	help
+	  Select this option to enable Telechips programmable interrupt controller driver.
+
+config TELECHIPS_TIMER
+	tristate "Telechips timer driver"
+	default y
+	help
+	  Select this option to enable Telechips timer driver.
+	  It supports 16/20-bit timer for Telechips SoCs.
+
+config PROC_RESERVED_MEM
+	tristate "/proc/reserved_mem support"
+	depends on OF_RESERVED_MEM
+	depends on PROC_FS
+	default y
+	help
+	  Select this option to enable /proc/reserved_mem support.
+
+	  /proc/reserved_mem shows the memory map of entire reserved memory
+	  registered by device tree.
+
+	  If unsure, say Y.
+
+endif # SOC_TELECHIPS

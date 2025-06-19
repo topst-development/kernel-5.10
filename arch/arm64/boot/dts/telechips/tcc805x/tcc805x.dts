@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+
+/ {
+	compatible = "telechips,tcc805x";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen: chosen {
+		bootargs = "vmalloc=480M console=ttyAMA0,115200n8";
+		stdout-path = "serial0:115200n8,mmio32,0x16600000";
+	};
+
+	aliases: aliases {};
+
+	memory: memory@20000000 {
+		device_type = "memory";
+		/* updated by U-Boot with actual size */
+		reg = <0x0 0x20000000 0x0 0x80000000>;
+	};
+
+	psci: psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		resume_context {
+			reg = <0x0 0x38000000 0x0 0x00001000>;
+			no-map;
+		};
+
+		a53_avm {
+			reg = <0x0 0x40000000 0x0 0x40000000
+				   0x1 0xa0000000 0x0 0x20000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+
+		optee_os {
+			compatible = "optee.os";
+			reg = <0x0 0x2e000000 0x0 0x02000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+	};
+
+	firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
+};
+
+#include "tcc805x-cpu.dtsi"
+#include "tcc805x-clk.dtsi"
+#include "tcc805x-reboot-mode.dtsi"
+#include "tcc805x-reset.dtsi"
+#include "tcc805x-mbox.dtsi"
+#include "tcc805x-scfw.dtsi"
+#include "tcc805x-gpio.dtsi"
+#include "tcc805x-uart.dtsi"
+#include "tcc805x-wdt.dtsi"
+#include "tcc805x-dma.dtsi"
+#include "tcc805x-mmc.dtsi"
+#include "tcc805x-ufs.dtsi"
+#include "tcc805x-i2c.dtsi"
+#include "tcc805x-spi.dtsi"
+#include "tcc805x-pic.dtsi"
+#include "tcc805x-timer.dtsi"
+#include "tcc805x-rtc.dtsi"
+#include "tcc805x-thermal.dtsi"
+#include "tcc805x-ecid.dtsi"
+#include "tcc805x-ipi.dtsi"
+#include "tcc805x-pmi.dtsi"
+#include "tcc805x-snor-updater.dtsi"
+#include "tcc805x-pwm.dtsi"
+#include "tcc805x-gmac.dtsi"
+#include "tcc805x-pcie.dtsi"
+#include "tcc805x-usb.dtsi"
+#include "tcc805x-ictc.dtsi"
+#include "tcc805x-hsm.dtsi"
+#include "tcc805x-rng.dtsi"
+#include "tcc805x-audio.dtsi"
+#include "tcc805x-vpu.dtsi"
+#include "tcc805x-touchbridge.dtsi"
+#include "tcc805x-tccipc.dtsi"
+#include "tcc805x-gpu.dtsi"

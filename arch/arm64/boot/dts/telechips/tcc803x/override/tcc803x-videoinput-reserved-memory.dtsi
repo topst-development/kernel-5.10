@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include <dt-bindings/soc/tcc803x,membase.h>
+#include <dt-bindings/pmap/tcc803x/pmap-tcc803x-linux-videoinput.h>
+#include "tcc803x-videoinput-reserved-memory-list.dtsi"

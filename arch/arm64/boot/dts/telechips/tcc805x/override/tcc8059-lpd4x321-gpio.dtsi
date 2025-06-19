@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+&gpio {
+	/*
+	 * Up to 16 EXTI(0~16) can be registered.
+	 *
+	 * eint-int = <[GPIO Group] [GPIO Pin] [IRQ Type]>
+	 *  - GPIO Group : GPIO group phandle
+	 *  - GPIO Pin : pin number
+	 *  - IRQ Type : Interrupt trigger type
+	 *    - IRQ_TYPE_EDGE_BOTH
+	 *    - IRQ_TYPE_EDGE_FALLING
+	 *    - IRQ_TYPE_EDGE_RISING
+	 *    - IRQ_TYPE_LEVEL_LOW
+	 *    - IRQ_TYPE_LEVEL_HIGH
+	 *
+	 * ex) eint-int = <&gpsd1 10 IRQ_TYPE_EDGE_FALLING>,
+	 *              <&gpb 4 IRQ_TYPE_LEVEL_HIGH>,
+	 *              ...
+	 */
+	ext-int = <&gpsd1 9 IRQ_TYPE_EDGE_FALLING>,
+		  <&gpe 19 IRQ_TYPE_EDGE_FALLING>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>,
+		  <0 0 IRQ_TYPE_NONE>;
+};

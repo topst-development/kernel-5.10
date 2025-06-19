@@ -1,0 +1,220 @@
+/* SPDX-License-Identifier: (GPL-2.0-or-later OR MIT) */
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include <dt-bindings/soc/tcc750x,membase.h>
+#include "tcc750x-clk.dtsi"
+
+/ {
+	vpu_dev_mgr: vpu_dev_mgr {
+		compatible = "telechips,vpu_dev_mgr";
+		status = "diabled";
+	};
+
+	jpu_dev_mgr: jpu_dev_mgr {
+		compatible = "telechips,jpu_dev_mgr";
+		status = "diabled";
+	};
+
+	vpu_4k_d2_dev_mgr: vpu_4k_d2_dev_mgr {
+		compatible = "telechips,vpu_4k_d2_dev_mgr";
+		status = "diabled";
+	  };
+
+	vpu_hevc_enc_dev_mgr: vpu_hevc_enc_dev_mgr {
+		compatible = "telechips,vpu_hevc_enc_dev_mgr";
+		reg = <0x0 0x19200000 0x0 0xA000>, <0x0 0x19280000 0x0 0x1000>;
+		interrupts = <GIC_SPI 273 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&fbus_vpu FBUS_VBUS &fbus_vpu FBUS_CHEVCENC &fbus_vpu FBUS_BHEVCENC
+			&clk_vpu VIDEOBUS_HEVC_ENC>;
+		resets = <&vpubus_rst VIDEOBUS_HEVC_ENC>;
+		reset-names = "hevc_encoder";
+		status = "diabled";
+	 };
+
+	hevc_dev_mgr: hevc_dev_mgr{
+		compatible = "telechips,hevc_dev_mgr";
+		status = "diabled";
+	};
+
+	/*--------------------------------------------------------------------------
+	 * pmap
+	 *--------------------------------------------------------------------------
+	 */
+	reserved_memory: reserved-memory {
+		reserved_vpu_main: vpu_share_m {
+			compatible = "telechips,map";
+			reg = <0x0 0x30000000 0x0 0x00001000>;
+			no-map;
+			status = "disabled";
+		};
+
+		reserved_vpu_sub: vpu_share_s {
+			compatible = "telechips,map";
+			reg = <0x0 0x50000000 0x0 0x00001000>;
+			no-map;
+			status = "disabled";
+		};
+
+		pmap_video: video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "video";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_video_ext: video_ext {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "video_ext";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_video_ext2: video_ext2 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "video_ext2";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_video_sw: video_sw {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "video_sw";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_main: enc_main {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_main";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext: enc_ext {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext2: enc_ext2 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext2";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext3: enc_ext3 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext3";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext4: enc_ext4 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext4";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext5: enc_ext5 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext5";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext6: enc_ext6 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext6";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext7: enc_ext7 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext7";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext8: enc_ext8 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext8";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext9: enc_ext9 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext9";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext10: enc_ext10 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext10";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext11: enc_ext11 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext11";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext12: enc_ext12 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext12";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext13: enc_ext13 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext13";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext14: enc_ext14 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext14";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+
+		pmap_enc_ext15: enc_ext15 {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "enc_ext15";
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			size = <0x0 0x0>;
+			status = "diabled";
+		};
+	}; /* reserved_memory: reserved-memory */
+};

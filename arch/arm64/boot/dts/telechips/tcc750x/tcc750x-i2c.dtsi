@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	aliases: aliases {
+		i2c0  = &i2c0;
+		i2c1  = &i2c1;
+		i2c2  = &i2c2;
+		i2c3  = &i2c3;
+	};
+
+	i2c0: i2c@18100000 {
+		compatible = "telechips,tcc750x-i2c-v3";
+		reg = <0x0 0x18100000 0x0 0x28>,
+		      <0x0 0x18140000 0x0 0x28>;
+		interrupts = <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clk_peri PERI_I2C0 &fbus_smu FBUS_I2C>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+	i2c1: i2c@18110000 {
+		compatible = "telechips,tcc750x-i2c-v3";
+		reg = <0x0 0x18110000 0x0 0x28>,
+		      <0x0 0x18150000 0x0 0x28>;
+		interrupts = <GIC_SPI 42 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clk_peri PERI_I2C1 &fbus_smu FBUS_I2C>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+	i2c2: i2c@18120000 {
+		compatible = "telechips,tcc750x-i2c-v3";
+		reg = <0x0 0x18120000 0x0 0x100>,
+		      <0x0 0x18160000 0x0 0x28>;
+		interrupts = <GIC_SPI 43 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clk_peri PERI_I2C2 &fbus_smu FBUS_I2C>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+	i2c3: i2c@16070000 {
+		compatible = "telechips,tcc750x-i2c-v3";
+		reg = <0x0 0x16070000 0x0 0x100>,
+		      <0x0 0x18160000 0x0 0x28>;
+		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&fbus_cam FBUS_CAM_PERI &fbus_smu FBUS_CAM>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+};

@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/ {
+	tcc_sc_ufs: tcc_sc_ufs {
+	compatible = "telechips,tcc805x-sc-ufs";
+	status = "disabled";
+	sc-firmware = <&tcc_sc_fw>;
+	};
+};

@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+
+/ {
+	compatible = "telechips,tcc750x";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen: chosen {
+		bootargs = "vmalloc=480M console=ttyAMA0,115200n8";
+		stdout-path = "serial0:115200n8,mmio32,0x18020000";
+	};
+
+	aliases: aliases {};
+
+	memory: memory@20000000 {
+		device_type = "memory";
+		/* updated by U-Boot with actual size */
+		reg = <0x0 0x20000000 0x0 0x80000000>;
+	};
+
+	psci: psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		optee_os {
+			compatible = "optee.os";
+			reg = <0x0 0x2e000000 0x0 0x02000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+	};
+
+	firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
+};
+
+#include "tcc750x-cpu.dtsi"
+#include "tcc750x-clk.dtsi"
+#include "tcc750x-reboot-mode.dtsi"
+#include "tcc750x-reset.dtsi"
+#include "tcc750x-gpio.dtsi"
+#include "tcc750x-uart.dtsi"
+#include "tcc750x-wdt.dtsi"
+#include "tcc750x-dma.dtsi"
+#include "tcc750x-mmc.dtsi"
+#include "tcc750x-i2c.dtsi"
+#include "tcc750x-spi.dtsi"
+#include "tcc750x-timer.dtsi"
+#include "tcc750x-thermal.dtsi"
+#include "tcc750x-ecid.dtsi"
+#include "tcc750x-gmac.dtsi"
+#include "tcc750x-pcie.dtsi"
+#include "tcc750x-hsm.dtsi"
+#include "tcc750x-rng.dtsi"
+#include "tcc750x-npu.dtsi"
+#include "tcc750x-vpu.dtsi"

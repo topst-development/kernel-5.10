@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright 2020-2022 Telechips Inc.
+#
+config VIDEO_TCC_IDI2AXI
+	tristate "Telechips IDI2AXI Driver"
+	depends on ARCH_TCC750X
+	depends on VIDEO_V4L2 && OF && HAS_DMA
+	default n
+	select DMA_DECLARE_COHERENT
+	select V4L2_FWNODE
+	select VIDEOBUF2_DMA_CONTIG
+	select VIDEO_V4L2_SUBDEV_API
+	help
+	Support v4l2 capture interface
+
+	Note that the driver is supported on the following chipsets.
+	- tcc750x

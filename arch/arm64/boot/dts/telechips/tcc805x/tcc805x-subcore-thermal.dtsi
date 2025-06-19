@@ -1,0 +1,125 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/thermal/thermal.h>
+
+/ {
+	thermal0: tca53@14700000 {
+		compatible = "telechips,tsens";
+
+		init = "false";
+		sc-firmware = <&tcc_sc_fw>;
+		reg = <0x0 0x14700000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+		core = <0>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal4: gpu@14700000 {
+//		compatible = "telechips,tcc805x-gpu";
+		compatible = "telechips,tsens";
+
+		init = "false";
+		sc-firmware = <&tcc_sc_fw>;
+		reg = <0x0 0x14700000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+		core = <5>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal_zone: thermal-zones {
+		cpu_thermal: cpu-thermal {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal0 0>;
+			trips {
+				trip0: trip-point@0 {
+					temperature = <75000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+				trip1: trip-point@1 {
+					temperature = <80000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+				trip2: trip-point@2 {
+					temperature = <85000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+			};
+			cooling-maps {
+				map0 {
+					trip = <&trip0>;
+					cooling-device =
+						<&A53_0 0 1>;
+				};
+				map1 {
+					trip = <&trip1>;
+					cooling-device =
+						<&A53_0 1 2>;
+				};
+				map2 {
+					trip = <&trip2>;
+					cooling-device =
+						<&A53_0 2 3>;
+				};
+			};
+		};
+		gpu_thermal: gpu-thermal {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal4 5>;
+			trips {
+				gputrip0: gpu-trip-point@0 {
+					temperature = <70000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+				gputrip1: gpu-trip-point@1 {
+				       temperature = <75000>;
+				       hysteresis = <0>;
+				       type = "passive";
+				};
+				gputrip2: gpu-trip-point@2 {
+				       temperature = <80000>;
+				       hysteresis = <0>;
+				       type = "passive";
+				};
+			};
+			cooling-maps {
+				map0 {
+					trip = <&gputrip0>;
+					cooling-device =
+						<&A53_0 0 1>;
+				};
+				map1 {
+					trip = <&gputrip1>;
+					cooling-device =
+						<&A53_0 1 2>;
+				};
+				map2 {
+					trip = <&gputrip2>;
+					cooling-device =
+						<&A53_0 2 3>;
+				};
+			};
+		};
+	};
+};

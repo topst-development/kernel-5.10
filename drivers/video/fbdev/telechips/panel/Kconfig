@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) Telechips Inc.
+
+menu "LCD panels for TELECHISP SIMPLE FB"
+	depends on TELECHIPS_SIMPLE_FB
+
+config TELECHIPS_FB_LVDS_PANEL
+	bool "LVDS panel drivers"
+	depends on OF && ARCH_TCC805X
+	default y if ARCH_TCC805X
+	select VIDEOMODE_HELPERS
+	help
+	  This driver supports LVDS panels that don't require device-specific
+	  handling of power supplies or control signals.
+
+config TELECHIPS_FB_DSI_PANEL
+	bool "DSI panel drivers"
+	depends on OF && ARCH_TCC807X
+	default y if ARCH_TCC807X
+	select VIDEOMODE_HELPERS
+	help
+	  This driver supports DSI panels that don't require device-specific
+	  handling of power supplies or control signals.
+
+config TELECHIPS_FB_DPTXV14_PANEL
+	bool "DPTx V1.4 panel driver for TSVFB"
+	depends on OF && TELECHIPS_DP_VZ && (ARCH_TCC805X || ARCH_TCC807X)
+	default n
+	select VIDEOMODE_HELPERS
+	help
+	  This driver supports DPTx V1.4 panels.
+
+config TELECHIPS_FB_CTRL_BACKLIGHT
+	tristate "binding TCC LVDS & DP backlight driver(gpio, pwm ...)"
+	depends on OF && (ARCH_TCC805X || ARCH_TCC807X)
+	default n
+	help
+	  This driver supports to bind FB_PANEL_XXX_TCC and backlight driver.
+
+endmenu

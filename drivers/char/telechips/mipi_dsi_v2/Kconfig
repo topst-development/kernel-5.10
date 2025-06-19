@@ -1,0 +1,6 @@
+config TELECHIPS_DSI_DRIVER_V2
+	bool "Support TCC MIPI DSI V2 drivers"
+	depends on ARCH_TCC807X
+	default y
+	help
+		It supports Telechips MIPI DSI V2 drivers

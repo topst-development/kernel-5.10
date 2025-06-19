@@ -1,0 +1,102 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/* eMMC */
+&tcc_sc_mmc {
+	status = "okay";
+
+	max-frequency = <200000000>;
+	bus-width = <8>;
+
+	no-sdio;
+	no-sd;
+	non-removable;
+	keep-power-in-suspend;
+	disable-wp;
+
+	mmc-hs400-1_8v;
+	mmc-hs400-enhanced-strobe;
+	vqmmc-supply = <&vqmmc_emmc>;
+};
+
+&vqmmc_emmc {
+	compatible = "regulator-fixed";
+	regulator-name = "vqmmc_emmc";
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-always-on;
+};
+
+/* SD slot */
+&sdhc1 {
+	/*
+	 * In order to reduce boot time,
+	 * we use the driver as module not built-in.
+	 */
+	compatible = "telechips,tcc807x-sdhci,module-only";
+	status = "okay";
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&sd1_clk &sd1_cmd &sd1_bus4 &sd2_bus4_wp_cd &sd2_pwr>;
+	pinctrl-1 = <&sd1_clk &sd1_cmd &sd1_bus4 &sd2_bus4_wp_cd &sd2_pwr>;
+
+	broken-cd;
+	cd-inverted;
+	keep-power-in-suspend;
+
+	tcc-mmc-taps = <28 15 15 15>;
+
+	wp-gpios = <&gpsd2 7 0>;
+	cd-gpios = <&gpsd2 6 0>;
+
+	vqmmc-supply = <&sdio_3p3>;
+	mmc-pwrseq = <&sdhc1_pwrseq>;
+};
+
+&sdhc1_pwrseq {
+	compatible = "mmc-pwrseq-simple";
+	reset-gpios = <&gpsd2 8 GPIO_ACTIVE_LOW>;
+};
+
+&pinctrl {
+	sd1_clk: sd1_clk {
+		telechips,pins = "gpsd1-0";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <5>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd1_cmd: sd1_cmd {
+		telechips,pins = "gpsd1-1";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <5>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd1_bus4: sd1_bus4 {
+		telechips,pins = "gpsd1-2", "gpsd1-3", "gpsd1-4", "gpsd1-5";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <5>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd2_bus4_wp_cd: sd2_bus4_wp_cd {
+		telechips,pins = "gpsd2-6", "gpsd2-7";
+		telechips,pin-function = <0>;
+		telechips,pull-up;
+		telechips,input-enable;
+		telechips,input_buffer_enable;
+	};
+
+	sd2_pwr: sd2_pwr {
+		telechips,pins = "gpsd2-8";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+};

@@ -1,0 +1,9 @@
+#
+# VPU v3 device configuration
+#
+
+menuconfig TELECHIPS_VPU_V3_DRV
+	tristate "Telechips VPU V3 Driver"
+	help
+		This option enables the Telechips VPU V3 driver as a loadable module.
+

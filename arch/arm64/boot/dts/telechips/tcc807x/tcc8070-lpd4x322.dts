@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc807x.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8070 LPD4X322 Main Core";
+	board-id = <BOARD_ID_TCC8070_EVB>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc807x-wdt.dtsi"
+#include "override/tcc807x-dma.dtsi"
+#include "override/tcc807x-smmu.dtsi"
+#include "override/tcc807x-scfw.dtsi"
+#include "override/tcc807x-ufs.dtsi"
+#include "override/tcc807x-can.dtsi"
+#include "override/tcc807x-audio.dtsi"
+#include "override/tcc807x-vpu.dtsi"
+#include "override/tcc807x-gpu.dtsi"
+#include "override/tcc807x-ethosn.dtsi"
+#include "override/tcc8070-cpu.dtsi"
+#include "override/tcc8070-lpd4x322-gpio.dtsi"
+#include "override/tcc8070-lpd4x322-uart.dtsi"
+#include "override/tcc8070-lpd4x322-mmc.dtsi"
+#include "override/tcc8070-lpd4x322-i2c.dtsi"
+#include "override/tcc8070-lpd4x322-spi.dtsi"
+#include "override/tcc8070-lpd4x322-ictc.dtsi"
+#include "override/tcc8070-lpd4x322-usb.dtsi"
+#include "override/tcc8070-lpd4x322-gmac.dtsi"
+#include "override/tcc8070-lpd4x322-pcie.dtsi"
+#include "override/tcc8070-lpd4x322-display.dtsi"
+#include "override/tcc8070-lpd4x322-camera.dtsi"

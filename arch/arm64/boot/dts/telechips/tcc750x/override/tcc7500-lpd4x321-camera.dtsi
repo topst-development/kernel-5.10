@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include "tcc750x-videoinput-reserved-memory.dtsi"
+#include "tcc7500-lpd4x321-videoinput.dtsi"
+#include "tcc750x-videoinput-camera-module.dtsi"

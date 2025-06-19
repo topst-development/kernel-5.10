@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&usb20host_vbus {
+	gpios = <&gpext1 1 0x0>;
+};
+
+&usb20drd_vbus {
+	gpios = <&gpext1 0 0x0>;
+};
+
+&usb30drd_vbus {
+	gpios = <&gpext1 2 0x0>;
+};

@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+&gpsb0 {
+	status = "okay";
+	gpsb-port = <22>;
+	pinctrl-names = "idle", "active", "cs";
+	pinctrl-0 = <&gpsb22_bus_idle>;
+	pinctrl-1 = <&gpsb22_bus_spi>;
+	pinctrl-2 = <&gpsb22_spi_cs>;
+
+	/* cs-gpios */
+	cs-gpios = <&gpg 8 GPIO_ACTIVE_LOW>,
+		<&gpa 30 GPIO_ACTIVE_LOW>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+	spidev@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <20000000>;
+	};
+	spidev@1 {
+		compatible = "rohm,dh2228fv";
+		reg = <1>;
+		spi-max-frequency = <20000000>;
+	};
+};
+
+&gpsb1 {
+	status = "okay";
+	gpsb-port = <15>;
+	pinctrl-names = "idle", "active";
+	pinctrl-0 = <&gpsb15_bus_idle>;
+	pinctrl-1 = <&gpsb15_bus_tsif>;
+};
+
+&gpsb2 {
+	status = "okay";
+	gpsb-port = <16>;
+	pinctrl-names = "idle", "active";
+	pinctrl-0 = <&gpsb16_bus_idle>;
+	pinctrl-1 = <&gpsb16_bus_tsif>;
+};
+
+&pinctrl {
+	gpsb15_bus: gpsb15_bus {
+		telechips,pins = "gpc-0", "gpc-1", "gpc-3", "gpc-2";
+		telechips,pin-function = <6>;
+	};
+
+	gpsb15_bus_idle: gpsb15_bus_idle {
+		telechips,pins = "gpc-0", "gpc-1", "gpc-3", "gpc-2";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+
+	gpsb15_bus_spi: gpsb15_bus_spi {
+		telechips,pins = "gpc-0", "gpc-1", "gpc-3", "gpc-2";
+		telechips,pin-function = <6>;
+	};
+
+	gpsb15_bus_tsif: gpsb15_bus_tsif {
+		telechips,pins = "gpc-0", "gpc-1", "gpc-3", "gpc-2";
+		telechips,pin-function = <6>;
+		telechips,input-enable;
+	};
+
+	gpsb16_bus: gpsb16_bus {
+		telechips,pins = "gpc-4", "gpc-5", "gpc-7", "gpc-6";
+		telechips,pin-function = <6>;
+	};
+
+	gpsb16_bus_idle: gpsb16_bus_idle {
+		telechips,pins = "gpc-4", "gpc-5", "gpc-7", "gpc-6";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+
+	gpsb16_bus_spi: gpsb16_bus_spi {
+		telechips,pins = "gpc-4", "gpc-5", "gpc-7", "gpc-6";
+		telechips,pin-function = <6>;
+	};
+
+	gpsb16_bus_tsif: gpsb16_bus_tsif {
+		telechips,pins = "gpc-4", "gpc-5", "gpc-7", "gpc-6";
+		telechips,pin-function = <6>;
+		telechips,input-enable;
+	};
+
+	gpsb22_bus: gpsb22_bus {
+		telechips,pins = "gpg-7", "gpg-8", "gpg-10", "gpg-9";
+		telechips,pin-function = <6>;
+	};
+
+	gpsb22_bus_idle: gpsb22_bus_idle {
+		telechips,pins = "gpg-7", "gpg-8", "gpg-10", "gpg-9";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+
+	gpsb22_bus_spi: gpsb22_bus_spi {
+		telechips,pins = "gpg-7", "gpg-8", "gpg-10", "gpg-9";
+		telechips,pin-function = <6>;
+	};
+
+	gpsb22_spi_cs: gpsb22_spi_cs {
+		telechips,pins = "gpg-8", "gpa-30";
+		telechips,pin-function = <0>;
+		telechips,input_buffer_enable;
+		telechips,output-high;
+	};
+};

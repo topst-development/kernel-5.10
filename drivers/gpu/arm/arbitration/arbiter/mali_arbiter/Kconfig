@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT
+#
+# (C) COPYRIGHT 2019-2022 Arm Limited or its affiliates. All rights reserved.
+#
+#
+
+config MALI_ARBITER_MODULES
+	tristate "Enable mali arbiter modules"
+	depends on MALI_ARBITRATION
+	default y
+	help
+	  Enables the build of the arbiter modules used in the reference
+	  virtualization setup for Mali.
+	  If unsure, say N
+

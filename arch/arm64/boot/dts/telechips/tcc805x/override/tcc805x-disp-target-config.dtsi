@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include <dt-bindings/display/display-defs.h>
+
+/* 1. Defination for DRM Displayport configuration */
+#define DRM_DP0_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+#define DRM_DP1_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+#define DRM_DP2_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+#define DRM_DP3_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+
+/* 2. Defination for DRM DUMMY configuration */
+#define DRM_DUMMY0_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+#define DRM_DUMMY1_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+#define DRM_DUMMY2_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+#define DRM_DUMMY3_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+
+/* 3. Defination for DRM LVDS configuration */
+#define DRM_DUAL_LVDS_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+
+
+/* 4. Defination for LVDS configuration */
+#define FB_LVDS_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+
+#if (FB_LVDS_PANEL_INDEX == LVDS_PANEL_AUO)
+#define FB_LVDS_PANEL &fb_auoc123han06  /* 0: BOE PANEL, 1: AUO PANEL */
+#define FB_LVDS_PANEL_IN &panel_fb_auo_in
+#else
+#define FB_LVDS_PANEL &fb_tm123xdhp90
+#define FB_LVDS_PANEL_IN &panel_fb_boe_in
+#endif
+
+#define LVDS_PANEL_AUO_BLKTIME 260

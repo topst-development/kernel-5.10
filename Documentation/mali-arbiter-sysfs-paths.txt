@@ -1,0 +1,179 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
+#
+# (C) COPYRIGHT 2020-2021 ARM Limited. All rights reserved.
+#
+# This program is free software and is provided to you under the terms of the
+# GNU General Public License version 2 as published by the Free Software
+# Foundation, and any use by you of this program is subject to the terms
+# of such GNU license.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, you can access it online at
+# http://www.gnu.org/licenses/gpl-2.0.html.
+#
+#
+
+
+=====================================
+Arbiter/Partition Manager sysfs Paths
+=====================================
+
+Introduction
+------------
+The Arbiter has various sysfs paths associated with it that provide details on
+the Partition Manager's state, and allow for modification to it.
+
+This document will describe in detail those paths.
+
+Structure Overview
+------------------
+The sysfs entries are structured as below.  Some directories end in a capital
+letter within square brackets (e.g. [X]), this indicates that there are multiple
+paths each with a 0-based numeric suffix - these path arrays may be sparse or
+empty.  The details of each path is in later sections.
+
+- /sys/bus/platform/devices/<Base address>.gpu_resource_group
+  |- arbiter
+     |- partitions
+     |  |- partition[P]
+     |     |- slices
+     |     |  |- slice[S]
+     |     |
+     |     |- active_slices
+     |     |- assigned_access_windows
+     |
+     |- slices
+     |  |- slice[S]
+     |     |- tiler_type
+     |     |- num_cores
+     |     |- partition
+     |     |- enabled
+     |     |- powered
+
+[P] - Partition index
+[S] - Slice index
+
+Path Details
+------------
+arbiter
+  The top-level arbiter path.  There is one Arbiter per resource group.
+
+arbiter/partitions
+  A directory that contains the partitions in the resource group the Arbiter
+  belongs to.
+
+arbiter/partitions/partition[P]
+  A directory that represents a partition in the resource group the Arbiter
+  belongs to. [P] represents the absolute partition index within the GPU.
+
+arbiter/partitions/partition[P]/slices
+  A directory that contains the slices assigned to partition[P].
+
+arbiter/partitions/partition[P]/slices/slice[S]
+  A symlink to arbiter/slices/slice[S]. [S] represents the absolute slice
+  index within the GPU.
+
+arbiter/partitions/partition[P]/active_slices  (rw)
+  A bitmask that represents the slices that have been assigned to partition[P].
+
+  When written to, the previously assigned slices are unassigned from this
+  partition, and the slices set high in the mask, are assigned to this
+  partition. This is a synchronous operation.
+
+  If the partition has an active access window and its associated graphics
+  driver is performing tasks on the partition, then it is instructed to stop.
+  Once it is stopped, the slice assignment is performed, and then if it has been
+  requested, an access window is set active.  If there are multiple access
+  windows' associated graphics drivers requesting access to the partition, the
+  access window set active may not be the one that was active when this process
+  began.
+
+  Multiple numeric formats are supported depending on the prefix:
+  - If there is no prefix, the text is parsed as decimal
+  - If the prefix is '0x', the text is parsed as hexadecimal
+  - If the prefix is '0', the text is parsed as octal
+
+  This operation can fail in the following ways:
+  - Textual input conversion to a number has failed.
+    -EINVAL or -ERANGE returned.
+  - A requested slice is not in the same resource group as the Arbiter.
+    -EINVAL returned.
+  - A requested slice is assigned in another partition.
+    -EINVAL returned.
+  - A requested slice could not be powered up/down or reset.
+    -EPERM returned.
+  - The requested slices are not contiguous.
+    -EINVAL returned.
+  - The GPU failed to acknowledge the assignment.
+    -ENODEV returned.
+
+  On a successful read the bitmask is displayed in hexadecimal format with a '0x'
+  prefix.
+
+arbiter/partitions/partition[P]/assigned_access_windows (rw)
+  A bitmask that represents the access windows that have been assigned to
+  partition[P].
+
+  When written to, the previously assigned access windows are unassigned from
+  this partition, and the access windows set high in the mask, are assigned to
+  this partition. This is a synchronous operation.
+
+  If the partition has an active access window and its associated graphics
+  driver is performing tasks on the partition, then it is instructed to stop.
+  Once it is stopped, the access window assignment is performed, and then if it
+  has been requested, an access window is set active.  If there are multiple
+  access windows' associated graphics drivers requesting access to the
+  partition, the access window set active may not be the one that was active
+  when this process began.
+
+  If multiple access windows are specified when this path is written to, they
+  share access to the partition by time-slicing.
+
+  Multiple numeric formats are supported depending on the prefix:
+  - If there is no prefix, the text is parsed as decimal
+  - If the prefix is '0x', the text is parsed as hexadecimal
+  - If the prefix is '0', the text is parsed as octal
+
+  This operation can fail in the following ways:
+  - Textual input conversion to a number has failed.
+    -EINVAL or -ERANGE returned.
+  - A requested access window is not in the same resource group as the Arbiter.
+    -EINVAL returned.
+  - A requested access window is already assigned to another partition.
+    -EINVAL returned.
+
+  On a successful read the bitmask is displayed in hexadecimal format with a '0x'
+  prefix.
+
+arbiter/slices
+  A directory that contains the slices in the resource group the Arbiter belongs
+  to.
+
+arbiter/slices/slice[S]
+  A directory that represents a slice in the resource group the Arbiter belongs
+  to. [S] represents the absolute slice index within the GPU.
+
+arbiter/slices/slice[S]/tiler_type (ro)
+  The tiler type in the slice.  Displays "Large" for the high performance tiler
+  and "Small" for the compact tiler.
+
+arbiter/slices/slice[S]/num_cores (ro)
+  Displays the number of shader cores in the slice as a decimal.
+
+arbiter/slices/slice[S]/partition (ro)
+  Displays the partition the slice is assigned to as a decimal, or '-1' if the
+  slice is not assigned to any partition.
+
+arbiter/slices/slice[S]/enabled (ro)
+  Displays the enabled state of the slice.  A slice is enabled if it is not in
+  reset state and its clock is enabled. '1' is displayed if the slice is
+  enabled, or '0' otherwise.
+
+arbiter/slices/slice[S]/powered (ro)
+  Displays the powered state of the slice.  '1' is displayed if the slice is
+  powered, or '0' otherwise.
