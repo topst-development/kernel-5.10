@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include <dt-bindings/display/tcc8070-lpd4x322-panel.h>
+#include "tcc807x-subcore-disp-target-config.dtsi"
+#include "tcc807x-subcore-vioc.dtsi"
+#include "tcc807x-subcore-disp.dtsi"
+
+#include "tcc8070-lpd4x322-subcore-vioc.dtsi"
+
+/*==============================================================================
+ * TCC807x_Linux_IVI SUB-CORE DISPLAY PATH
+ * ---------------------------
+ * VIOC2 : fb0<fb0_display_out>
+ =============================================================================*/
+
+&pmap_fb_video {
+	reg = <0x0 FB_VIDEO_BASE 0x0 PMAP_SIZE_FB_VIDEO>;
+	alignment = <0x1000>;
+	no-map;
+	status = "okay";
+};
+
+#if defined(LCD_PORT4_BLK_GPIO) && defined(LCD_PORT4_BLK_NUM)
+&lcd_port4_bl {
+	status = "okay";
+};
+#endif
+
+/* FB0 */
+&fb0 {
+	status = "okay";
+	memory-region = <&pmap_fb_video>;
+};
+
+
+&fb_tcc_dsi {
+	status = "okay";
+	#if defined(LCD_PORT4_PWR) && defined(LCD_PORT4_RST) && \
+	    defined(LCD_PORT4_BLK)
+	pinctrl-0 = <&lcd_port_default4>;
+	pinctrl-1 = <&lcd_port_power_on4>;
+	pinctrl-2 = <&lcd_port_reset_off4>;
+	pinctrl-3 = <&lcd_port_blk_on4>;
+	pinctrl-4 = <&lcd_port_blk_off4>;
+	pinctrl-5 = <&lcd_port_reset_on4 &lcd_port_power_off4>;
+	pinctrl-6 = <&lcd_port_ser_pwdn>;
+	#endif
+	#if defined(LCD_PORT4_BLK_GPIO) && defined(LCD_PORT4_BLK_NUM)
+	backlight = <&lcd_port4_bl>;
+	#endif
+};
+
+&fb_dsi0_in {
+	remote-endpoint = <&fb0_display_out>;
+};
+
+&fb0_display_out {
+	remote-endpoint = <&fb_dsi0_in>;
+};
+/* end of file */

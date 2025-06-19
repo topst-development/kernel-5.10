@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	cb_wwdt: cb_wwdt@40600000 {
+		compatible = "telechips,tcc-cb-wwdt";
+		reg = <0x0 0x40600000 0x0 0x10000>;
+
+		clocks = <&osc24m 0 0>;
+		clock-names = "clk_wwdt";
+
+		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+
+		kick-interval = <5>;
+		timeout-sec = <20>;
+
+		reset-enable-watchdog = <2>;
+	};
+};

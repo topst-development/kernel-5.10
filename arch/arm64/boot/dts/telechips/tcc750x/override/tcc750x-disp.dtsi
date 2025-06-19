@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+
+/ {
+	/*----------------------------------------------------------------------
+	 * aliases
+	 *----------------------------------------------------------------------
+	 */
+	aliases: aliases {
+		fb0 = &fb0;
+	};
+
+        fb0: fb@0 {
+                compatible = "telechips,fb";
+                status = "disabled";
+                memory-region = <>;
+                xres = <800>;
+                yres = <480>;
+                bpp = <32>;
+                chroma-key = <0x0 0x0 0x0>;
+                chroma-mkey = <0xF8 0xFC 0xF8>;
+                mode = <FBX_TRIPLE>;
+                update-type = <FBX_OVERLAY_UPDATE>;
+                device-priority = <FBX_DEVICE_LVDS>;
+                telechips,disp = <&vioc_disp VIOC_DISP0>;
+                telechips,wmixer = <&vioc_wmix VIOC_WMIX0>;
+                telechips,rdma = <&vioc_rdma VIOC_RDMA00>;
+        };
+};
+/* end of file */

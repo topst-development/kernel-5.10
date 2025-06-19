@@ -1,0 +1,220 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	aliases: aliases {
+		gpio0 = &gpa;
+		gpio28 = &gpb;
+		gpio40 = &gpc;
+		gpio56 = &gpd;
+		gpio72 = &gpe;
+		gpio88 = &gpf;
+		gpio104 = &gpg;
+		gpio116 = &gph;
+		gpio140 = &gpi;
+		gpio164 = &gpsd0;
+	};
+
+	pinctrl: pinctrl@1E020000 {
+		compatible = "telechips,tcc-pinctrl";
+		reg = <0x0 0x1E020000 0x0 0x7C0>;
+
+		pinctrl_gpio {
+			gpa {
+				pin-info = <0x0 0 28>;
+				source-num = <0xff>;
+				mfio-info = <3 17 30 4 25 34 2 21 36 4>;
+			};
+
+			gpb {
+				pin-info = <0x50 0 12>;
+				source-num = <0xff>;
+				mfio-info = <0xff>;
+			};
+
+			gpc {
+				pin-info = <0xA0 0 16>;
+				source-num =  <1 4 0 4>;
+				mfio-info = <1 4 10 4>;
+			};
+
+			gpd {
+				pin-info = <0xF0 0 16>;
+				source-num =  <1 4 4 4>;
+				mfio-info = <1 0 14 8>;
+			};
+
+			gpe {
+				pin-info = <0x140 0 16>;
+				source-num = <1 8 12 4>;
+				mfio-info = <1 0 22 8>;
+			};
+
+			gpf {
+				pin-info = <0x190 0 16>;
+				source-num = <1 8 16 4>;
+				mfio-info = <1 14 40 2>;
+			};
+
+			gpg {
+				pin-info = <0x1E0 0 12>;
+				source-num = <0xff>;
+				mfio-info = <1 0 0 10>;
+			};
+
+			gph {
+				pin-info = <0x220 0 24>;
+				source-num = <1 18 8 4>;
+				mfio-info = <0xff>;
+			};
+
+			gpi {
+				pin-info = <0x260 0 24>;
+				source-num = <0xff>;
+				mfio-info = <0xff>;
+			};
+
+			gpsd0 {
+				pin-info = <0x2A0 0 12>;
+				source-num = <0xff>;
+				mfio-info = <0xff>;
+			};
+		};
+	};
+
+	gpio: gpio@1E020000 {
+		compatible = "telechips,tcc-gpio";
+		reg = <0x0 0x1E020000 0x0 0x7C0>;
+
+		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 2 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 4 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 9 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>,
+					  <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
+
+		gpa: gpa {
+			reg-offset = <0x0>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <1 17 32 7>;
+			label = "gpioa";
+			gpio-ranges = <&pinctrl 0 0 28>;
+		};
+
+		gpb: gpb {
+			reg-offset = <0x50>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <0xff>;
+			label = "gpiob";
+			gpio-ranges = <&pinctrl 0 28 12>;
+		};
+
+		gpc: gpc {
+			reg-offset = <0xA0>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num =  <1 6 40 2>;
+			label = "gpioc";
+			gpio-ranges = <&pinctrl 0 40 16>;
+		};
+
+		gpd: gpd {
+			reg-offset = <0xF0>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num =  <1 5 42 2>;
+			label = "gpiod";
+			gpio-ranges = <&pinctrl 0 56 16>;
+		};
+
+		gpe: gpe {
+			reg-offset = <0x140>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <1 11 48 1>;
+			label = "gpioe";
+			gpio-ranges = <&pinctrl 0 72 16>;
+		};
+
+		gpf: gpf {
+			reg-offset = <0x190>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <1 8 51 8>;
+			label = "gpiof";
+			gpio-ranges = <&pinctrl 0 88 16>;
+		};
+
+		gpg: gpg {
+			reg-offset = <0x1E0>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <0xff>;
+			label = "gpiog";
+			gpio-ranges = <&pinctrl 0 104 12>;
+		};
+
+		gph: gph {
+			reg-offset = <0x220>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <2 11 44 4 16 49 2>;
+			label = "gpioh";
+			gpio-ranges = <&pinctrl 0 116 24>;
+		};
+
+		gpi: gpi {
+			reg-offset = <0x260>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <0xff>;
+			label = "gpioi";
+			gpio-ranges = <&pinctrl 0 140 24>;
+		};
+
+		gpsd0: gpsd0 {
+			reg-offset = <0x2A0>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			source-num = <0xff>;
+			label = "gpiosd0";
+			gpio-ranges = <&pinctrl 0 164 12>;
+		};
+	};
+};

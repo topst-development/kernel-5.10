@@ -1,0 +1,299 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#ifndef TCC_MIPI_CFG_REG_H
+#define TCC_MIPI_CFG_REG_H
+
+#define TCC_MIPI_RESET_RELEASE		(0U)
+#define TCC_MIPI_RESET_RESET		(1U)
+
+/*
+ * MIPI CFG BASE
+ */
+#define CSI0_CFG		((uint32_t)0x000U)
+#define CSI1_CFG		((uint32_t)0x004U)
+#define CSI0_DPHY_STATUS0	((uint32_t)0x008U)
+#define CSI0_DPHY_STATUS1	((uint32_t)0x00CU)
+#define CSI0_DPHY_STATUS2	((uint32_t)0x010U)
+#define CSI0_DPHY_STATUS3	((uint32_t)0x014U)
+#define CSI0_DPHY_STATUS4	((uint32_t)0x018U)
+#define CSI1_DPHY_STATUS0	((uint32_t)0x01CU)
+#define CSI1_DPHY_STATUS1	((uint32_t)0x020U)
+#define CSI1_DPHY_STATUS2	((uint32_t)0x024U)
+#define CSI1_DPHY_STATUS3	((uint32_t)0x028U)
+#define CSI1_DPHY_STATUS4	((uint32_t)0x02CU)
+#define ISP_CLK_MASK		((uint32_t)0x200U)
+#define ISP_SWRST		((uint32_t)0x204U)
+#define ISP_PX1X_DIV		((uint32_t)0x208U)
+#define ISP_BYPASS		((uint32_t)0x20CU)
+#define ISP_X2X_CFG		((uint32_t)0x210U)
+#define ISP_FMT_CFG		((uint32_t)0x214U)
+#define ISP_APBADDR_CFG0	((uint32_t)0x218U)
+#define ISP_APBADDR_CFG1	((uint32_t)0x21CU)
+
+/*
+ * CSI_CFG
+ */
+#define CSI_CFG_GEN_APB_RST_SHIFT	((uint32_t)31U)
+#define CSI_CFG_GEN_PX_RST_SHIFT	((uint32_t)30U)
+#define CSI_CFG_MIPI_SWRST_SHIFT	((uint32_t)29U)
+#define CSI_CFG_MIPI_CKMASK_SHIFT	((uint32_t)28U)
+#define CSI_CFG_MIPI_CHMUX_3_SHIFT	((uint32_t)27U)
+#define CSI_CFG_MIPI_CHMUX_2_SHIFT	((uint32_t)26U)
+#define CSI_CFG_MIPI_CHMUX_1_SHIFT	((uint32_t)25U)
+#define CSI_CFG_MIPI_CHMUX_0_SHIFT	((uint32_t)24U)
+#define CSI_CFG_VSYNC_INV3_SHIFT	((uint32_t)23U)
+#define CSI_CFG_VSYNC_INV2_SHIFT	((uint32_t)22U)
+#define CSI_CFG_VSYNC_INV1_SHIFT	((uint32_t)21U)
+#define CSI_CFG_VSYNC_INV0_SHIFT	((uint32_t)20U)
+#define CSI_CFG_CSI_DATA_ALIGN_SHIFT	((uint32_t)16U)
+#define CSI_CFG_HSYNC_INV3_SHIFT	((uint32_t)15U)
+#define CSI_CFG_HSYNC_INV2_SHIFT	((uint32_t)14U)
+#define CSI_CFG_HSYNC_INV1_SHIFT	((uint32_t)13U)
+#define CSI_CFG_HSYNC_INV0_SHIFT	((uint32_t)12U)
+#define CSI_CFG_LOOPBACK_EN_SHIFT	((uint32_t)9U)
+#define CSI_CFG_S_RESETN_SHIFT		((uint32_t)8U)
+#define CSI_CFG_M_RESETN_SHIFT		((uint32_t)7U)
+#define CSI_CFG_S_FORCERXMODE3_SHIFT	((uint32_t)6U)
+#define CSI_CFG_S_FORCERXMODE2_SHIFT	((uint32_t)5U)
+#define CSI_CFG_S_FORCERXMODE1_SHIFT	((uint32_t)4U)
+#define CSI_CFG_S_FORCERXMODE0_SHIFT	((uint32_t)3U)
+#define CSI_CFG_S3_BIASEN_SHIFT		((uint32_t)2U)
+#define CSI_CFG_S2_BIASEN_SHIFT		((uint32_t)1U)
+#define CSI_CFG_S1_BIASEN_SHIFT		((uint32_t)0U)
+
+#define CSI_CFG_GEN_APB_RST_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_GEN_APB_RST_SHIFT)
+#define CSI_CFG_GEN_PX_RST_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_GEN_PX_RST_SHIFT)
+#define CSI_CFG_MIPI_SWRST_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_MIPI_SWRST_SHIFT)
+#define CSI_CFG_MIPI_CKMASK_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_MIPI_CKMASK_SHIFT)
+#define CSI_CFG_MIPI_CHMUX_3_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_MIPI_CHMUX_3_SHIFT)
+#define CSI_CFG_MIPI_CHMUX_2_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_MIPI_CHMUX_2_SHIFT)
+#define CSI_CFG_MIPI_CHMUX_1_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_MIPI_CHMUX_1_SHIFT)
+#define CSI_CFG_MIPI_CHMUX_0_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_MIPI_CHMUX_0_SHIFT)
+#define CSI_CFG_VSYNC_INV3_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_VSYNC_INV3_SHIFT)
+#define CSI_CFG_VSYNC_INV2_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_VSYNC_INV2_SHIFT)
+#define CSI_CFG_VSYNC_INV1_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_VSYNC_INV1_SHIFT)
+#define CSI_CFG_VSYNC_INV0_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_VSYNC_INV0_SHIFT)
+#define CSI_CFG_CSI_DATA_ALIGN_MASK	\
+		(((uint32_t)0x3U) << CSI_CFG_CSI_DATA_ALIGN_SHIFT)
+#define CSI_CFG_HSYNC_INV3_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_HSYNC_INV3_SHIFT)
+#define CSI_CFG_HSYNC_INV2_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_HSYNC_INV2_SHIFT)
+#define CSI_CFG_HSYNC_INV1_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_HSYNC_INV1_SHIFT)
+#define CSI_CFG_HSYNC_INV0_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_HSYNC_INV0_SHIFT)
+#define CSI_CFG_LOOPBACK_EN_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_LOOPBACK_EN_SHIFT)
+#define CSI_CFG_S_RESETN_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_S_RESETN_SHIFT)
+#define CSI_CFG_M_RESETN_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_M_RESETN_SHIFT)
+#define CSI_CFG_S_FORCERXMODE3_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_S_FORCERXMODE3_SHIFT)
+#define CSI_CFG_S_FORCERXMODE2_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_S_FORCERXMODE2_SHIFT)
+#define CSI_CFG_S_FORCERXMODE1_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_S_FORCERXMODE1_SHIFT)
+#define CSI_CFG_S_FORCERXMODE0_MASK	\
+		(((uint32_t)0x1U) << CSI_CFG_S_FORCERXMODE0_SHIFT)
+#define CSI_CFG_S3_BIASEN_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_S3_BIASEN_SHIFT)
+#define CSI_CFG_S2_BIASEN_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_S2_BIASEN_SHIFT)
+#define CSI_CFG_S1_BIASEN_MASK		\
+		(((uint32_t)0x1U) << CSI_CFG_S1_BIASEN_SHIFT)
+
+#define CSI_CFG_MIPI_CHMUX_MAX		((uint32_t)8U)
+
+#define CSI_CFG_ISP_BYPASS_MAX		((uint32_t)4U)
+
+#define CSI_DATA_ALIGN_RGB8_YUV8	((uint32_t)0x0U)
+#define CSI_DATA_ALIGN_RGB666		((uint32_t)0x1U)
+#define CSI_DATA_ALIGN_RGB565		((uint32_t)0x2U)
+#define CSI_DATA_ALIGN_YUV10		((uint32_t)0x3U)
+
+
+/*
+ * CSI DPHY STATUS0~3
+ */
+#define S_ATB_OUT_SHIFT	((uint32_t)0U)
+
+#define S_ATB_OUT_MASK		\
+		(((uint32_t)0xFFFFFFFFU) << S_ATB_OUT_SHIFT)
+
+/*
+ * CSI DPHY STATUS4
+ */
+#define TCC_S_ERR3_ESC_SHIFT		((uint32_t)8U)
+#define TCC_S_ERR2_ESC_SHIFT		((uint32_t)7U)
+#define TCC_S_ERR1_ESC_SHIFT		((uint32_t)6U)
+#define TCC_S_ERR0_ESC_SHIFT		((uint32_t)5U)
+#define TCC_S_ERR3_CONTROL_SHIFT	((uint32_t)3U)
+#define TCC_S_ERR2_CONTROL_SHIFT	((uint32_t)2U)
+#define TCC_S_ERR1_CONTROL_SHIFT	((uint32_t)1U)
+#define TCC_S_ERR0_CONTROL_SHIFT	((uint32_t)0U)
+
+#define TCC_S_ERR3_ESC_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR3_ESC_SHIFT)
+#define TCC_S_ERR2_ESC_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR2_ESC_SHIFT)
+#define TCC_S_ERR1_ESC_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR1_ESC_SHIFT)
+#define TCC_S_ERR0_ESC_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR0_ESC_SHIFT)
+#define TCC_S_ERR3_CONTROL_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR3_CONTROL_SHIFT)
+#define TCC_S_ERR2_CONTROL_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR2_CONTROL_SHIFT)
+#define TCC_S_ERR1_CONTROL_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR1_CONTROL_SHIFT)
+#define TCC_S_ERR0_CONTROL_MASK		\
+		(((uint32_t)0x1U) << TCC_S_ERR0_CONTROL_SHIFT)
+
+/*
+ * ISP_CLK_MASK
+ */
+#define ISP_CLK_MASK_PX2X_M3_SHIFT	((uint32_t)11U)
+#define ISP_CLK_MASK_PX2X_M2_SHIFT	((uint32_t)10U)
+#define ISP_CLK_MASK_PX2X_M1_SHIFT	((uint32_t)9U)
+#define ISP_CLK_MASK_PX2X_M0_SHIFT	((uint32_t)8U)
+#define ISP_CLK_MASK_PX1X_M3_SHIFT	((uint32_t)7U)
+#define ISP_CLK_MASK_PX1X_M2_SHIFT	((uint32_t)6U)
+#define ISP_CLK_MASK_PX1X_M1_SHIFT	((uint32_t)5U)
+#define ISP_CLK_MASK_PX1X_M0_SHIFT	((uint32_t)4U)
+#define ISP_CLK_MASK_BCLK_M_SHIFT	((uint32_t)0U)
+
+#define ISP_CLK_MASK_PX2X_M3_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX2X_M3_SHIFT)
+#define ISP_CLK_MASK_PX2X_M2_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX2X_M2_SHIFT)
+#define ISP_CLK_MASK_PX2X_M1_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX2X_M1_SHIFT)
+#define ISP_CLK_MASK_PX2X_M0_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX2X_M0_SHIFT)
+#define ISP_CLK_MASK_PX1X_M3_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX1X_M3_SHIFT)
+#define ISP_CLK_MASK_PX1X_M2_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX1X_M2_SHIFT)
+#define ISP_CLK_MASK_PX1X_M1_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX1X_M1_SHIFT)
+#define ISP_CLK_MASK_PX1X_M0_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_PX1X_M0_SHIFT)
+#define ISP_CLK_MASK_BCLK_M_MASK	\
+		(((uint32_t)0x1U) << ISP_CLK_MASK_BCLK_M_SHIFT)
+
+/*
+ * ISP_SWRST
+ */
+#define ISP_SWRST_PX2X_SWRST_SHIFT	((uint32_t)20U)
+#define ISP_SWRST_PX1X_SWRST_SHIFT	((uint32_t)16U)
+#define ISP_SWRST_DDIIF_SWRST_SHIFT	((uint32_t)12U)
+#define ISP_SWRST_X2X_SWRST_SHIFT	((uint32_t)8U)
+#define ISP_SWRST_AXI_SWRST_SHIFT	((uint32_t)4U)
+#define ISP_SWRST_APB_SWRST_SHIFT	((uint32_t)0U)
+
+#define ISP_SWRST_PX2X_SWRST_MASK	\
+		(((uint32_t)0x1U) << ISP_SWRST_PX2X_SWRST_SHIFT)
+#define ISP_SWRST_PX1X_SWRST_MASK	\
+		(((uint32_t)0x1U) << ISP_SWRST_PX1X_SWRST_SHIFT)
+#define ISP_SWRST_DDIIF_SWRST_MASK	\
+		(((uint32_t)0x1U) << ISP_SWRST_DDIIF_SWRST_SHIFT)
+#define ISP_SWRST_X2X_SWRST_MASK	\
+		(((uint32_t)0x1U) << ISP_SWRST_X2X_SWRST_SHIFT)
+#define ISP_SWRST_AXI_SWRST_MASK	\
+		(((uint32_t)0x1U) << ISP_SWRST_AXI_SWRST_SHIFT)
+#define ISP_SWRST_APB_SWRST_MASK	\
+		(((uint32_t)0x1U) << ISP_SWRST_APB_SWRST_SHIFT)
+
+/*
+ * ISP_PX1X_DIV
+ */
+#define ISP_PX1X_DIV_PX1X_DIV3_SHIFT	((uint32_t)3U)
+#define ISP_PX1X_DIV_PX1X_DIV2_SHIFT	((uint32_t)2U)
+#define ISP_PX1X_DIV_PX1X_DIV1_SHIFT	((uint32_t)1U)
+#define ISP_PX1X_DIV_PX1X_DIV0_SHIFT	((uint32_t)0U)
+
+#define ISP_PX1X_DIV_PX1X_DIV3_MASK	\
+		(((uint32_t)0x1U) << ISP_PX1X_DIV_PX1X_DIV3_SHIFT)
+#define ISP_PX1X_DIV_PX1X_DIV2_MASK	\
+		(((uint32_t)0x1U) << ISP_PX1X_DIV_PX1X_DIV2_SHIFT)
+#define ISP_PX1X_DIV_PX1X_DIV1_MASK	\
+		(((uint32_t)0x1U) << ISP_PX1X_DIV_PX1X_DIV1_SHIFT)
+#define ISP_PX1X_DIV_PX1X_DIV0_MASK	\
+		(((uint32_t)0x1U) << ISP_PX1X_DIV_PX1X_DIV0_SHIFT)
+
+/*
+ * ISP_BYPASS
+ */
+#define ISP_BYPASS_RVC_SEL_SHIFT	((uint32_t)4U)
+#define ISP_BYPASS_ISP3_BYP_SHIFT	((uint32_t)3U)
+#define ISP_BYPASS_ISP2_BYP_SHIFT	((uint32_t)2U)
+#define ISP_BYPASS_ISP1_BYP_SHIFT	((uint32_t)1U)
+#define ISP_BYPASS_ISP0_BYP_SHIFT	((uint32_t)0U)
+
+#define ISP_BYPASS_RVC_SEL_MASK		\
+		(((uint32_t)0x1U) << ISP_BYPASS_RVC_SEL_SHIFT)
+#define ISP_BYPASS_ISP3_BYP_MASK	\
+		(((uint32_t)0x1U) << ISP_BYPASS_ISP3_BYP_SHIFT)
+#define ISP_BYPASS_ISP2_BYP_MASK	\
+		(((uint32_t)0x1U) << ISP_BYPASS_ISP2_BYP_SHIFT)
+#define ISP_BYPASS_ISP1_BYP_MASK	\
+		(((uint32_t)0x1U) << ISP_BYPASS_ISP1_BYP_SHIFT)
+#define ISP_BYPASS_ISP0_BYP_MASK	\
+		(((uint32_t)0x1U) << ISP_BYPASS_ISP0_BYP_SHIFT)
+
+/*
+ * ISP_X2X_CFG
+ */
+#define ISP_X2X_CFG_PWRDN_BYPASS_SHIFT	((uint32_t)10U)
+#define ISP_X2X_CFG_PWRDNACKN_SHIFT	((uint32_t)9U)
+#define ISP_X2X_CFG_PWRDNREQN_SHIFT	((uint32_t)4U)
+#define ISP_X2X_CFG_ISP_SLEEP_SHIFT	((uint32_t)0U)
+
+#define ISP_X2X_CFG_PWRDN_BYPASS_MASK	\
+		((uint32_t)(0x1U) << ISP_X2X_CFG_PWRDN_BYPASS_SHIFT)
+#define ISP_X2X_CFG_PWRDNACKN_MASK	\
+		(((uint32_t)0x1U) << ISP_X2X_CFG_PWRDNACKN_SHIFT)
+#define ISP_X2X_CFG_PWRDNREQN_MASK	\
+		(((uint32_t)0x1U) << ISP_X2X_CFG_PWRDNREQN_SHIFT)
+#define ISP_X2X_CFG_ISP_SLEEP_MASK	\
+		(((uint32_t)0x1U) << ISP_X2X_CFG_ISP_SLEEP_SHIFT)
+
+/*
+ * ISP_FMT_CFG
+ */
+#define ISP_FMT_CFG_ISP3_FMT_SHIFT	((uint32_t)12U)
+#define ISP_FMT_CFG_ISP2_FMT_SHIFT	((uint32_t)8U)
+#define ISP_FMT_CFG_ISP1_FMT_SHIFT	((uint32_t)4U)
+#define ISP_FMT_CFG_ISP0_FMT_SHIFT	((uint32_t)0U)
+
+#define ISP_FMT_CFG_ISP3_FMT_MASK	\
+		(((uint32_t)0x7U) << ISP_FMT_CFG_ISP3_FMT_SHIFT)
+#define ISP_FMT_CFG_ISP2_FMT_MASK	\
+		(((uint32_t)0x7U) << ISP_FMT_CFG_ISP2_FMT_SHIFT)
+#define ISP_FMT_CFG_ISP1_FMT_MASK	\
+		(((uint32_t)0x7U) << ISP_FMT_CFG_ISP1_FMT_SHIFT)
+#define ISP_FMT_CFG_ISP0_FMT_MASK	\
+		(((uint32_t)0x7U) << ISP_FMT_CFG_ISP0_FMT_SHIFT)
+
+#define ISP_FMT_RAW_RGB_8_TO_10_USING_UPPER_2BIT	((uint32_t)0U)
+#define ISP_FMT_RAW_RGB_8_TO_10_USING_ZERO		((uint32_t)1U)
+#define ISP_FMT_RAW_RGB_10_OR_MORE			((uint32_t)2U)
+
+#endif

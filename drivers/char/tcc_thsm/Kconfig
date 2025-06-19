@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+
+config TELECHIPS_THSM
+	tristate "TELECHIPS THSM Driver"
+	default n
+	help
+		Support to THSM based on CA7,R5, <-> CA53 communication 

@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	aliases: aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+	};
+
+	uart0: serial@18000000 {
+		compatible = "arm,pl011", "arm,primecell";
+		reg = <0x0 0x18000000 0x0 0x1000>;
+		config-reg = <0x180C0000 0x8 9>;
+		arm,primecell-periphid = <0x001feff7>;
+		interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_UART0>, <&fbus_smu FBUS_UART>;
+		clock-names = "uartclk", "apb_pclk";
+		status = "disabled";
+	};
+
+	uart1: serial@18010000 {
+		compatible = "arm,pl011", "arm,primecell";
+		reg = <0x0 0x18010000 0x0 0x1000>;
+		config-reg = <0x180C0000 0x8 9>;
+		arm,primecell-periphid = <0x001feff7>;
+		interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_UART1>, <&fbus_smu FBUS_UART>;
+		clock-names = "uartclk", "apb_pclk";
+		status = "disabled";
+	};
+
+	uart2: serial@18020000 {
+		compatible = "arm,pl011", "arm,primecell";
+		reg = <0x0 0x18020000 0x0 0x1000>;
+		config-reg = <0x180C0000 0x8 9>;
+		arm,primecell-periphid = <0x001feff7>;
+		interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_UART2>, <&fbus_smu FBUS_UART>;
+		clock-names = "uartclk", "apb_pclk";
+		status = "disabled";
+	};
+};

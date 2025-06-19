@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+
+/ {
+	compatible = "telechips,tcc803x";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen: chosen {
+		bootargs = "vmalloc=480M console=ttyAMA0,115200n8";
+		stdout-path = "serial0:115200n8,mmio32,0x16600000";
+	};
+
+	aliases: aliases {};
+
+	memory: memory@20000000 {
+		device_type = "memory";
+		/* updated by U-Boot with actual size */
+		reg = <0x0 0x20000000 0x0 0x80000000>;
+	};
+
+	psci: psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		a7s_avm {
+			reg = <0x0 0x80000000 0x0 0x20000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+
+		a7s_avm_backup {
+			reg = <0x0 0xA0000000 0x0 0x04000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+
+		optee_os {
+			compatible = "optee.os";
+			reg = <0x0 0x2e000000 0x0 0x02000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+	};
+
+	firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
+};
+
+#include "tcc803x-cpu.dtsi"
+#include "tcc803x-clk.dtsi"
+#include "tcc803x-reboot-mode.dtsi"
+#include "tcc803x-reset.dtsi"
+#include "tcc803x-mbox.dtsi"
+#include "tcc803x-gpio.dtsi"
+#include "tcc803x-uart.dtsi"
+#include "tcc803x-wdt.dtsi"
+#include "tcc803x-dma.dtsi"
+#include "tcc803x-mmc.dtsi"
+#include "tcc803x-adc.dtsi"
+#include "tcc803x-i2c.dtsi"
+#include "tcc803x-spi.dtsi"
+#include "tcc803x-pic.dtsi"
+#include "tcc803x-timer.dtsi"
+#include "tcc803x-rtc.dtsi"
+#include "tcc803x-thermal.dtsi"
+#include "tcc803x-ecid.dtsi"
+#include "tcc803x-pwm.dtsi"
+#include "tcc803x-gmac.dtsi"
+#include "tcc803x-pcie.dtsi"
+#include "tcc803x-usb.dtsi"
+#include "tcc803x-ictc.dtsi"
+#include "tcc803x-ipi.dtsi"
+#include "tcc803x-snor-updater.dtsi"
+#include "tcc803x-hsm.dtsi"
+#include "tcc803x-rng.dtsi"
+#include "tcc803x-audio.dtsi"
+#include "tcc803x-vpu.dtsi"
+#include "tcc803x-gpu.dtsi"

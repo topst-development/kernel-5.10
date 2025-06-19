@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	rtc: rtc@4b320000 {
+		compatible = "telechips,rtc";
+		reg = <0x0 0x4b320000 0x0 0x50>;
+		clocks = <&osc24m 0 0>;
+		interrupts = <GIC_SPI 434 IRQ_TYPE_LEVEL_HIGH>;
+		/* Clocksource for RTC, 1: XTAL, 2: OSC */
+		rtc_clock = <1>;
+	};
+};

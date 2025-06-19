@@ -1,0 +1,486 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/clock/telechips,tcc805x-clks.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/soc/tcc805x,membase.h>
+#include <dt-bindings/display/tcc805x-vioc.h>
+#include <dt-bindings/display/tcc805x-lvds.h>
+//#include <dt-bindings/mailbox/tcc805x_multi_mailbox/tcc_mbox_ch.h>	//TODO:AlanK
+
+/ {
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	/*--------------------------------------------------------------------------
+	 * pinctrl
+	 *--------------------------------------------------------------------------
+	 */
+
+	/*--------------------------------------------------------------------------
+	 * aliases
+	 *--------------------------------------------------------------------------
+	 */
+	aliases: aliases {
+		tcc-overlay-drv1 = &tcc_overlay_drv1;
+		vout-drv0 = &vout_drv0;
+	};
+
+	/*--------------------------------------------------------------------------
+	 * pmap
+	 *--------------------------------------------------------------------------
+	 */
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+
+		pmap_fb_video: fb_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB_VIDEO>;
+			//or
+			//reg = <0x0 FB_VIDEO_BASE 0x0 PMAP_SIZE_FB_VIDEO>;
+			//alignment = <0x1000>;
+			status = "disabled";
+		};
+
+		pmap_fb1_video: fb1_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb1_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB1_VIDEO>;
+			//or
+			//reg = <0x0 FB1_VIDEO_BASE 0x0 PMAP_SIZE_FB1_VIDEO>;
+			//alignment = <0x1000>;
+			status = "disabled";
+		};
+
+		pmap_fb2_video: fb2_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb2_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB2_VIDEO>;
+			//or
+			//reg = <0x0 FB2_VIDEO_BASE 0x0 PMAP_SIZE_FB2_VIDEO>;
+			//alignment = <0x1000>
+			status = "disabled";
+		};
+
+		pmap_fb3_video: fb3_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb3_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB3_VIDEO>;
+			//or
+			//reg = <0x0 FB3_VIDEO_BASE 0x0 PMAP_SIZE_FB3_VIDEO>;
+			//alignment = <0x1000>
+
+			status = "disabled";
+		};
+
+		pmap_fb_wmixer: fb_wmixer {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		pmap_overlay: overlay {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		pmap_overlay1: overlay1 {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		pmap_overlay_rot: overlay_rot {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		pmap_v4l2_vout0: v4l2_vout0 {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		pmap_v4l2_vout1: v4l2_vout1 {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		pmap_viqe0: viqe0 {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		pmap_viqe1: viqe1 {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		/* Dual video play for Android */
+		pmap_video_dual: video_dual {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		/* VOUT dual display */
+		pmap_dual_display: dual_display {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+
+		/* OSD + Camera frame = mixing (for DVRS) */
+		pmap_osd: osd {
+			alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			status = "disabled";
+		};
+	};
+
+	/*--------------------------------------------------------------------------
+	 * DDI Bus Block
+	 *--------------------------------------------------------------------------
+	 */
+	ddi_config: ddi_config@12380000 {
+		compatible = "telechips,ddi_config";
+		reg = <0x0 0x12380000 0x0 0x70>;
+	};
+
+	cifport: cifport@12380008 {
+		compatible = "telechips,cif-port";
+		reg = <0x0 0x12380008 0x0 0x4>;
+	};
+
+	vioc_config: vioc_config@1200a000 {
+		compatible = "telechips,vioc_config";
+		reg =  <0x0 0x1200a000 0x0 0x1000>,
+				/* VIOC_REMAP */
+				<0x0 0x12046000 0x0 0x1000>;
+	};
+
+	vioc_intr: vioc_intr@1200a400 {
+		compatible = "telechips,vioc_intr";
+		reg = <0x0 0x1200a400 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12046400 0x0 0x100>;
+		interrupts = <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vioc_disp: vioc_disp@12000000 {
+		compatible = "telechips,vioc_disp";
+		reg = <0x0 0x12000000 0x0 0x100
+				0x0 0x12000100 0x0 0x100
+				0x0 0x12000200 0x0 0x100
+				0x0 0x12000300 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12000000 0x0 0x100
+				0x0 0x12001000 0x0 0x100
+				0x0 0x12002000 0x0 0x100
+				0x0 0x12003000 0x0 0x100>;
+		interrupts = <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_ddi DDIBUS_VIOC>, <&clk_peri PERI_LCD0>, <&clk_peri PERI_LCD1>, <&clk_peri PERI_LCD2>, <&clk_peri PERI_LCD3>;
+		clock-names = "ddi-clk", "disp0-clk", "disp1-clk", "disp2-clk", "disp3-clk";
+	};
+
+	vioc_rdma: vioc_rdma@12000400 {
+		compatible = "telechips,vioc_rdma";
+		reg = <0x0 0x12000400 0x0 0x100
+				0x0 0x12000500 0x0 0x100
+				0x0 0x12000600 0x0 0x100
+				0x0 0x12000700 0x0 0x100
+				0x0 0x12000800 0x0 0x100
+				0x0 0x12000900 0x0 0x100
+				0x0 0x12000a00 0x0 0x100
+				0x0 0x12000b00 0x0 0x100
+				0x0 0x12000c00 0x0 0x100
+				0x0 0x12000d00 0x0 0x100
+				0x0 0x12000e00 0x0 0x100
+				0x0 0x12000f00 0x0 0x100
+				0x0 0x12001000 0x0 0x100
+				0x0 0x12001100 0x0 0x100
+				0x0 0x12001200 0x0 0x100
+				0x0 0x12001300 0x0 0x100
+				0x0 0x12001400 0x0 0x100
+				0x0 0x12001500 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12004000 0x0 0x100
+				0x0 0x12005000 0x0 0x100
+				0x0 0x12006000 0x0 0x100
+				0x0 0x12007000 0x0 0x100
+				0x0 0x12008000 0x0 0x100
+				0x0 0x12009000 0x0 0x100
+				0x0 0x1200a000 0x0 0x100
+				0x0 0x1200b000 0x0 0x100
+				0x0 0x1200c000 0x0 0x100
+				0x0 0x1200d000 0x0 0x100
+				0x0 0x1200e000 0x0 0x100
+				0x0 0x1200f000 0x0 0x100
+				0x0 0x12010000 0x0 0x100
+				0x0 0x12011000 0x0 0x100
+				0x0 0x12012000 0x0 0x100
+				0x0 0x12013000 0x0 0x100
+				0x0 0x12014000 0x0 0x100
+				0x0 0x12015000 0x0 0x100>;
+		interrupts = <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vioc_wmix: vioc_wmix@12001800 {
+		compatible = "telechips,vioc_wmix";
+		reg = <0x0 0x12001800 0x0 0x100
+				0x0 0x12001900 0x0 0x100
+				0x0 0x12001a00 0x0 0x100
+				0x0 0x12001b00 0x0 0x100
+				0x0 0x12001c00 0x0 0x100
+				0x0 0x12001d00 0x0 0x100
+				0x0 0x12001e00 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12018000 0x0 0x100
+				0x0 0x12019000 0x0 0x100
+				0x0 0x1201a000 0x0 0x100
+				0x0 0x1201b000 0x0 0x100
+				0x0 0x1201c000 0x0 0x100
+				0x0 0x1201d000 0x0 0x100
+				0x0 0x1201e000 0x0 0x100>;
+		interrupts = <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vioc_scaler: vioc_scaler@12002000 {
+		compatible = "telechips,scaler";
+		reg = <0x0 0x12002000 0x0 0x100
+				0x0 0x12002100 0x0 0x100
+				0x0 0x12002200 0x0 0x100
+				0x0 0x12002300 0x0 0x100
+				0x0 0x12002400 0x0 0x100
+				0x0 0x12002500 0x0 0x100
+				0x0 0x12002600 0x0 0x100
+				0x0 0x12002700 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12020000 0x0 0x100
+				0x0 0x12021000 0x0 0x100
+				0x0 0x12022000 0x0 0x100
+				0x0 0x12023000 0x0 0x100
+				0x0 0x12024000 0x0 0x100
+				0x0 0x12025000 0x0 0x100
+				0x0 0x12026000 0x0 0x100
+				0x0 0x12027000 0x0 0x100>;
+	};
+
+	vioc_wdma: vioc_wdma@12002800 {
+		compatible = "telechips,vioc_wdma";
+		reg = <0x0 0x12002800 0x0 0x100 0x0 0x12002900 0x0 0x100
+				0x0 0x12002a00 0x0 0x100 0x0 0x12002b00 0x0 0x100
+				0x0 0x12002c00 0x0 0x100 0x0 0x12002d00 0x0 0x100
+				0x0 0x12002e00 0x0 0x100 0x0 0x12002f00 0x0 0x100
+				0x0 0x12003000 0x0 0x100 0x0 0x12014000 0x0 0x100
+				0x0 0x12014100 0x0 0x100 0x0 0x12014200 0x0 0x100
+				0x0 0x12014300 0x0 0x100 0x0 0x12014400 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12028000 0x0 0x100 0x0 0x12029000 0x0 0x100
+				0x0 0x1202a000 0x0 0x100 0x0 0x1202b000 0x0 0x100
+				0x0 0x1202c000 0x0 0x100 0x0 0x1202d000 0x0 0x100
+				0x0 0x1202e000 0x0 0x100 0x0 0x1202f000 0x0 0x100
+				0x0 0x12030000 0x0 0x100 0x0 0x12052000 0x0 0x100
+				0x0 0x12053000 0x0 0x100 0x0 0x12054000 0x0 0x100
+				0x0 0x12059000 0x0 0x100 0x0 0x1205a000 0x0 0x100>;
+		interrupts = <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vioc_vin: vioc_vin@12004000 {
+		compatible = "telechips,vioc_vin";
+		reg = <0x0 0x12004000 0x0 0x400 0x0 0x12004400 0x0 0x600
+				0x0 0x12005000 0x0 0x400 0x0 0x12005400 0x0 0x600
+				0x0 0x12006000 0x0 0x400 0x0 0x12006400 0x0 0x600
+				0x0 0x12007000 0x0 0x400 0x0 0x12007400 0x0 0x600
+				0x0 0x12018000 0x0 0x400 0x0 0x12018400 0x0 0x600
+				0x0 0x12019000 0x0 0x400 0x0 0x12019400 0x0 0x600
+				0x0 0x1201a000 0x0 0x400 0x0 0x1201a400 0x0 0x600
+				0x0 0x1201b000 0x0 0x400 0x0 0x1201b400 0x0 0x600>,
+				/* VIOC_REMAP */
+				<0x0 0x12040000 0x0 0x400 0x0 0x12040400 0x0 0x600
+				0x0 0x12041000 0x0 0x400 0x0 0x12041400 0x0 0x600
+				0x0 0x12042000 0x0 0x400 0x0 0x12042400 0x0 0x600
+				0x0 0x12043000 0x0 0x400 0x0 0x12043400 0x0 0x600
+				0x0 0x12055000 0x0 0x400 0x0 0x12055400 0x0 0x600
+				0x0 0x12056000 0x0 0x400 0x0 0x12056400 0x0 0x600
+				0x0 0x12057000 0x0 0x400 0x0 0x12057400 0x0 0x600
+				0x0 0x12058000 0x0 0x400 0x0 0x12058400 0x0 0x600>;
+		interrupts = <GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI VIOC0_IRQI IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vioc_viqe: vioc_viqe@1200d000 {
+		compatible = "telechips,vioc_viqe";
+		reg = <0x0 0x1200d000 0x0 0x1000
+				0x0 0x12010000 0x0 0x1000>,
+				/* VIOC_REMAP */
+				<0x0 0x1204b000 0x0 0x1000
+				0x0 0x1204e000 0x0 0x1000>;
+	};
+
+	vioc_lut: vioc_lut@12009000 {
+		compatible = "telechips,vioc_lut";
+		reg = <0x0 0x12009000 0x0 0x800>,
+				/* VIOC_REMAP */
+				<0x0 0x12045000 0x0 0x800>;
+	};
+
+	vioc_lut_3d: vioc_lut_3d@12003200 {
+		compatible = "telechips,vioc_lut_3d";
+		reg = <0x0 0x12003200 0x0 0x200>,
+				<0x0 0x12003400 0x0 0x200>;
+	};
+
+	vioc_deintls:vioc_deintls@12003800 {
+		compatible = "telechips,vioc_deintls";
+		reg = <0x0 0x12003800 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12038000 0x0 0x100>;
+	};
+
+	vioc_fifo:vioc_fifo@12003b00 {
+		compatible = "telechips,vioc_fifo";
+		reg = <0x0 0x12003b00 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x1203b000 0x0 0x100>;
+	};
+
+	vioc_rdma_arbitor:vioc_rdma_arbitor@12003f00 {
+		reg = <0x0 0x12003f00 0x0 0x20
+				0x0 0x12003f20 0x0 0x20
+				0x0 0x12003f40 0x0 0x20
+				0x0 0x12003f60 0x0 0x20>,
+				/* VIOC_REMAP */
+				<0x0 0x1203f000 0x0 0x20
+				0x0 0x1203f020 0x0 0x20
+				0x0 0x1203f040 0x0 0x20
+				0x0 0x1203f060 0x0 0x20>;
+		arbitor_num = <4>;
+	};
+
+	vioc_mc: vioc_mc@12001600 {
+		compatible = "telechips,vioc_mc";
+		reg = <0x0 0x12001600 0x0 0x100>,
+				<0x0 0x12001700 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12016000 0x0 0x100>,
+				<0x0 0x12017000 0x0 0x100>;
+	};
+
+	vioc_pvric_fbdc:vioc_pvric_fbdc@12012000{
+		compatible = "telechips,vioc_pvric_fbdc";
+		reg = <0x0 0x12012000 0x0 0x100
+				0x0 0x12013000 0x0 0x100>,
+				/* VIOC_REMAP */
+				<0x0 0x12050000 0x0 0x100
+				0x0 0x12051000 0x0 0x100>;
+	};
+
+	/*--------------------------------------------------------------------------
+	 * VDST Driver
+	 *--------------------------------------------------------------------------
+	 */
+	vioc_api: vioc_api { 
+		compatible = "telechips,vioc_api";
+		status = "okay";
+	};
+
+	tccmisc: tccmisc {
+		compatible = "telechips,tccmisc";
+		status = "okay";
+	};
+
+	/* tcc_scrshare for Sub */
+	tcc_scrshare0: tcc_scrshare0 {
+		compatible = "telechips,tcc_scrshare";
+		device-name ="tcc_scrshare_sub";
+		rdma = <&vioc_rdma VIOC_RDMA09>;
+ 		wmix = <&vioc_wmix VIOC_WMIX2>;
+		tcc-ipi = <&tcc_ipi_main>;
+		status = "disabled";
+	};
+
+	vout_drv0: vout_drv@0 {
+		compatible = "telechips,v4l2_vout";
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		status = "disabled";
+	};
+
+	tcc_overlay: tcc_overlay_drv {
+		compatible = "telechips,tcc_overlay";
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		status = "disabled";
+	};
+
+	tcc_overlay_drv1: tcc_overlay_drv@1 {
+		compatible = "telechips,tcc_overlay";
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		status = "disabled";
+	};
+
+	lvds_phy:lvds_phy@1b940000 {
+		compatible = "telechips,lvds_phy";
+		reg = <0x0 0x1b941000 0x0 0x400>,
+				<0x0 0x1b941000 0x0 0x400>,
+				<0x0 0x1b942800 0x0 0x400>,
+				<0x0 0x1b942c00 0x0 0x400>,
+				<0x0 0x1b940000 0x0 0x400>;
+	};
+
+};
+
+/* end of file */

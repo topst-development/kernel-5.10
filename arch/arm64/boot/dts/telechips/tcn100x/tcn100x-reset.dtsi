@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+
+/ {
+	sysckc_rst: rstctrl-system {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <SMU_START IO1_END>;
+	};
+};

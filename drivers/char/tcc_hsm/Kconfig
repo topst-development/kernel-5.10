@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+
+menu "HSM support"
+
+if TELECHIPS_SEC_IPC
+
+config TELECHIPS_HSM
+	tristate "Telechips HSM Driver"
+	help
+		Support to HSM based on Cortex-M4 or SC000
+
+source "drivers/char/tcc_thsm/Kconfig"
+endif
+
+endmenu
+ 

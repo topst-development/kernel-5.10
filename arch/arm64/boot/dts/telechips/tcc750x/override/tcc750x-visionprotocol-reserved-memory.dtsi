@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/soc/tcc750x,membase.h>
+
+&reserved_memory {
+	pmap_visionprotocol: pmap_visionprotocol {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+		size = <0x0 0x02000000>;
+		no-map;
+		status = "okay";
+	};
+
+	pmap_visionprotocol1: pmap_visionprotocol1 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+		size = <0x0 0x02000000>;
+		no-map;
+		status = "okay";
+	};
+
+	pmap_visionprotocol2: pmap_visionprotocol2 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+		size = <0x0 0x02000000>;
+		no-map;
+		status = "okay";
+	};
+
+	pmap_visionprotocol3: pmap_visionprotocol3 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+		size = <0x0 0x02000000>;
+		no-map;
+		status = "okay";
+	};
+};

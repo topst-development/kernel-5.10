@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include "tcc805x-videoinput-parallel-sd.dtsi"
+#include "tcc805x-videoinput-mipi0-hd.dtsi"

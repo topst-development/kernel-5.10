@@ -1,0 +1,1992 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/display/tcc805x-lvds.h>
+#include <dt-bindings/display/display-defs.h>
+
+/ {
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	/*--------------------------------------------------------------------------
+	 * aliases
+	 *--------------------------------------------------------------------------
+	 */
+	aliases: aliases {
+		fb0 = &fb0;
+		fb1 = &fb1;
+		fb2 = &fb2;
+		fb3 = &fb3;
+	};
+	/*--------------------------------------------------------------------------
+	 * pmap
+	 *--------------------------------------------------------------------------
+	 */
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+
+		pmap_fb_video: fb_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB_VIDEO>;
+			//or
+			//reg = <0x0 FB_VIDEO_BASE 0x0 PMAP_SIZE_FB_VIDEO>;
+			//alignment = <0x1000>;
+			status = "disabled";
+		};
+
+		pmap_fb1_video: fb1_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb1_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB1_VIDEO>;
+			//or
+			//reg = <0x0 FB1_VIDEO_BASE 0x0 PMAP_SIZE_FB1_VIDEO>;
+			//alignment = <0x1000>;
+			status = "disabled";
+		};
+
+		pmap_fb2_video: fb2_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb2_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB2_VIDEO>;
+			//or
+			//reg = <0x0 FB2_VIDEO_BASE 0x0 PMAP_SIZE_FB2_VIDEO>;
+			//alignment = <0x1000>
+			status = "disabled";
+		};
+
+		pmap_fb3_video: fb3_video {
+			compatible = "telechips,pmap";
+			telechips,pmap-name = "fb3_video";
+			//alloc-ranges = <0x0 RSVD_MEM_BASE_32 0x0 RSVD_MEM_SIZE_32>;
+			//size = <0x0 PMAP_SIZE_FB3_VIDEO>;
+			//or
+			//reg = <0x0 FB3_VIDEO_BASE 0x0 PMAP_SIZE_FB3_VIDEO>;
+			//alignment = <0x1000>
+
+			status = "disabled";
+		};
+	};
+
+	/*--------------------------------------------------------------------------
+	 * Backlight node
+	 *--------------------------------------------------------------------------
+	 */
+	lcd_port1_bl: lcd_port1_bl {
+		compatible = "gpio-backlight";
+		status = "disabled";
+		#if defined(LCD_PORT1_BLK_GPIO) && defined(LCD_PORT1_BLK_NUM)
+		gpios = <&LCD_PORT1_BLK_GPIO LCD_PORT1_BLK_NUM 0> ;
+		#endif
+	};
+
+	lcd_port2_bl: lcd_port2_bl {
+		compatible = "gpio-backlight";
+		status = "disabled";
+		#if defined(LCD_PORT2_BLK_GPIO) && defined(LCD_PORT2_BLK_NUM)
+		gpios = <&LCD_PORT2_BLK_GPIO LCD_PORT2_BLK_NUM 0> ;
+		#endif
+	};
+
+	lcd_port3_bl: lcd_port3_bl {
+		compatible = "gpio-backlight";
+		status = "disabled";
+		#if defined(LCD_PORT3_BLK_GPIO) && defined(LCD_PORT3_BLK_NUM)
+		gpios = <&LCD_PORT3_BLK_GPIO LCD_PORT3_BLK_NUM 0> ;
+		#endif
+	};
+
+	lcd_port4_bl: lcd_port4_bl {
+		compatible = "gpio-backlight";
+		status = "disabled";
+		#if defined(LCD_PORT4_BLK_GPIO) && defined(LCD_PORT4_BLK_NUM)
+		gpios = <&LCD_PORT4_BLK_GPIO LCD_PORT4_BLK_NUM 0> ;
+		#endif
+	};
+
+	/*--------------------------------------------------------------------------
+	 * DRM PANELs
+	 *--------------------------------------------------------------------------
+	 */
+	/*  P0> DP -----------------------------------------------------------*/
+	panel_dp0: panel_dp@0 {
+		compatible = "telechips,drm-lvds-dpv14-0";
+		status = "disabled";
+		pinctrl-names = "default", "sleep", "power_on", "reset_off",
+				"blk_on", "blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		pinctrl-6 = <>;
+		backlight = <>;
+		display-timings {
+			#if (DRM_DP0_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp0_panel_auo>;
+			#else
+			native-mode = <&timing_drm_dp0_panel_boe>;
+			#endif
+			timing_drm_dp0_panel_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp0_panel_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel0_in_dp0: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&dp0_out_panel0>;
+				};
+			};
+		};
+	};
+	panel_dp1: panel_dp@1 {
+		compatible = "telechips,drm-lvds-dpv14-1";
+		status = "disabled";
+		pinctrl-names = "default", "sleep", "power_on", "reset_off",
+				"blk_on", "blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		pinctrl-6 = <>;
+		backlight = <>;
+		display-timings {
+			#if (DRM_DP1_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp1_panel_auo>;
+			#else
+			native-mode = <&timing_drm_dp1_panel_boe>;
+			#endif
+			timing_drm_dp1_panel_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp1_panel_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel1_in_dp1: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&dp1_out_panel1>;
+				};
+			};
+		};
+	};
+
+	panel_dp2: panel_dp@2 {
+		compatible = "telechips,drm-lvds-dpv14-2";
+		status = "disabled";
+		pinctrl-names = "default", "sleep", "power_on", "reset_off",
+				"blk_on", "blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		pinctrl-6 = <>;
+		backlight = <>;
+		display-timings {
+			#if (DRM_DP2_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp2_panel_auo>;
+			#else
+			native-mode = <&timing_drm_dp2_panel_boe>;
+			#endif
+			timing_drm_dp2_panel_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp2_panel_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel2_in_dp2: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&dp2_out_panel2>;
+				};
+			};
+		};
+	};
+
+	panel_dp3: panel_dp@3 {
+		compatible = "telechips,drm-lvds-dpv14-3";
+		status = "disabled";
+		pinctrl-names = "default", "sleep", "power_on", "reset_off",
+				"blk_on", "blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		pinctrl-6 = <>;
+		backlight = <>;
+		display-timings {
+			#if (DRM_DP3_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp3_panel_auo>;
+			#else
+			native-mode = <&timing_drm_dp3_panel_boe>;
+			#endif
+			timing_drm_dp3_panel_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp3_panel_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel3_in_dp3: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&dp3_out_panel3>;
+				};
+			};
+		};
+	};
+
+	/*  P1> LVDS ---------------------------------------------------------*/
+	panel_tm123xdhp90:panel_tm123xdhp90 {
+		compatible = "telechips,drm-lvds-tm123xdhp90";
+		status = "disabled";
+		pinctrl-names = "default", "sleep", "pwr_on_1", "pwr_on_2",
+					"blk_on", "blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		pinctrl-6 = <>;
+		backlight = <>;
+		display-timings {
+			native-mode = <&timing_drm_lvds_boe>;
+			timing_drm_lvds_boe: 1920x720p60 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel_drm_boe_in: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&lvds0_out_panel0>;
+				};
+			};
+		};
+	};
+
+	panel_auoc123han06: panel_auoc123han06 {
+		compatible = "telechips,drm-lvds-auoc123han06";
+		status = "disabled";
+		pinctrl-names = "default", "sleep", "pwr_on_1", "pwr_on_2",
+					"blk_on", "blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		pinctrl-6 = <>;
+		backlight = <>;
+		display-timings {
+			native-mode = <&timing_drm_lvds_auo>;
+			timing_drm_lvds_auo: 1920x720p60 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel_drm_auo_in: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&lvds0_out_panel0>;
+				};
+			};
+		};
+	};
+
+	panel_fld0800:panel_fld0800 {
+		compatible = "telechips,drm-lvds-fld0800";
+		status = "disabled";
+		pinctrl-names = "default", "sleep", "pwr_on_1", "pwr_on_2",
+					"blk_on", "blk_off", "power_off";
+
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		pinctrl-6 = <>;
+		backlight = <>;
+		display-timings {
+			native-mode = <&timing_drm_lvds_fld0800>;
+			timing_drm_lvds_fld0800: 1024x600p60 {
+				clock-frequency = <51200000>;
+				hactive = <1024>;
+				vactive = <600>;
+				hfront-porch = <147>;
+				hback-porch = <147>;
+				hsync-len = <19>;
+				hsync-active = <0>;
+				vback-porch = <10>;
+				vfront-porch = <25>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel_drm_fld_in: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&lvds1_out_panel1>;
+				};
+			};
+		};
+	};
+
+	/*----------------------------------------------------------------------
+	 * FB PANELs
+	 *----------------------------------------------------------------------
+	 */
+	fb_tm123xdhp90: fb_tm123xdhp90 {
+		compatible = "telechips,fb-lvds-tm123xdhp90";
+		status = "disabled";
+		lvds0 = <&lvds_phy>;
+		mode = <LVDS_DUAL>;   /* 0: single 1: dual */
+		phy-ports = <PHY_PORT_D0 PHY_PORT_D1>; /*port main, port sub*/
+		data-mapping = "vesa-24";
+		lane-main =
+				<DATA3_LANE CLK_LANE DATA2_LANE DATA1_LANE DATA0_LANE>;
+		lane-sub =
+				<DATA0_LANE DATA1_LANE DATA2_LANE CLK_LANE DATA3_LANE>;
+		vcm = <1200>;
+		vsw = <500>;
+		lcdc-mux-select = <2>;
+		lcdc-mux-bypass = "true";
+		pinctrl-names = "default", "pwr_on_1", "pwr_on_2", "blk_on",
+				"blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		backlight = <>;
+		display-timings {
+			native-mode = <&timing_fb_lvds_boe>;
+			timing_fb_lvds_boe: 1920x720p60 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <28>;
+				hback-porch = <28>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <10>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel_fb_boe_in: endpoint {
+					//remote-endpoint = <&fb0_display_out>;
+				};
+			};
+		};
+	};
+
+	fb_auoc123han06: fb_auoc123han06 {
+		compatible = "telechips,fb-lvds-auoc123han06";
+		status = "disabled";
+		lvds0 = <&lvds_phy>;
+		mode = <LVDS_DUAL>;   /* 0: single 1: dual */
+		phy-ports = <PHY_PORT_D0 PHY_PORT_D1>; /*port main, port sub*/
+		data-mapping = "vesa-24";
+		lane-main =
+				<DATA3_LANE CLK_LANE DATA2_LANE DATA1_LANE DATA0_LANE>;
+		lane-sub =
+				<DATA0_LANE DATA1_LANE DATA2_LANE CLK_LANE DATA3_LANE>;
+		vcm = <1200>;
+		vsw = <500>;
+		lcdc-mux-select = <2>;
+		lcdc-mux-bypass = "true";
+		pinctrl-names = "default", "pwr_on_1", "pwr_on_2", "blk_on",
+				"blk_off", "power_off";
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <>;
+		pinctrl-3 = <>;
+		pinctrl-4 = <>;
+		pinctrl-5 = <>;
+		backlight = <>;
+		display-timings {
+			native-mode = <&timing_fb_lvds_auo>;
+			timing_fb_lvds_auo: 1920x720p60 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				panel_fb_auo_in: endpoint {
+					//remote-endpoint = <&fb0_display_out>;
+				};
+			};
+		};
+	};
+
+	/*----------------------------------------------------------------------
+	 * DRM VIOC (PLANE/CRTC)
+	 *----------------------------------------------------------------------
+	 */
+	tccdrm_vioc0: tcc-drm-lcd {
+		compatible = "telechips,drm-vioc-0";
+		status = "disabled";
+		display_device = <&vioc_disp VIOC_DISP0>;
+		lcdc-mux-select = <3>;
+		lcdc-mux-bypass = <1>; /* 1: Bypass, 0: Normal */
+		wmixer = <&vioc_wmix VIOC_WMIX0>;
+		rdma = <&vioc_rdma VIOC_RDMA00>;
+		planes = "primary";
+		clocks = <&clk_ddi DDIBUS_VIOC>, <&clk_peri PERI_LCD0>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			vioc0_out: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				#if defined(CONFIG_EXAMPLES)
+				vioc0_output_lvds0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&lvds0_in_vioc0>;
+				};
+				vioc0_output_lvds1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&lvds1_in_vioc0>;
+				};
+				vioc0_output_dp0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp0_in_vioc0>;
+				};
+				vioc0_output_dp1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp1_in_vioc0>;
+				};
+				vioc0_output_dp2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp2_in_vioc0>;
+				};
+				vioc0_output_dp3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp3_in_vioc0>;
+				};
+				vioc0_output_dummy0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy0_in_vioc0>;
+				};
+				vioc0_output_dummy1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy1_in_vioc0>;
+				};
+				vioc0_output_dummy2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy2_in_vioc0>;
+				};
+				vioc0_output_dummy3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy3_in_vioc0>;
+				};
+				#endif
+			};
+		};
+	};
+
+	tccdrm_vioc1: tcc-drm-ext {
+		compatible = "telechips,drm-vioc-1";
+		status = "disabled";
+		display_device = <&vioc_disp VIOC_DISP1>;
+		lcdc-mux-select = <0>;
+		lcdc-mux-bypass = <0>; /* 1: Bypass, 0: Normal */
+		wmixer = <&vioc_wmix VIOC_WMIX1>;
+		rdma = <&vioc_rdma VIOC_RDMA04>;
+		planes = "primary";
+		clocks = <&clk_ddi DDIBUS_VIOC>, <&clk_peri PERI_LCD1>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			vioc1_out: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				#if defined(CONFIG_EXAMPLES)
+				vioc1_output_lvds0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&lvds0_in_vioc1>;
+				};
+				vioc1_output_lvds1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&lvds1_in_vioc1>;
+				};
+				vioc1_output_dp0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp0_in_vioc1>;
+				};
+				vioc1_output_dp1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp1_in_vioc1>;
+				};
+				vioc1_output_dp2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp2_in_vioc1>;
+				};
+				vioc1_output_dp3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp3_in_vioc1>;
+				};
+				vioc1_output_dummy0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy0_in_vioc1>;
+				};
+				vioc1_output_dummy1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy1_in_vioc1>;
+				};
+				vioc1_output_dummy2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy2_in_vioc1>;
+				};
+				vioc1_output_dummy3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy3_in_vioc1>;
+				};
+				#endif
+			};
+		};
+	};
+
+	tccdrm_vioc2: tcc-drm-third {
+		compatible = "telechips,drm-vioc-2";
+		status = "disabled";
+			display_device = <&vioc_disp VIOC_DISP2>;
+		lcdc-mux-select = <2>;
+		lcdc-mux-bypass = <1>; /* 1: Bypass, 0: Normal */
+		wmixer = <&vioc_wmix VIOC_WMIX2>;
+		rdma = <&vioc_rdma VIOC_RDMA08>;
+		planes = "primary";
+		clocks = <&clk_ddi DDIBUS_VIOC>, <&clk_peri PERI_LCD2>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			vioc2_out: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				vioc2_output_lvds0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&lvds0_in_vioc2>;
+				};
+				vioc2_output_lvds1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&lvds1_in_vioc2>;
+				};
+				vioc2_output_dp0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp0_in_vioc2>;
+				};
+				vioc2_output_dp1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp1_in_vioc2>;
+				};
+				vioc2_output_dp2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp2_in_vioc2>;
+				};
+				vioc2_output_dp3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp3_in_vioc2>;
+				};
+				vioc2_output_dummy0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy0_in_vioc2>;
+				};
+				vioc2_output_dummy1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy1_in_vioc2>;
+				};
+				vioc2_output_dummy2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy2_in_vioc2>;
+				};
+				vioc2_output_dummy3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy3_in_vioc2>;
+				};
+				#endif
+			};
+		};
+	};
+
+	tccdrm_vioc3: tcc-drm-fourth {
+		compatible = "telechips,drm-vioc-3";
+		status = "disabled";
+		display_device = <&vioc_disp VIOC_DISP3>;
+		lcdc-mux-select = <1>;
+		lcdc-mux-bypass = <0>; /* 1: Bypass, 0: Normal */
+		wmixer = <&vioc_wmix VIOC_WMIX3>;
+		rdma = <&vioc_rdma VIOC_RDMA12>;
+		planes = "primary";
+		clocks = <&clk_ddi DDIBUS_VIOC>, <&clk_peri PERI_LCD3>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			vioc3_out: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				vioc3_output_lvds0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&lvds0_in_vioc3>;
+				};
+				vioc3_output_lvds1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&lvds1_in_vioc3>;
+				};
+				vioc3_output_dp0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp0_in_vioc3>;
+				};
+				vioc3_output_dp1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp1_in_vioc3>;
+				};
+				vioc3_output_dp2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp2_in_vioc3>;
+				};
+				vioc3_output_dp3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dp3_in_vioc3>;
+				};
+				vioc3_output_dummy0: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy0_in_vioc3>;
+				};
+				vioc3_output_dummy1: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy1_in_vioc3>;
+				};
+				vioc3_output_dummy2: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy2_in_vioc3>;
+				};
+				vioc3_output_dummy3: endpoint@0  {
+					reg = <0>;
+					remote-endpoint = <&dummy3_in_vioc3>;
+				};
+				#endif
+			};
+		};
+	};
+
+	/* Encoders & Connectors ---------------------------------------------*/
+	tccdrm_dp0: drm_dp@0 {
+		compatible = "telechips,drm-dp";
+		status = "disabled";
+		display-timings {
+			#if (DRM_DP0_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp0_auo>;
+			#else
+			native-mode = <&timing_drm_dp0_boe>;
+			#endif
+			timing_drm_dp0_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp0_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dp0_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dp0_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dp0>;
+				};
+				dp0_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dp0>;
+				};
+				dp0_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dp0>;
+				};
+				dp0_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dp0>;
+				};
+				#endif
+			};
+			dp0_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dp0_out_panel0: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&panel0_in_dp0>;
+				};
+			};
+		};
+	};
+
+	tccdrm_dp1: drm_dp@1 {
+		compatible = "telechips,drm-dp";
+		status = "disabled";
+		display-timings {
+			#if (DRM_DP1_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp1_auo>;
+			#else
+			native-mode = <&timing_drm_dp1_boe>;
+			#endif
+			timing_drm_dp1_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp1_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dp1_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dp1_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dp1>;
+				};
+				dp1_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dp1>;
+				};
+				dp1_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dp1>;
+				};
+				dp1_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dp1>;
+				};
+				#endif
+			};
+			dp1_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dp1_out_panel1: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&panel1_in_dp1>;
+				};
+			};
+		};
+	};
+
+	tccdrm_dp2: drm_dp@2 {
+		compatible = "telechips,drm-dp";
+		status = "disabled";
+		display-timings {
+			#if (DRM_DP2_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp2_auo>;
+			#else
+			native-mode = <&timing_drm_dp2_boe>;
+			#endif
+			timing_drm_dp2_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp2_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dp2_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dp2_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dp2>;
+				};
+				dp2_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dp2>;
+				};
+				dp2_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dp2>;
+				};
+				dp2_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dp2>;
+				};
+				#endif
+			};
+			dp2_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dp2_out_panel2: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&panel2_in_dp2>;
+				};
+			};
+		};
+	};
+
+	tccdrm_dp3: drm_dp@3 {
+		compatible = "telechips,drm-dp";
+		status = "disabled";
+		display-timings {
+			#if (DRM_DP3_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_drm_dp3_auo>;
+			#else
+			native-mode = <&timing_drm_dp3_boe>;
+			#endif
+			timing_drm_dp3_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_drm_dp3_auo: 1920x720p60@1 {
+				clock-frequency = <108520000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <356>;
+				hback-porch = <96>;
+				hsync-len = <8>;
+				hsync-active = <0>;
+				vback-porch = <3>;
+				vfront-porch = <36>;
+				vsync-len = <1>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dp3_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dp3_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dp3>;
+				};
+				dp3_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dp3>;
+				};
+				dp3_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dp3>;
+				};
+				dp3_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dp3>;
+				};
+				#endif
+			};
+			dp3_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dp3_out_panel3: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&panel3_in_dp3>;
+				};
+			};
+		};
+	};
+
+	tcc_drm_dummy0: drm_dummy@0 {
+		compatible = "telechips,drm-dummy-dev";
+		status = "disabled";
+		connector_type ="LVDS";  // Incase of it is used as dummy display for DRM CRTC
+		display-timings {
+			#if (DRM_DUMMY0_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_dummy0_auo>;
+			#else
+			native-mode = <&timing_dummy0_boe>;
+			#endif
+			timing_dummy0_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_dummy0_auo: 1920x720p60@1 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dummy0_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dummy0_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dummy0>;
+				};
+				dummy0_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dummy0>;
+				};
+				dummy0_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dummy0>;
+				};
+				dummy0_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dummy0>;
+				};
+				#endif
+			};
+			/*
+			dummy0_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dummy0_out_panel0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&panel0_in_dummy0>;
+				};
+			};
+			*/
+		};
+	};
+
+	tcc_drm_dummy1: drm_dummy@1 {
+		compatible = "telechips,drm-dummy-dev";
+		status = "disabled";
+		connector_type ="LVDS";  // Incase of it is used as dummy display for DRM CRTC
+		display-timings {
+			#if (DRM_DUMMY1_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_dummy1_auo>;
+			#else
+			native-mode = <&timing_dummy1_boe>;
+			#endif
+			timing_dummy1_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_dummy1_auo: 1920x720p60@1 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dummy1_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dummy1_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dummy1>;
+				};
+				dummy1_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dummy1>;
+				};
+				dummy1_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dummy1>;
+				};
+				dummy1_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dummy1>;
+				};
+				#endif
+			};
+			/*
+			dummy1_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dummy1_out_panel0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&panel0_in_dummy1>;
+				};
+			};
+			*/
+		};
+	};
+
+	tcc_drm_dummy2: drm_dummy@2 {
+		compatible = "telechips,drm-dummy-dev";
+		status = "disabled";
+		connector_type ="LVDS";  // Incase of it is used as dummy display for DRM CRTC
+		display-timings {
+			#if (DRM_DUMMY2_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_dummy2_auo>;
+			#else
+			native-mode = <&timing_dummy2_boe>;
+			#endif
+			timing_dummy2_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_dummy2_auo: 1920x720p60@1 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dummy2_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dummy2_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dummy2>;
+				};
+				dummy2_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dummy2>;
+				};
+				dummy2_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dummy2>;
+				};
+				dummy2_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dummy2>;
+				};
+				#endif
+			};
+			/*
+			dummy2_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dummy2_out_panel0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&panel0_in_dummy2>;
+				};
+			};
+			*/
+		};
+	};
+
+	tcc_drm_dummy3: drm_dummy@3 {
+		compatible = "telechips,drm-dummy-dev";
+		status = "disabled";
+		connector_type ="LVDS";  // Incase of it is used as dummy display for DRM CRTC
+		display-timings {
+			#if (DRM_DUMMY3_PANEL_INDEX == LVDS_PANEL_AUO)
+			native-mode = <&timing_dummy3_auo>;
+			#else
+			native-mode = <&timing_dummy3_boe>;
+			#endif
+			timing_dummy3_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_dummy3_auo: 1920x720p60@1 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dummy3_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				dummy3_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_dummy3>;
+				};
+				dummy3_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_dummy3>;
+				};
+				dummy3_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_dummy3>;
+				};
+				dummy3_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_dummy3>;
+				};
+				#endif
+			};
+			/*
+			dummy3_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				dummy3_out_panel0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&panel0_in_dummy3>;
+				};
+			};
+			*/
+		};
+	};
+
+	tcc_drm_lvds_dual0: drm_lvds_dual@0 {
+		compatible = "telechips,drm-lvds-dual";
+		status = "disabled";
+		mode = <LVDS_DUAL>;   /* 0: single 1: dual */
+		phy-ports = <PHY_PORT_D0 PHY_PORT_D1>; /*port main, port sub*/
+		data-mapping = "vesa-24";
+		lane-main = <DATA3_LANE CLK_LANE DATA2_LANE DATA1_LANE DATA0_LANE>;
+		lane-sub = <DATA0_LANE DATA1_LANE DATA2_LANE CLK_LANE DATA3_LANE>;
+		vcm = <1200>;
+		vsw = <500>;
+
+		display-timings {
+			native-mode = <&timing_dual_lvds_auo>;
+			timing_dual_lvds_boe: 1920x720p60@0 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+			timing_dual_lvds_auo: 1920x720p60@1 {
+				clock-frequency = <88200000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hfront-porch = <30>;
+				hback-porch = <30>;
+				hsync-len = <4>;
+				hsync-active = <0>;
+				vback-porch = <9>;
+				vfront-porch = <10>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dual_lvds_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				lvds0_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_lvds0>;
+				};
+				lvds0_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_lvds0>;
+				};
+				lvds0_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_lvds0>;
+				};
+				lvds0_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_lvds0>;
+				};
+				#endif
+			};
+			dual_lvds_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				lvds0_out_panel0: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&panel0_in_lvds0>;
+				};
+			};
+		};
+	};
+	tcc_drm_lvds_single0: drm_lvds_single@0 {
+		compatible = "telechips,drm-lvds-single";
+		status = "disabled";
+		mode = <LVDS_SINGLE>;   /* 0: single 1: dual */
+		phy-ports = <PHY_PORT_S0>; /*port main, port sub*/
+		data-mapping = "vesa-24";
+		lane-main = <DATA0_LANE DATA1_LANE DATA2_LANE CLK_LANE DATA3_LANE>;
+		vcm = <1200>;
+		vsw = <400>;
+
+		display-timings {
+			native-mode = <&timing_single0>;
+			timing_single0: 1024x600p60 {
+				clock-frequency = <51200000>;
+				hactive = <1024>;
+				vactive = <600>;
+				hfront-porch = <147>;
+				hback-porch = <147>;
+				hsync-len = <19>;
+				hsync-active = <0>;
+				vback-porch = <10>;
+				vfront-porch = <25>;
+				vsync-len = <2>;
+				vsync-active = <0>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			single_lvds0_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				#if defined(CONFIG_EXAMPLES)
+				lvds1_in_vioc0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc0_output_lvds1>;
+				};
+				lvds1_in_vioc1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc1_output_lvds1>;
+				};
+				lvds1_in_vioc2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc2_output_lvds1>;
+				};
+				lvds1_in_vioc3: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vioc3_output_lvds1>;
+				};
+				#endif
+			};
+			single_lvds0_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+				lvds1_out_panel1: endpoint@0 {
+					reg = <0>;
+					//remote-endpoint = <&panel1_in_lvds1>;
+				};
+			};
+		};
+	};
+
+	/*--------------------------------------------------------------------------
+	 * FB VIOCS
+	 *--------------------------------------------------------------------------
+	 */
+	fb0: fb@0 { //Cluster
+		compatible = "telechips,fb";
+		status = "okay";
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		memory-region = <>;
+		xres = <1920>;
+		yres = <720>;
+		bpp = <32>;
+		chroma-key = <0x0 0x0 0x0>;
+		chroma-mkey = <0xF8 0xFC 0xF8>;
+		mode = <FBX_TRIPLE>;
+		update-type = <FBX_OVERLAY_UPDATE>;
+		device-priority = <FBX_DEVICE_LVDS>;
+		telechips,disp = <&vioc_disp VIOC_DISP2>;
+		telechips,wmixer = <&vioc_wmix VIOC_WMIX2>;
+		telechips,rdma = <&vioc_rdma VIOC_RDMA08>;
+		telechips,fbdc = <&vioc_pvric_fbdc VIOC_FBCDEC1>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				fb0_display_out: endpoint {
+					//remote-endpoint = <&fb_lvds_0_input_0>;
+				};
+			};
+		};
+	};
+
+	fb1: fb@1 { //SVM
+		compatible = "telechips,fb";
+		status = "disabled";
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		memory-region = <>;
+		xres = <1920>;
+		yres = <720>;
+		bpp = <32>;
+		chroma-key = <0x0 0x0 0x0>;
+		chroma-mkey = <0xF8 0xFC 0xF8>;
+		mode = <FBX_TRIPLE>;
+		update-type = <FBX_OVERLAY_UPDATE>;
+		device-priority = <FBX_DEVICE_LVDS>;
+		telechips,disp = <&vioc_disp VIOC_DISP0>;
+		telechips,wmixer = <&vioc_wmix VIOC_WMIX0>;
+		telechips,rdma = <&vioc_rdma VIOC_RDMA02>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				fb1_display_out: endpoint {
+					//remote-endpoint = <&fb_lvds_0_input_0>;
+				};
+			};
+		};
+	};
+
+	fb2: fb@2 { //BVM
+		compatible = "telechips,fb";
+		status = "disabled";
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		memory-region = <>;
+		xres = <1920>;
+		yres = <720>;
+		bpp = <32>;
+		chroma-key = <0x0 0x0 0x0>;
+		chroma-mkey = <0xF8 0xFC 0xF8>;
+		mode = <FBX_TRIPLE>;
+		update-type = <FBX_OVERLAY_UPDATE>;
+		device-priority = <FBX_DEVICE_LVDS>;
+		telechips,disp = <&vioc_disp VIOC_DISP2>;
+		telechips,wmixer = <&vioc_wmix VIOC_WMIX2>;
+		telechips,rdma = <&vioc_rdma VIOC_RDMA09>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				fb2_display_out: endpoint {
+					//remote-endpoint = <&fb_lvds_0_input_0>;
+				};
+			};
+		};
+	};
+
+	fb3: fb@3 { //DPGL
+		compatible = "telechips,fb";
+		status = "disabled";
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		memory-region = <>;
+		xres = <1920>;
+		yres = <720>;
+		bpp = <32>;
+		chroma-key = <0x0 0x0 0x0>;
+		chroma-mkey = <0xF8 0xFC 0xF8>;
+		mode = <FBX_TRIPLE>;
+		update-type = <FBX_NOWAIT_UPDATE>;
+		device-priority = <FBX_DEVICE_NONE>;
+		no-kernel-logo =<1>;
+		telechips,wdma = <&vioc_wdma VIOC_WDMA05>;
+		telechips,wmixer = <&vioc_wmix VIOC_WMIX5>;
+		telechips,rdma = <&vioc_rdma VIOC_RDMA16>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+				fb3_display_out: endpoint {
+					//remote-endpoint = <&fb_lvds_0_input_0>;
+				};
+			};
+		};
+	};
+};
+
+/*------------------------------------------------------------------------------
+ * pinctrl
+ *------------------------------------------------------------------------------
+ */
+&pinctrl {
+	/* LCD POWER PORT 1 */
+	#if defined(LCD_PORT1_PWR) && defined(LCD_PORT1_RST) && \
+		defined(LCD_PORT1_BLK)
+	lcd_port_default1:lcd_port_default1 {
+		telechips,pins = LCD_PORT1_PWR, LCD_PORT1_RST, LCD_PORT1_BLK;
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+	lcd_port_power_on1:lcd_port_power_on1 {
+		telechips,pins = LCD_PORT1_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_power_off1:lcd_port_power_off1 {
+		telechips,pins = LCD_PORT1_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_on1:lcd_port_reset_on1 {
+		telechips,pins = LCD_PORT1_RST;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_off1:lcd_port_reset_off1 {
+		telechips,pins = LCD_PORT1_RST;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_on1:lcd_port_blk_on1 {
+		telechips,pins = LCD_PORT1_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_off1:lcd_port_blk_off1 {
+		telechips,pins = LCD_PORT1_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	#endif
+
+	/* LCD POWER PORT 2 */
+	#if defined(LCD_PORT2_PWR) && defined(LCD_PORT2_RST) && \
+		defined(LCD_PORT2_BLK)
+	lcd_port_default2:lcd_port_default2 {
+		telechips,pins = LCD_PORT2_PWR, LCD_PORT2_RST, LCD_PORT2_BLK;
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+	lcd_port_power_on2:lcd_port_power_on2 {
+		telechips,pins = LCD_PORT2_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_power_off2:lcd_port_power_off2 {
+		telechips,pins = LCD_PORT2_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_on2:lcd_port_reset_on2 {
+		telechips,pins = LCD_PORT2_RST;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_off2:lcd_port_reset_off2 {
+		telechips,pins = LCD_PORT2_RST;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_on2:lcd_port_blk_on2 {
+		telechips,pins = LCD_PORT2_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_off2:lcd_port_blk_off2 {
+		telechips,pins = LCD_PORT2_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	#endif
+
+	/* LCD POWER PORT 3 */
+	#if defined(LCD_PORT3_PWR) && defined(LCD_PORT3_RST) && \
+		defined(LCD_PORT3_BLK)
+	lcd_port_default3:lcd_port_default3 {
+		telechips,pins = LCD_PORT3_PWR, LCD_PORT3_RST, LCD_PORT3_BLK;
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+	/* LVDS power on */
+	lcd_port_power_on3:lcd_port_power_on3 {
+		telechips,pins = LCD_PORT3_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_power_off3:lcd_port_power_off3 {
+		telechips,pins = LCD_PORT3_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_on3:lcd_port_reset_on3 {
+		telechips,pins = LCD_PORT3_RST;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_off3:lcd_port_reset_off3 {
+		telechips,pins = LCD_PORT3_RST;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_on3:lcd_port_blk_on3 {
+		telechips,pins = LCD_PORT3_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_off3:lcd_port_blk_off3 {
+		telechips,pins = LCD_PORT3_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	#endif
+
+	/* LCD POWER PORT 4 */
+	#if defined(LCD_PORT4_PWR) && defined(LCD_PORT4_RST) && defined(LCD_PORT4_BLK)
+	lcd_port_default4:lcd_port_default4 {
+		telechips,pins = LCD_PORT4_PWR, LCD_PORT4_RST, LCD_PORT4_BLK;
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+	lcd_port_power_on4:lcd_port_power_on4 {
+		telechips,pins = LCD_PORT4_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_power_off4:lcd_port_power_off4 {
+		telechips,pins = LCD_PORT4_PWR;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_on4:lcd_port_reset_on4 {
+		telechips,pins = LCD_PORT4_RST;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	lcd_port_reset_off4:lcd_port_reset_off4 {
+		telechips,pins = LCD_PORT4_RST;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_on4:lcd_port_blk_on4 {
+		telechips,pins = LCD_PORT4_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+	lcd_port_blk_off4:lcd_port_blk_off4 {
+		telechips,pins = LCD_PORT4_BLK;
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+	#endif
+
+	#if defined(DP_HPD_GPIO)
+	dp_hpd_gpio: dp_hpd_gpio {
+		telechips,pins = DP_HPD_GPIO;
+		telechips,pin-function = <1>;
+		telechips,input-enable;
+		telechips,pull-down;
+	};
+	#endif
+	#if defined(DP_SERDES_INTB)
+	serdes_intb: serdes_intb {
+		telechips,pins = DP_SERDES_INTB;
+		telechips,pin-function = <0>;
+		telechips,input-enable;
+		telechips,no-pull;
+	};
+	#endif
+	#if defined(DP_SERDES_LOCK)
+	serdes_lock: serdes_lock {
+		telechips,pins = DP_SERDES_LOCK;
+		telechips,pin-function = <0>;
+		telechips,input-enable;
+		telechips,no-pull;
+	};
+	#endif
+};
+
+/* end of file */
+

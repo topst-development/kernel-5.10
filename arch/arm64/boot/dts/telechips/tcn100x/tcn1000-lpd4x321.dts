@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcn100x.dts"
+#endif
+
+/ {
+	model = "Telechips TCN1000 LPD4X321";
+	board-id = <BOARD_ID_TCN1000_EVB>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcn100x-dma.dtsi"
+#include "override/tcn1000-cpu.dtsi"
+#include "override/tcn1000-lpd4x321-gpio.dtsi"
+#include "override/tcn1000-lpd4x321-uart.dtsi"
+#include "override/tcn1000-lpd4x321-mmc.dtsi"
+#include "override/tcn1000-lpd4x321-i2c.dtsi"
+#include "override/tcn1000-lpd4x321-spi.dtsi"
+#include "override/tcn1000-lpd4x321-ictc.dtsi"
+#include "override/tcn1000-lpd4x321-gmac.dtsi"
+#include "override/tcn1000-lpd4x321-pcie.dtsi"
+#include "override/tcn1000-lpd4x321-adc.dtsi"

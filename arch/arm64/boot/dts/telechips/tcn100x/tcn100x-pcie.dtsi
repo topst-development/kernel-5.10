@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/ {
+	pcie_phy: pcie_phy@49800000 {
+		compatible = "synopsys,ss14lpp-x2ns-pcie-phy";
+		reg = <0 0x49800000 0 0x10000
+			0 0x49810000 0 0x10000>;
+		reg-names = "phy", "clk";
+		#phy-cells = <0>;
+		clocks = <&peri_smu PERI_PCIe_PHY_CR>, <&fbus_pcie FBUS_PCIe>;
+		clock-names = "pcie_phy", "pcie_fbus";
+		status = "disabled";
+	};
+
+	pcie0: pcie@49000000 {
+		compatible = "telechips,tcn100x-pcie";
+		reg = <0 0x49000000 0 0x400000
+			0 0x49820000 0 0x10000
+			0 0x51000000 0 0x00100000>;
+		reg-names = "dbi", "link", "config";
+		interrupts = <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>;
+		bus-range = <0x00 0xff>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		ranges = <0x81000000 0 0x00000000 0 0x50000000 0 0x00100000
+			0x82000000 0 0x02000000 0 0x52000000 0 0x06000000>;
+		#interrupt-cells = <1>;
+		interrupt-map-mask = <0 0 0 0>;
+		interrupt-map = <0 0 0 0 &gic 0 0 GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>;
+		num-lanes = <1>;
+		num-viewport = <4>;
+		max-link-speed = <4>;
+		phys = <&pcie_phy>;
+		phy-names = "pcie-phy";
+		status = "disabled";
+	};
+
+	pcie1: pcie@49400000 {
+		compatible = "telechips,tcn100x-pcie";
+		reg = <0 0x49400000 0 0x400000
+			0 0x49830000 0 0x10000
+			0 0x59000000 0 0x00100000>;
+		reg-names = "dbi", "link", "config";
+		interrupts = <GIC_SPI 356 IRQ_TYPE_LEVEL_HIGH>;
+		bus-range = <0x00 0xff>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		ranges = <0x81000000 0 0x00000000 0 0x58000000 0 0x00100000
+			0x82000000 0 0x02000000 0 0x5A000000 0 0x06000000>;
+		#interrupt-cells = <1>;
+		interrupt-map-mask = <0 0 0 0>;
+		interrupt-map = <0 0 0 0 &gic 0 0 GIC_SPI 356 IRQ_TYPE_LEVEL_HIGH>;
+		num-lanes = <2>;
+		num-viewport = <4>;
+		max-link-speed = <4>;
+		phys = <&pcie_phy>;
+		phy-names = "pcie-phy";
+		status = "disabled";
+	};
+
+	pcie_epc0: pcie_epc@49000000 {
+		compatible = "telechips,tcn100x-pcie-ep";
+		reg = <0 0x49000000 0 0x400000
+			0 0x49820000 0 0x10000
+			0 0x50000000 0 0x01000000>;
+		reg-names = "dbi", "link", "addr_space";
+		interrupts = <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 355 IRQ_TYPE_LEVEL_HIGH>;
+		max-link-speed = <4>;
+		num-lanes = <1>;
+		num-ib-windows = <4>;
+		num-ob-windows = <4>;
+		phys = <&pcie_phy>;
+		phy-names = "pcie-phy";
+		status = "disabled";
+	};
+
+	pcie_epc1: pcie_epc@49400000 {
+		compatible = "telechips,tcn100x-pcie-ep";
+		reg = <0 0x49400000 0 0x400000
+			0 0x49830000 0 0x10000
+			0 0x58000000 0 0x01000000>;
+		reg-names = "dbi", "link", "addr_space";
+		interrupts = <GIC_SPI 356 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 357 IRQ_TYPE_LEVEL_HIGH>;
+		max-link-speed = <4>;
+		num-lanes = <1>;
+		num-ib-windows = <4>;
+		num-ob-windows = <4>;
+		phys = <&pcie_phy>;
+		phy-names = "pcie-phy";
+		status = "disabled";
+	};
+};

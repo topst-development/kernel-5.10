@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT
+#
+# (C) COPYRIGHT 2022 ARM Limited. All rights reserved.
+#
+#
+
+config MALI_KUTF_VM_COMMS
+	tristate "Enable vm comms tests"
+	depends on MALI_KUTF && MALI_ARBITRATION
+	default n
+	default y if MALI_XEN
+	help
+	  Enables building the mali_kutf_vm_comms module
+	  If unsure, say N

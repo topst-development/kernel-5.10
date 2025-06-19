@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc805x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	cpus: cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu-map {
+			cluster0 {
+				core0 {
+					cpu = <&A72_0>;
+				};
+				core1 {
+					cpu = <&A72_1>;
+				};
+				core2 {
+					cpu = <&A72_2>;
+				};
+				core3 {
+					cpu = <&A72_3>;
+				};
+			};
+		};
+
+		A72_0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a72";
+			reg = <0x0>;
+			enable-method = "psci";
+			next-level-cache = <&A72_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+			clocks = <&cpu_ca72 FBUS_CA72>;
+		};
+
+		A72_1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a72";
+			reg = <0x1>;
+			enable-method = "psci";
+			next-level-cache = <&A72_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		A72_2: cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a72";
+			reg = <0x2>;
+			enable-method = "psci";
+			next-level-cache = <&A72_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		A72_3: cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a72";
+			reg = <0x3>;
+			enable-method = "psci";
+			next-level-cache = <&A72_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		A72_L2: l2-cache {
+			compatible = "cache";
+			cache-level = <2>;
+		};
+
+		cpu_opp_table: cpu_opp_table {
+			compatible = "operating-points-v2";
+			opp-shared;
+		};
+	};
+
+	gic: interrupt-controller@17301000 {
+		compatible = "arm,gic-400";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg = <0x0 0x17301000 0x0 0x1000>,
+		      <0x0 0x17302000 0x0 0x2000>,
+		      <0x0 0x17304000 0x0 0x2000>,
+		      <0x0 0x17306000 0x0 0x2000>;
+	};
+
+	timer: timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+
+		arm,no-tick-in-suspend;
+	};
+
+	pmu: arm_pmu {
+		compatible = "arm,cortex-a72-pmu";
+		interrupts = <GIC_SPI 165 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 166 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 167 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 168 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-affinity = <&A72_0>,
+				     <&A72_1>,
+				     <&A72_2>,
+				     <&A72_3>;
+	};
+};

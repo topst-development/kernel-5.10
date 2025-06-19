@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright 2020-2022 Telechips Inc.
+#
+config TCC_CAP_MEDIA
+	tristate "Telechips Capture Media Controller"
+	default n
+	depends on MEDIA_CONTROLLER && VIDEO_V4L2_SUBDEV_API
+	help
+	  Say Y here to enable Telechips Capture Media Controller
+	  for Telechips SoC.

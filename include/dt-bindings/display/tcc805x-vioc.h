@@ -1,0 +1,1 @@
+../../video/telechips/tcc805x/vioc_global.h

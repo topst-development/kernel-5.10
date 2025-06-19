@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: GPL-2.0 OR MIT */
+
+/*
+ * (C) COPYRIGHT 2021-2022 ARM Limited or its affiliates. All rights reserved.
+ */
+
+bob_kernel_module {
+    name: "mali_emu_kbase",
+    defaults: [
+        "mali_arbitration_shared_config_defaults",
+    ],
+    local_include_dirs: [
+        "../../../midgard/arbiter",
+    ],
+    srcs: [
+        "Kbuild",
+        "mali_emu_kbase.c",
+    ],
+    enabled: false,
+    build_emu_kbase_module: {
+        enabled: true,
+    },
+    add_to_alias: [
+        "kernel",
+    ],
+    kbuild_options: [
+        "CONFIG_MALI_ARBITER_MODULES=m",
+    ],
+}

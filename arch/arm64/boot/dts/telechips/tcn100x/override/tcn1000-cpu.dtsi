@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&cpu_opp_table {
+	opp0 {
+		opp-hz = /bits/ 64 <1116000000>;
+		opp-microvolt = <900000>;
+		clock-latency-ns = <300000>;
+	};
+};

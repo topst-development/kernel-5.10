@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+#
+config TELECHIPS_THERMAL
+        depends on OF
+        tristate "Temperature sensor on Telechips SoCs"
+        help
+          If you say yes here you get support for Telechips SoC.
+
+config ARM_TELECHIPS_MP_CPUFREQ
+        bool "Telechips Thermal driver driving by MP condition."
+        depends on TCC_THERMAL
+        default n
+        help
+          If you say yes here you get support for MP thermal policy.
+
+config TELECHIPS_THERMAL_IRQ
+       bool "Telechips Thermal driver IRQ check."
+       depends on TCC_THERMAL
+       default n
+       help
+         If you say yes here you get support for Thermal driver IRQ handler.
+
+config TELECHIPS_GPU_THERMAL_SUPPORT
+        bool "Telechips thermal driver for GPU"
+        depends on TCC_THERMAL && ARCH_TCC805X
+        default n
+        help
+          If you say yes here you get support for GPU Thermal driver.
+
+config TELECHIPS_TEM1459
+       bool "Thermal Sensor IP name - TEM1459"
+       depends on (ARCH_TCC803X || ARCH_TCC899X || ARCH_TCC802X || ARCH_TCC897X)
+       default y
+       help
+         Name of Thermal Sensor IP.

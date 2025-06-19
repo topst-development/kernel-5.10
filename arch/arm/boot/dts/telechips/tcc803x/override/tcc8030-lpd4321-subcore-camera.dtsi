@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include "tcc803x-subcore-videoinput-reserved-memory.dtsi"
+#include "tcc8030-lpd4321-videoinput.dtsi"
+#include "../tcc803x-subcore-camipc.dtsi"

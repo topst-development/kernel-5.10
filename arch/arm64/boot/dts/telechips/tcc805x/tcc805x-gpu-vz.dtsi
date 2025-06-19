@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/pmap/tcc805x/pmap-tcc805x-graphic.h>
+
+
+&reserved_memory { 
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	/*-----------------------------------------------------------
+	* Memory for PowerVR Virtualization
+	*-----------------------------------------------------------
+	*/
+	pmap_pvr_vz: pmap_pvr_vz {
+            reg = <0x0 PVR_VZ_BASE 0x0 PMAP_SIZE_PVR_VZ>;
+            no-map;
+    };
+};
+
+/ {
+	gpu: gpu@0x10100000 {
+	        compatible = "imagination,powerVR-9XTP";
+		status = "okay";
+	        reg = <0x0 0x10100000 0x0 0x10000>,     /* 3D Graphic Engine Configuration and Control */
+	              <0x0 0x10010000 0x0 0x30>;        /* 3D BUS Configuration and Control */
+	        interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>, /* HostOS */
+	                     <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>; /* GuestOS */
+	        interrupt-names = "GPU";
+	        clocks = <&fbus_gpu FBUS_GPU>;
+	        clock-names = "9XTP_clk";
+	        memory-region = <&pmap_pvr_vz>;
+	};
+
+};

@@ -1,0 +1,1650 @@
+#include <dt-bindings/interrupt-controller/arm-gic.h>   
+#include <dt-bindings/clock/telechips,tcc807x-clks.h>   
+
+/ {
+	aliases: aliases {
+		adma0  = &adma0;
+		adma1  = &adma1;
+		adma2  = &adma2;
+		adma3  = &adma3;
+		adma4  = &adma4;
+		adma5  = &adma5;
+		adma6  = &adma6;
+		adma7  = &adma7;
+		i2s0 = &i2s0;
+		i2s1 = &i2s1;
+		i2s2 = &i2s2;
+		i2s3 = &i2s3;
+		i2s4 = &i2s4;
+		i2s5 = &i2s5;
+		i2s6 = &i2s6;
+		i2s7 = &i2s7;
+		spdif0 = &spdif0;
+		spdif1 = &spdif1;
+		spdif2 = &spdif2;
+		spdif3 = &spdif3;
+		spdif4 = &spdif4;
+		spdif5 = &spdif5;
+		spdif6 = &spdif6;
+		spdif7 = &spdif7;
+		volume0 = &volume0;
+		volume1 = &volume1;
+		volume2 = &volume2;
+		volume3 = &volume3;
+		volume4 = &volume4;
+		volume5 = &volume5;
+		volume6 = &volume6;
+		volume7 = &volume7;
+		mixer0 = &mixer0;
+		mixer1 = &mixer1;
+		mixer2 = &mixer2;
+		mixer3 = &mixer3;
+		mixer4 = &mixer4;
+		mixer5 = &mixer5;
+		mars0 = &mars0;
+		mars1 = &mars1;
+		mars2 = &mars2;
+		mars3 = &mars3;
+		mars4 = &mars4;
+		masrc0 = &masrc0;
+		masrc1 = &masrc1;
+		masrc2 = &masrc2;
+		masrc3 = &masrc3;
+		masrc4 = &masrc4;
+		masrc5 = &masrc5;
+		fifo_controller0 = &fifo_controller0;
+		fifo_controller1 = &fifo_controller1;
+		fifo_controller2 = &fifo_controller2;
+		fifo_controller3 = &fifo_controller3;
+	};
+
+
+	audio_cfg: audio_cfg@19601000{
+		compatible = "telechips,audio-cfg-807x";
+		reg = <0x0 0x19601000 0x0 0xB0>;
+		dai_chmux = <99 99 99 99 99 99 99>;
+			// i2s0(GPIO C ) - 0: MI2S(01), 1: I2S(00)
+			// i2s1(GPIO MB) - 0: MI2S(04)
+			// i2s2(GPIO G ) - 0: MI2S(02)
+			// i2s3(GPIO A ) - 0: MI2S(00)
+			// i2s4(GPIO E ) - 0: MI2S(03)
+			// i2s5(GPIO E ) - 0: SI2S(04)
+			// i2s6(GPIO E ) - 0: SI2S(05)
+			// i2s7(GPIO C ) - 0: MI2S(01), 1: I2S(00)
+		spdif_chmux = <99 99 99 99 99 99 99>;
+			//spdif0(x) spdif1(x) spdif2(x) spdif3(x) spdif4(x) spdif5(x) spdif6(x)
+		dp_chmux = <99 99 99 99>;
+			// dp0(x) dp1(x) dp2(x) dp3(xx)
+
+		/*
+			MAIC0 MAIC1 MAIC2 MAIC3 MAIC4 MAIC5 MAIC6 MAIC7
+			MAVC0 MAVC1 MAVC2 MAVC3 MAVC4 MAVC5 MAVC6 MAVC7
+			MARS0 MARS1 MARS2 MARS3 MARS4 MARS5
+			MASM0 MASM1 MASM2 MASM3 MASM4
+			MASRC0 MASRC1 MASRC2 MASRC3 MASRC4 MASRC5
+			MACFG0 MACFG1 MACFG2 MACFG3
+		*/
+		ar_cache = <0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 >;
+		ar_prot = <0x22 0x22 0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 >;
+		aw_cache = <0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 0x00 0x00
+			   0x00 0x00 0x00 0x00 >;
+		aw_prot = <0x22 0x22 0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 0x22 0x22
+			   0x22 0x22 0x22 0x22 >;
+		resets = <&pmu_rst SMUBUS_AUDIO>;
+		status = "disabled";
+	};
+
+	adma0: adma@19000000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19000000 0x0 0x200>;
+		interrupts = <GIC_SPI 341 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		hrsten-reg-offset = <0xC>;
+		hrsten-bit-offset = <24>;
+		status = "disabled";
+	};
+
+	adma1: adma@19010000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19010000 0x0 0x200>;
+		interrupts = <GIC_SPI 342 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		hrsten-reg-offset = <0x88>;
+		hrsten-bit-offset = <3>;
+		status = "disabled";
+	};
+
+	adma2: adma@19020000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19020000 0x0 0x200>;
+		interrupts = <GIC_SPI 343 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		hrsten-reg-offset = <0x88>;
+		hrsten-bit-offset = <7>;
+		status = "disabled";
+	};
+
+	adma3: adma@19030000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19030000 0x0 0x200>;
+		interrupts = <GIC_SPI 344 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	adma4: adma@19040000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19040000 0x0 0x200>;
+		interrupts = <GIC_SPI 345 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	adma5: adma@19050000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19050000 0x0 0x200>;
+		interrupts = <GIC_SPI 346 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	adma6: adma@19060000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19060000 0x0 0x200>;
+		interrupts = <GIC_SPI 347 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	adma7: adma@19070000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x19070000 0x0 0x200>;
+		interrupts = <GIC_SPI 348 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		hrsten-reg-offset = <0x88>;
+		hrsten-bit-offset = <23>;
+		status = "disabled";
+	};
+
+	i2s0: i2s@19001000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19001000 0x0 0x50>,
+		      <0x0 0x19000080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC0_DAIF &peri_audio PERI_AUDIO_MAIC0_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma0>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	i2s1: i2s@19011000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19011000 0x0 0x50>,
+		      <0x0 0x19010080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC1_DAIF &peri_audio PERI_AUDIO_MAIC1_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma1>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	i2s2: i2s@19021000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19021000 0x0 0x50>,
+		      <0x0 0x19020080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC2_DAIF &peri_audio PERI_AUDIO_MAIC2_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma2>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	i2s3: i2s@19031000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19031000 0x0 0x50>,
+		      <0x0 0x19030080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC3_DAIF &peri_audio PERI_AUDIO_MAIC3_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma3>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	i2s4: i2s@19041000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19041000 0x0 0x50>,
+		      <0x0 0x19040080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC4_DAIF &peri_audio PERI_AUDIO_MAIC4_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma4>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	i2s5: i2s@19051000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19051000 0x0 0x50>,
+		      <0x0 0x19050080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC5_DAIF &peri_audio PERI_AUDIO_MAIC5_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma5>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	i2s6: i2s@19061000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19061000 0x0 0x50>,
+		      <0x0 0x19060080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC6_DAIF &peri_audio PERI_AUDIO_MAIC6_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma6>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	i2s7: i2s@19071000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x19071000 0x0 0x50>,
+		      <0x0 0x19070080 0x0 0x8>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC7_DAIF &peri_audio PERI_AUDIO_MAIC7_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only, 2: data only, 3: data and clock
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma7>;
+		type = <0>; /* 0: adma, 1: fifo(MAFC) */
+		status = "disabled";
+	};
+
+	spdif0: spdif@19002000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19002000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC0_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma0>;
+		status = "disabled";
+	};
+
+	spdif1: spdif@19012000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19012000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC1_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma1>;
+		status = "disabled";
+	};
+
+	spdif2: spdif@19022000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19022000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC2_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma2>;
+		status = "disabled";
+	};
+
+	spdif3: spdif@19032000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19032000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC3_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma3>;
+		status = "disabled";
+	};
+
+	spdif4: spdif@19042000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19042000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC4_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma4>;
+		status = "disabled";
+	};
+
+	spdif5: spdif@19052000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19052000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC5_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma5>;
+		status = "disabled";
+	};
+
+	spdif6: spdif@19062000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19062000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC6_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma6>;
+		status = "disabled";
+	};
+
+	spdif7: spdif@19072000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x19072000 0x0 0x1000>;
+		clocks = <&peri_audio PERI_AUDIO_MAIC7_SPDIF>;
+		clock-frequency = <44100>;
+		adma = <&adma7>;
+		status = "disabled";
+	};
+
+
+	volume0: volume@19100000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19100000 0x0 0x1000>;
+		interrupts = <GIC_SPI 349 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	volume1: volume@19101000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19101000 0x0 0x1000>;
+		interrupts = <GIC_SPI 350 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	volume2: volume@19102000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19102000 0x0 0x1000>;
+		interrupts = <GIC_SPI 351 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	volume3: volume@19103000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19103000 0x0 0x1000>;
+		interrupts = <GIC_SPI 352 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	volume4: volume@19104000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19104000 0x0 0x1000>;
+		interrupts = <GIC_SPI 353 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	volume5: volume@19105000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19105000 0x0 0x1000>;
+		interrupts = <GIC_SPI 354 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	volume6: volume@19106000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19106000 0x0 0x1000>;
+		interrupts = <GIC_SPI 355 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	volume7: volume@19107000 {
+		compatible = "telechips,volume";
+		reg = <0x0 0x19107000 0x0 0x1000>;
+		interrupts = <GIC_SPI 356 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: bypass, 1: volume control, 2: mute
+		status = "disabled";
+	};
+
+	mixer0: mixer@19300000 {
+		compatible = "telechips,mixer";
+		reg = <0x0 0x19300000 0x0 0x1000>;
+		interrupts = <GIC_SPI 363 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	mixer1: mixer@19301000 {
+		compatible = "telechips,mixer";
+		reg = <0x0 0x19301000 0x0 0x1000>;
+		interrupts = <GIC_SPI 364 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	mixer2: mixer@19302000 {
+		compatible = "telechips,mixer";
+		reg = <0x0 0x19302000 0x0 0x1000>;
+		interrupts = <GIC_SPI 365 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	mixer3: mixer@19303000 {
+		compatible = "telechips,mixer";
+		reg = <0x0 0x19303000 0x0 0x1000>;
+		interrupts = <GIC_SPI 366 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	mixer4: mixer@19304000 {
+		compatible = "telechips,mixer";
+		reg = <0x0 0x19304000 0x0 0x1000>;
+		interrupts = <GIC_SPI 367 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	mixer5: mixer@19305000 {
+		compatible = "telechips,mixer";
+		reg = <0x0 0x19305000 0x0 0x1000>;
+		interrupts = <GIC_SPI 368 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	mars0: mars@19200000 {
+		compatible = "telechips,mars";
+		/* MARS0, MAFC1, CKC for IP-PV MS1 */
+		reg = <0x0 0x19200000 0x0 0x1000>,
+				<0x0 0x19502000 0x0 0x1000>,
+				<0x0 0x19600000 0x0 0x10000>;
+		interrupts = <GIC_SPI 357 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: reorder, 1: discard, 2: duplicate, 3:discard
+		status = "disabled";
+	};
+
+	mars1: mars@19201000 {
+		compatible = "telechips,mars";
+		reg = <0x0 0x19201000 0x0 0x1000>;
+		interrupts = <GIC_SPI 358 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: reorder, 1: discard, 2: duplicate, 3:discard
+		status = "disabled";
+	};
+
+	mars2: mars@19202000 {
+		compatible = "telechips,mars";
+		reg = <0x0 0x19202000 0x0 0x1000>;
+		interrupts = <GIC_SPI 359 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: reorder, 1: discard, 2: duplicate, 3:discard
+		status = "disabled";
+	};
+
+	mars3: mars@19203000 {
+		compatible = "telechips,mars";
+		reg = <0x0 0x19203000 0x0 0x1000>;
+		interrupts = <GIC_SPI 360 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: reorder, 1: discard, 2: duplicate, 3:discard
+		status = "disabled";
+	};
+
+	mars4: mars@19204000 {
+		compatible = "telechips,mars";
+		reg = <0x0 0x19204000 0x0 0x1000>;
+		interrupts = <GIC_SPI 361 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: reorder, 1: discard, 2: duplicate, 3:discard
+		status = "disabled";
+	};
+
+	masrc0: masrc@19400000 {
+		compatible = "telechips,masrc";
+		// reg = <0x0 0x19400000 0x0 0x1000>;
+
+		/* MASRC0, MAFC1, CKC for IP-PV MS1 */
+		reg = <0x0 0x19400000 0x0 0x1000>,
+				<0x0 0x19501000 0x0 0x1000>,
+				<0x0 0x19600000 0x0 0x10000>;
+		interrupts = <GIC_SPI 368 IRQ_TYPE_EDGE_RISING>;
+		type = <0>; // 0: 8 channels, 1: 2 channels
+		status = "disabled";
+	};
+
+	masrc1: masrc@19401000 {
+		compatible = "telechips,masrc";
+		reg = <0x0 0x19401000 0x0 0x1000>;
+		interrupts = <GIC_SPI 369 IRQ_TYPE_EDGE_RISING>;
+		type = <1>; // 0: 8 channels, 1: 2 channels
+		status = "disabled";
+	};
+
+	masrc2: masrc@19402000 {
+		compatible = "telechips,masrc";
+		reg = <0x0 0x19402000 0x0 0x1000>;
+		interrupts = <GIC_SPI 370 IRQ_TYPE_EDGE_RISING>;
+		type = <1>; // 0: 8 channels, 1: 2 channels
+		status = "disabled";
+	};
+
+	masrc3: masrc@19403000 {
+		compatible = "telechips,masrc";
+		reg = <0x0 0x19403000 0x0 0x1000>;
+		interrupts = <GIC_SPI 371 IRQ_TYPE_EDGE_RISING>;
+		type = <1>; // 0: 8 channels, 1: 2 channels
+		status = "disabled";
+	};
+
+	masrc4: masrc@19404000 {
+		compatible = "telechips,masrc";
+		reg = <0x0 0x19404000 0x0 0x1000>;
+		interrupts = <GIC_SPI 372 IRQ_TYPE_EDGE_RISING>;
+		type = <1>; // 0: 8 channels, 1: 2 channels
+		status = "disabled";
+	};
+
+	masrc5: masrc@19405000 {
+		compatible = "telechips,masrc";
+		reg = <0x0 0x19405000 0x0 0x1000>;
+		interrupts = <GIC_SPI 373 IRQ_TYPE_EDGE_RISING>;
+		type = <1>; // 0: 8 channels, 1: 2 channels
+		status = "disabled";
+	};
+
+	fifo_controller0: fifo_controller@19500000 {
+		compatible = "telechips,fifo-controller";
+		reg = <0x0 0x19500000 0x0 0x1000>;
+		interrupts = <GIC_SPI 374 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	fifo_controller1: fifo_controller@19501000 {
+		compatible = "telechips,fifo-controller";
+		reg = <0x0 0x19501000 0x0 0x1000>;
+		interrupts = <GIC_SPI 375 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	fifo_controller2: fifo_controller@19502000 {
+		compatible = "telechips,fifo-controller";
+		reg = <0x0 0x19502000 0x0 0x1000>;
+		interrupts = <GIC_SPI 376 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	fifo_controller3: fifo_controller@19503000 {
+		compatible = "telechips,fifo-controller";
+		reg = <0x0 0x19503000 0x0 0x1000>;
+		interrupts = <GIC_SPI 377 IRQ_TYPE_EDGE_RISING>;
+		status = "disabled";
+	};
+
+	sound0: sound0 {};
+	sound1: sound1 {};
+};
+
+&pinctrl {
+/*****************************************************
+* Audio PinCtrl Start
+******************************************************/
+/*****************************************************
+* Multi-channel Audio Port 0
+******************************************************/
+
+        mi2s_mclk_port0: mi2s_mclk_port0 {
+                telechips,pins = "gpa-25";
+                telechips,pin-function = <5>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_mclk_port0_idle: mi2s_mclk_port0_idle {
+                telechips,pins = "gpa-25";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_bclk_port0: mi2s_bclk_port0 {
+                telechips,pins = "gpa-26";
+                telechips,pin-function = <5>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_bclk_port0_idle: mi2s_bclk_port0_idle {
+                telechips,pins = "gpa-26";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_lrck_port0: mi2s_lrck_port0 {
+                telechips,pins = "gpa-27";
+                telechips,pin-function = <5>;
+                telechips,input_buffer_enable;
+        };
+
+
+        mi2s_lrck_port0_idle: mi2s_lrck_port0_idle {
+                telechips,pins = "gpa-27";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao0_port0: mi2s_dao0_port0 {
+                telechips,pins = "gpa-24";
+                telechips,pin-function = <5>;
+        };
+
+        mi2s_dao0_port0_idle: mi2s_dao0_port0_idle {
+                telechips,pins = "gpa-24";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai0_port0: mi2s_dai0_port0 {
+                telechips,pins = "gpa-28";
+                telechips,pin-function = <5>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai0_port0_idle: mi2s_dai0_port0_idle {
+                telechips,pins = "gpa-28";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao1_port0: mi2s_dao1_port0 {
+                telechips,pins = "gpa-23";
+                telechips,pin-function = <5>;
+        };
+
+        mi2s_dao1_port0_idle: mi2s_dao1_port0_idle {
+                telechips,pins = "gpa-23";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai1_port0: mi2s_dai1_port0 {
+                telechips,pins = "gpa-29";
+                telechips,pin-function = <5>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai1_port0_idle: mi2s_dai1_port0_idle {
+                telechips,pins = "gpa-29";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao2_port0: mi2s_dao2_port0 {
+                telechips,pins = "gpa-22";
+                telechips,pin-function = <5>;
+        };
+
+        mi2s_dao2_port0_idle: mi2s_dao2_port0_idle {
+                telechips,pins = "gpa-22";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai2_port0: mi2s_dai2_port0 {
+                telechips,pins = "gpa-30";
+                telechips,pin-function = <5>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai2_port0_idle: mi2s_dai2_port0_idle {
+                telechips,pins = "gpa-30";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao3_port0: mi2s_dao3_port0 {
+                telechips,pins = "gpa-21";
+                telechips,pin-function = <5>;
+        };
+
+        mi2s_dao3_port0_idle: mi2s_dao3_port0_idle {
+                telechips,pins = "gpa-21";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai3_port0: mi2s_dai3_port0 {
+                telechips,pins = "gpa-31";
+                telechips,pin-function = <5>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai3_port0_idle: mi2s_dai3_port0_idle {
+                telechips,pins = "gpa-31";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+/*****************************************************
+* Multi-channel Audio Port 1
+******************************************************/
+
+        mi2s_mclk_port1: mi2s_mclk_port1 {
+                telechips,pins = "gpc-19";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_mclk_port1_idle: mi2s_mclk_port1_idle {
+                telechips,pins = "gpc-19";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_bclk_port1: mi2s_bclk_port1 {
+                telechips,pins = "gpc-20";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_bclk_port1_idle: mi2s_bclk_port1_idle {
+                telechips,pins = "gpc-20";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_lrck_port1: mi2s_lrck_port1 {
+                telechips,pins = "gpc-21";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_lrck_port1_idle: mi2s_lrck_port1_idle {
+                telechips,pins = "gpc-21";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao0_port1: mi2s_dao0_port1 {
+                telechips,pins = "gpc-26";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao0_port1_idle: mi2s_dao0_port1_idle {
+                telechips,pins = "gpc-26";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai0_port1: mi2s_dai0_port1 {
+                telechips,pins = "gpc-22";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai0_port1_idle: mi2s_dai0_port1_idle {
+                telechips,pins = "gpc-22";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao1_port1: mi2s_dao1_port1 {
+                telechips,pins = "gpc-27";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao1_port1_idle: mi2s_dao1_port1_idle {
+                telechips,pins = "gpc-27";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai1_port1: mi2s_dai1_port1 {
+                telechips,pins = "gpc-23";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai1_port1_idle: mi2s_dai1_port1_idle {
+                telechips,pins = "gpc-23";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao2_port1: mi2s_dao2_port1 {
+                telechips,pins = "gpc-28";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao2_port1_idle: mi2s_dao2_port1_idle {
+                telechips,pins = "gpc-28";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai2_port1: mi2s_dai2_port1 {
+                telechips,pins = "gpc-24";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai2_port1_idle: mi2s_dai2_port1_idle {
+                telechips,pins = "gpc-24";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao3_port1: mi2s_dao3_port1 {
+                telechips,pins = "gpc-29";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao3_port1_idle: mi2s_dao3_port1_idle {
+                telechips,pins = "gpc-29";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai3_port1: mi2s_dai3_port1 {
+                telechips,pins = "gpc-25";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai3_port1_idle: mi2s_dai3_port1_idle {
+                telechips,pins = "gpc-25";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+/*****************************************************
+* Stereo-channel Audio Port 0
+******************************************************/
+
+        i2s_mclk_port0: i2s_mclk_port0 {
+                telechips,pins = "gpc-25";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_mclk_port0_idle: i2s_mclk_port0_idle {
+                telechips,pins = "gpc-25";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_bclk_port0: i2s_bclk_port0 {
+                telechips,pins = "gpc-26";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_bclk_port0_idle: i2s_bclk_port0_idle {
+                telechips,pins = "gpc-26";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_lrck_port0: i2s_lrck_port0 {
+                telechips,pins = "gpc-27";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_lrck_port0_idle: i2s_lrck_port0_idle {
+                telechips,pins = "gpc-27";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_dao_port0: i2s_dao_port0 {
+                telechips,pins = "gpc-28";
+                telechips,pin-function = <2>;
+        };
+
+        i2s_dao_port0_idle: i2s_dao_port0_idle {
+                telechips,pins = "gpc-28";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_dai_port0: i2s_dai_port0 {
+                telechips,pins = "gpc-29";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_dai_port0_idle: i2s_dai_port0_idle {
+                telechips,pins = "gpc-29";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+/*****************************************************
+* Multi-channel Audio Port 3
+******************************************************/
+
+        mi2s_mclk_port3: mi2s_mclk_port3 {
+                telechips,pins = "gpe-0";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_mclk_port3_idle: mi2s_mclk_port3_idle {
+                telechips,pins = "gpe-0";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_bclk_port3: mi2s_bclk_port3 {
+                telechips,pins = "gpe-1";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_bclk_port3_idle: mi2s_bclk_port3_idle {
+                telechips,pins = "gpe-1";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_lrck_port3: mi2s_lrck_port3 {
+                telechips,pins = "gpe-2";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_lrck_port3_idle: mi2s_lrck_port3_idle {
+                telechips,pins = "gpe-2";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao0_port3: mi2s_dao0_port3 {
+                telechips,pins = "gpe-3";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao0_port3_idle: mi2s_dao0_port3_idle {
+                telechips,pins = "gpe-3";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai0_port3: mi2s_dai0_port3 {
+                telechips,pins = "gpe-4";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai0_port3_idle: mi2s_dai0_port3_idle {
+                telechips,pins = "gpe-4";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao1_port3: mi2s_dao1_port3 {
+                telechips,pins = "gpe-5";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao1_port3_idle: mi2s_dao1_port3_idle {
+                telechips,pins = "gpe-5";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai1_port3: mi2s_dai1_port3 {
+                telechips,pins = "gpe-6";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai1_port3_idle: mi2s_dai1_port3_idle {
+                telechips,pins = "gpe-6";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao2_port3: mi2s_dao2_port3 {
+                telechips,pins = "gpe-7";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao2_port3_idle: mi2s_dao2_port3_idle {
+                telechips,pins = "gpe-7";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai2_port3: mi2s_dai2_port3 {
+                telechips,pins = "gpe-8";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai2_port3_idle: mi2s_dai2_port3_idle {
+                telechips,pins = "gpe-8";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao3_port3: mi2s_dao3_port3 {
+                telechips,pins = "gpe-9";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao3_port3: mi2s_dao3_port3 {
+                telechips,pins = "gpe-9";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao3_port3_idle: mi2s_dao3_port3_idle {
+                telechips,pins = "gpe-9";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai3_port3: mi2s_dai3_port3 {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai3_port3_idle: mi2s_dai3_port3_idle {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+
+/*****************************************************
+* Stereo-channel Audio Port 4
+******************************************************/
+
+        i2s_mclk_port4: i2s_mclk_port4 {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_mclk_port4_idle: i2s_mclk_port4_idle {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_bclk_port4: i2s_bclk_port4 {
+                telechips,pins = "gpe-11";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_bclk_port4_idle: i2s_bclk_port4_idle {
+                telechips,pins = "gpe-11";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+
+        i2s_lrck_port4: i2s_lrck_port4 {
+                telechips,pins = "gpe-12";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_lrck_port4_idle: i2s_lrck_port4_idle {
+                telechips,pins = "gpe-12";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_dao_port4: i2s_dao_port4 {
+                telechips,pins = "gpe-13";
+                telechips,pin-function = <2>;
+        };
+
+        i2s_dao_port4_idle: i2s_dao_port4_idle {
+                telechips,pins = "gpe-13";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_dai_port4: i2s_dai_port4 {
+                telechips,pins = "gpe-14";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_dai_port4_idle: i2s_dai_port4_idle {
+                telechips,pins = "gpe-14";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+/*****************************************************
+* Stereo-channel Audio Port 5
+******************************************************/
+
+        i2s_mclk_port5: i2s_mclk_port5 {
+                telechips,pins = "gpe-15";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_mclk_port5_idle: i2s_mclk_port5_idle {
+                telechips,pins = "gpe-15";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_bclk_port5: i2s_bclk_port5 {
+                telechips,pins = "gpe-16";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_bclk_port5_idle: i2s_bclk_port5_idle {
+                telechips,pins = "gpe-16";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_lrck_port5: i2s_lrck_port5 {
+                telechips,pins = "gpe-17";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_lrck_port5_idle: i2s_lrck_port5_idle {
+                telechips,pins = "gpe-17";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_dao_port5: i2s_dao_port5 {
+                telechips,pins = "gpe-18";
+                telechips,pin-function = <2>;
+        };
+
+        i2s_dao_port5_idle: i2s_dao_port5_idle {
+                telechips,pins = "gpe-18";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        i2s_dai_port5: i2s_dai_port5 {
+                telechips,pins = "gpe-19";
+                telechips,pin-function = <2>;
+                telechips,input_buffer_enable;
+        };
+
+        i2s_dai_port5_idle: i2s_dai_port5_idle {
+                telechips,pins = "gpe-19";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+/*****************************************************
+* Multi-channel Audio Port 2
+******************************************************/
+
+        mi2s_mclk_port2: mi2s_mclk_port2 {
+                telechips,pins = "gpg-0";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_mclk_port2_idle: mi2s_mclk_port2_idle {
+                telechips,pins = "gpg-0";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_bclk_port2: mi2s_bclk_port2 {
+                telechips,pins = "gpg-1";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_bclk_port2_idle: mi2s_bclk_port2_idle {
+                telechips,pins = "gpg-1";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_lrck_port2: mi2s_lrck_port2 {
+                telechips,pins = "gpg-2";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_lrck_port2_idle: mi2s_lrck_port2_idle {
+                telechips,pins = "gpg-2";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao0_port2: mi2s_dao0_port2 {
+                telechips,pins = "gpg-3";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao0_port2_idle: mi2s_dao0_port2_idle {
+                telechips,pins = "gpg-3";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai0_port2: mi2s_dai0_port2 {
+                telechips,pins = "gpg-4";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai0_port2_idle: mi2s_dai0_port2_idle {
+                telechips,pins = "gpg-4";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao1_port2: mi2s_dao1_port2 {
+                telechips,pins = "gpg-5";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao1_port2_idle: mi2s_dao1_port2_idle {
+                telechips,pins = "gpg-5";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai1_port2: mi2s_dai1_port2 {
+                telechips,pins = "gpg-6";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai1_port2_idle: mi2s_dai1_port2_idle {
+                telechips,pins = "gpg-6";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao2_port2: mi2s_dao2_port2 {
+                telechips,pins = "gpg-7";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao2_port2_idle: mi2s_dao2_port2_idle {
+                telechips,pins = "gpg-7";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai2_port2: mi2s_dai2_port2 {
+                telechips,pins = "gpg-8";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai2_port2_idle: mi2s_dai2_port2_idle {
+                telechips,pins = "gpg-8";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao3_port2: mi2s_dao3_port2 {
+                telechips,pins = "gpg-9";
+                telechips,pin-function = <1>;
+        };
+        mi2s_dao3_port2_idle: mi2s_dao3_port2_idle {
+                telechips,pins = "gpg-9";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai3_port2: mi2s_dai3_port2 {
+                telechips,pins = "gpg-10";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai3_port2_idle: mi2s_dai3_port2_idle {
+                telechips,pins = "gpg-10";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+/*****************************************************
+* Multi-channel Audio Port 4
+******************************************************/
+
+        mi2s_mclk_port4: mi2s_mclk_port4 {
+                telechips,pins = "gpmb-12";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_mclk_port4_idle: mi2s_mclk_port4_idle {
+                telechips,pins = "gpmb-12";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_bclk_port4: mi2s_bclk_port4 {
+                telechips,pins = "gpmb-13";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_bclk_port4_idle: mi2s_bclk_port4_idle {
+                telechips,pins = "gpmb-13";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_lrck_port4: mi2s_lrck_port4 {
+                telechips,pins = "gpmb-14";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_lrck_port4_idle: mi2s_lrck_port4_idle {
+                telechips,pins = "gpmb-14";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao0_port4: mi2s_dao0_port4 {
+                telechips,pins = "gpmb-15";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao0_port4_idle: mi2s_dao0_port4_idle {
+                telechips,pins = "gpmb-15";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai0_port4: mi2s_dai0_port4 {
+                telechips,pins = "gpmb-16";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai0_port4_idle: mi2s_dai0_port4_idle {
+                telechips,pins = "gpmb-16";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao1_port4: mi2s_dao1_port4 {
+                telechips,pins = "gpmb-17";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao1_port4_idle: mi2s_dao1_port4_idle {
+                telechips,pins = "gpmb-17";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+
+        mi2s_dai1_port4: mi2s_dai1_port4 {
+                telechips,pins = "gpmb-18";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai1_port4_idle: mi2s_dai1_port4_idle {
+                telechips,pins = "gpmb-18";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao2_port4: mi2s_dao2_port4 {
+                telechips,pins = "gpmb-19";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao2_port4_idle: mi2s_dao2_port4_idle {
+                telechips,pins = "gpmb-19";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai2_port4: mi2s_dai2_port4 {
+                telechips,pins = "gpmb-20";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai2_port4_idle: mi2s_dai2_port4_idle {
+                telechips,pins = "gpmb-20";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dao3_port4: mi2s_dao3_port4 {
+                telechips,pins = "gpmb-21";
+                telechips,pin-function = <1>;
+        };
+
+        mi2s_dao3_port4_idle: mi2s_dao3_port4_idle {
+                telechips,pins = "gpmb-21";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        mi2s_dai3_port4: mi2s_dai3_port4 {
+                telechips,pins = "gpmb-22";
+                telechips,pin-function = <1>;
+                telechips,input_buffer_enable;
+        };
+
+        mi2s_dai3_port4_idle: mi2s_dai3_port4_idle {
+                telechips,pins = "gpmb-22";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+/*****************************************************
+* SPDIF Port 0 ~ 6
+******************************************************/
+
+        spdif_tx_port0: spdif_tx_port0 {
+                telechips,pins = "gpe-5";
+                telechips,pin-function = <3>;
+        };
+
+        spdif_tx_port0_idle: spdif_tx_port0_idle {
+                telechips,pins = "gpe-5";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_rx_port0: spdif_rx_port0 {
+                telechips,pins = "gpe-5";
+                telechips,pin-function = <4>;
+                telechips,input_buffer_enable;
+        };
+
+        spdif_rx_port0_idle: spdif_rx_port0_idle {
+                telechips,pins = "gpe-5";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_tx_port1: spdif_tx_port1 {
+                telechips,pins = "gpe-6";
+                telechips,pin-function = <3>;
+        };
+
+        spdif_tx_port1_idle: spdif_tx_port1_idle {
+                telechips,pins = "gpe-6";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_rx_port1: spdif_rx_port1 {
+                telechips,pins = "gpe-6";
+                telechips,pin-function = <4>;
+                telechips,input_buffer_enable;
+        };
+
+        spdif_rx_port1_idle: spdif_rx_port1_idle {
+                telechips,pins = "gpe-6";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_tx_port2: spdif_tx_port2 {
+                telechips,pins = "gpe-7";
+                telechips,pin-function = <3>;
+        };
+
+        spdif_tx_port2_idle: spdif_tx_port2_idle {
+                telechips,pins = "gpe-7";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_rx_port2: spdif_rx_port2 {
+                telechips,pins = "gpe-7";
+                telechips,pin-function = <4>;
+                telechips,input_buffer_enable;
+        };
+
+        spdif_rx_port2_idle: spdif_rx_port2_idle {
+                telechips,pins = "gpe-7";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_tx_port3: spdif_tx_port3 {
+                telechips,pins = "gpe-8";
+                telechips,pin-function = <3>;
+        };
+
+        spdif_tx_port3_idle: spdif_tx_port3_idle {
+                telechips,pins = "gpe-8";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_rx_port3: spdif_rx_port3 {
+                telechips,pins = "gpe-8";
+                telechips,pin-function = <4>;
+                telechips,input_buffer_enable;
+        };
+
+        spdif_rx_port3_idle: spdif_rx_port3_idle {
+                telechips,pins = "gpe-8";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_tx_port4: spdif_tx_port4 {
+                telechips,pins = "gpe-9";
+                telechips,pin-function = <3>;
+        };
+
+        spdif_tx_port4_idle: spdif_tx_port4_idle {
+                telechips,pins = "gpe-9";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_rx_port4: spdif_rx_port4 {
+                telechips,pins = "gpe-9";
+                telechips,pin-function = <4>;
+                telechips,input_buffer_enable;
+        };
+
+        spdif_rx_port4_idle: spdif_rx_port4_idle {
+                telechips,pins = "gpe-9";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_tx_port5: spdif_tx_port5 {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <3>;
+        };
+
+        spdif_tx_port5_idle: spdif_tx_port5_idle {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_rx_port5: spdif_rx_port5 {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <4>;
+                telechips,input_buffer_enable;
+        };
+
+        spdif_rx_port5_idle: spdif_rx_port5_idle {
+                telechips,pins = "gpe-10";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_tx_port6: spdif_tx_port6 {
+                telechips,pins = "gpe-15";
+                telechips,pin-function = <3>;
+        };
+
+        spdif_tx_port6_idle: spdif_tx_port6_idle {
+                telechips,pins = "gpe-15";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+        spdif_rx_port6: spdif_rx_port6 {
+                telechips,pins = "gpe-15";
+                telechips,pin-function = <4>;
+                telechips,input_buffer_enable;
+        };
+
+        spdif_rx_port6_idle: spdif_rx_port6_idle {
+                telechips,pins = "gpe-15";
+                telechips,pin-function = <0>;
+                telechips,output-low = <0>;
+        };
+
+/*****************************************************
+* Audio PinCtrl END
+******************************************************/
+};

@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) Telechips Inc.
+#
+
+config TELECHIPS_VIOC_LOW_API
+	tristate "Telechips VIOC LOW APIs"
+	depends on ARCH_TELECHIPS
+	default n
+	help
+		If true, it supports low api to control VIOC blocks.
+
+if TELECHIPS_VIOC_LOW_API
+config VIOC_OUTPUT_CONFIG
+	bool "Enable De-interlacer (VIQE and S_Deintl)"
+	depends on !(ARCH_TCC750X)
+	default y
+	help
+		TELECHIPS Output configuration register.
+
+config VIOC_DEINTERLACER
+	bool "Enable De-interlacer (VIQE and S_Deintl)"
+	depends on !(ARCH_TCC750X)
+	default y
+	help
+		TELECHIPS De-interlacer VIQE and Simple De-interlacer.
+
+config VIOC_MAP_DECOMP
+	bool "VIOC MAP Decompressor support for HEVC"
+	depends on (ARCH_TCC803X || ARCH_TCC805X)
+	default y
+	help
+		TELECHIPS VIOC MAP CONVERTER Block.
+		Decompress HEVC compressed data.
+
+config VIOC_AFBCDEC
+	bool "Enable AFBC decoder"
+	depends on (ARCH_TCC803X) && MALI_MIDGARD
+	default n
+	help
+		TELECHIPS AFBC Decoder
+
+config VIOC_PVRIC_FBDC
+	bool "Enable PVRIC_FBDC"
+	depends on (ARCH_TCC805X) && POWERVR_ROGUE
+	default n
+	help
+		TELECHIPS PVRIC Framebuffer decompressor
+
+config VIOC_G2D
+	bool "Enable Graphic 2D"
+	depends on (ARCH_TCC803X || ARCH_TCC805X) && !TELECHIPS_DUAL_DISPLAY
+	default y
+	help
+		TELECHIPS Graphic 2D controller
+endif

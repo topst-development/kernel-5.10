@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&usb20drd_vbus {
+	gpios = <&gpmc 6 0x0>;
+	status = "okay";
+};
+
+&usb30drd_vbus {
+	gpios = <&gpmc 8 0x0>;
+	status = "okay";
+};
+
+&usb20drd_phy_host {
+	status = "okay";
+};
+
+&usb20drd_phy_dev {
+	status = "okay";
+};
+
+&usb20drd_controller {
+	status = "okay";
+};
+
+&usb30drd_phy {
+	status = "okay";
+};
+
+&usb30drd_controller {
+	status = "okay";
+};

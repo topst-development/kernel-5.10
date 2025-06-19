@@ -1,0 +1,73 @@
+#
+# VPU device configuration
+#
+
+menuconfig TELECHIPS_VPU_DRV
+	tristate "VPU-Video Process Unit"
+
+if TELECHIPS_VPU_DRV
+
+choice
+	prompt "Max Frame Size (W x H)"
+	default VDEC_MAX_FRAME_SIZE_1
+	depends on (ARCH_TCC899X || ARCH_TCC901X || ARCH_TCC805X || ARCH_TCC807X)
+	help
+		max frame size(width/height) for decoder.
+		This adds support
+		the VPU drivers
+		on TCCxxxx Soc devices.
+
+config VDEC_MAX_FRAME_SIZE_1
+	bool "4096x2160"
+	help
+		DEC_MAX_FRAME_SIZE_1
+		This adds support
+		the VPU drivers.
+		on TCCxxxx Soc devices.
+
+config VDEC_MAX_FRAME_SIZE_2
+	bool "3840x2160"
+	help
+		DEC_MAX_FRAME_SIZE_2
+		This adds support
+		the VPU drivers
+		on TCCxxxx Soc devices.
+endchoice
+
+config VPU_TIME_MEASUREMENT
+	bool "processing time masurement"
+	help
+		Enable to measure the time of decoding/encoding.
+		This adds support
+		the VPU drivers
+		on TCCxxxx Soc devices.
+
+choice
+	prompt "Select VPU Target SDK"
+	default TELECHIPS_VPU_IVI
+	help
+		Enable to select VPU DTSI configuration for each SDK
+
+config TELECHIPS_VPU_IVI
+	bool "IVI SDK (LinuxIVI or AndroidIVI)"
+	select IVI
+	help
+		TELECHIPS_VPU_IVI
+
+config TELECHIPS_VPU_DVRS
+	bool "DVRS"
+	select DVRS
+	help
+		TELECHIPS_VPU_DVRS
+		Enable to select VPU DTSI configuration for DVRS
+config TELECHIPS_VPU_CONSOLIDATION
+	bool "CONSOLIDATION_IVI_DVRS"
+	select CONSOLIDATION_IVI_DVRS
+	help
+		TELECHIPS_VPU_CONSOLIDATION
+		Enable to select VPU DTSI configuration
+		for DVRS_IVI Consolidation SDK
+endchoice
+
+
+endif # TELECHIPS_VPU_DRV

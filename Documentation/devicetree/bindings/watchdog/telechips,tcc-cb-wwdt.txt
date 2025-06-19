@@ -1,0 +1,33 @@
+* Telechips WWDT(Windowed Watchdog Timer)
+
+Telechips TCN1000X use Telechips WWDT(Windowed Watchdog Timer) basically
+as CPU watchdog timers.
+
+Required properties:
+- compatible: Dependent on Telechips SoC
+	"telechips,tcc-cb-wwdt"
+- reg: Specifies base physical address and size of the registers.
+- clocks: Must contain an entry for each entry in clock-names.
+- clock-names : Should be set to
+- interrupts : Shall contain the interrupt for the watchdog
+- timeout-sec : Contains the watchdog timeout in seconds
+
+Optional properties:
+- kick-interval : Contains the watchdog pretimeout in seconds
+reset-enable-watchdog : Can enable the reset control
+
+Example:
+cb_wwdt: cb_wwdt@40600000 {
+	compatible = "telechips,tcc-cb-wwdt";
+	reg = <0x0 0x40600000 0x0 0x10000>;
+
+	clocks = <&osc24m 0 0>;
+	clock-names = "clk_wwdt";
+
+	interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+
+	kick-interval = <5>;
+	timeout-sec = <20>;
+
+	reset-enable-watchdog = <1>;
+};

@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&ethosn_reserved {
+	status = "okay";
+};
+
+&ethosn0 {
+	memory-region = <&ethosn_reserved>;
+	status = "okay";
+	core0 {
+		compatible = "ethosn-core";
+		/* iommus = <&smmu_npu 0>; */
+		status = "okay";
+	};
+};

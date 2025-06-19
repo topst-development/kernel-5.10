@@ -1,0 +1,95 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/{
+	/* CA65AE Side I/F */
+
+	/* CA65AE <-> CM7-0 : CA65_MBOX_HP0, non-secure */
+	ca65_cm7_0_host_mbox: mbox@40500000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x40500000 0x0 0x80>;
+		interrupts = <GIC_SPI 42 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 43 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CA65AE <-> CM7-1 : CA65_MBOX_HP1, non-secure */
+	ca65_cm7_1_host_mbox: mbox@40510000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x40510000 0x0 0x80>;
+		interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CA65AE <-> CM7-2 : CA65_MBOX_HP2, non-secure */
+	ca65_cm7_2_host_mbox: mbox@40520000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x40520000 0x0 0x80>;
+		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CA65AE <-> CMN : CA65_MBOX_HP4, non-secure */
+	ca65_cmn_host_mbox: mbox@40540000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x40540000 0x0 0x80>;
+		interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CA65AE <-> HSM : HSM_MBOX_GP1, non-secure*/
+	hsm_ca65_guest_mbox: mbox@44180000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x44180000 0x0 0x80>;
+		interrupts = <GIC_SPI 168 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 169 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CM7-0 <-> CA65AE : CM0_MBOX_GP1, non-secure */
+	cm7_0_ca65_guest_mbox: mbox@41080000 {
+		status = "disabled";
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x41080000 0x0 0x80>;
+		interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CM7-1 <-> CA65AE : CM1_MBOX_GP1, non-secure */
+	cm7_1_ca65_guest_mbox: mbox@42080000 {
+		status = "disabled";
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x42080000 0x0 0x80>;
+		interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CM7-2 <-> CA65AE : CM2_MBOX_GP1, non-secure */
+	cm7_2_ca65_guest_mbox: mbox@43080000 {
+		status = "disabled";
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x43080000 0x0 0x80>;
+		interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+	/* CMN <-> CA65AE : CMN_MBOX_GP1, non-secure */
+	cmn_ca65_guest_mbox: mbox@47080000 {
+		status = "disabled";
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x47080000 0x0 0x80>;
+		interrupts = <GIC_SPI 276 IRQ_TYPE_LEVEL_HIGH>, /* RX DONE */
+		             <GIC_SPI 277 IRQ_TYPE_LEVEL_HIGH>; /* TX DONE */
+		#mbox-cells = <1>;
+	};
+
+};
+

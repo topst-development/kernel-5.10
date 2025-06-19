@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/ {
+	gmac0: gmac@48200000 {
+		compatible = "telechips,gmac";
+		reg = 	<0x0 0x48200000 0x0 0x3000>, /* base address */
+				<0x0 0x48203000 0x0 0x0014>, /* cfg address */
+				<0x0 0x4BE0007C 0x0 0x0014>, /* ecid address */
+				<0x0 0x48204000 0x0 0x0110>; /* ecc address */
+		interrupts = <GIC_SPI 331 IRQ_TYPE_LEVEL_HIGH>;
+		index = <0>;
+		bus-id = <0>;
+		clocks = <&peri_smu PERI_HSIO_GMAC0_PCLK>,
+				<&fbus_smu FBUS_HSIO>,
+				<&peri_smu PERI_HSIO_GMAC0_TS>,
+				<&clk_hsio HSIO_GMAC0>;
+		clock-names = "pclk", "hsio-clk", "ptp-pclk", "stmmaceth";
+		status = "disabled";
+	};
+
+	gmac1: gmac@48300000 {
+		compatible = "telechips,gmac";
+		reg = 	<0x0 0x48300000 0x0 0x3000>, /* base address */
+				<0x0 0x48303000 0x0 0x0014>, /* cfg address */
+				<0x0 0x4BE0007C 0x0 0x0014>, /* ecid address */
+				<0x0 0x48304000 0x0 0x0110>; /* ecc address */
+		interrupts = <GIC_SPI 341 IRQ_TYPE_LEVEL_HIGH>;
+		index = <1>;
+		bus-id = <1>;
+		clocks = <&peri_smu PERI_HSIO_GMAC1_PCLK>,
+				<&fbus_smu FBUS_HSIO>,
+				<&peri_smu PERI_HSIO_GMAC1_TS>,
+				<&clk_hsio HSIO_GMAC1>;
+		clock-names = "pclk", "hsio-clk", "ptp-pclk", "stmmaceth";
+		status = "disabled";
+	};
+};
+
+
+
+
+

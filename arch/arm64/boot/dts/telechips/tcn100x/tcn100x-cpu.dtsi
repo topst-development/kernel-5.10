@@ -1,0 +1,255 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/* 0: Lock-Mode, 1: Split-Mode */
+#define CPU_CEMODE_IS_SPLIT (0U)
+
+/ {
+	cpus: cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu-map {
+			cluster0 {
+				core0 {
+					thread0 {
+						cpu = <&A65_0>;
+					};
+					thread1 {
+						cpu = <&A65_1>;
+					};
+				};
+				core1 {
+					thread0 {
+						cpu = <&A65_2>;
+					};
+					thread1 {
+						cpu = <&A65_3>;
+					};
+				};
+				core2 {
+					thread0 {
+						cpu = <&A65_4>;
+					};
+					thread1 {
+						cpu = <&A65_5>;
+					};
+				};
+#if CPU_CEMODE_IS_SPLIT
+				core3 {
+					thread0 {
+						cpu = <&A65_6>;
+					};
+					thread1 {
+						cpu = <&A65_7>;
+					};
+				};
+				core4 {
+					thread0 {
+						cpu = <&A65_8>;
+					};
+					thread1 {
+						cpu = <&A65_9>;
+					};
+				};
+				core5 {
+					thread0 {
+						cpu = <&A65_10>;
+					};
+					thread1 {
+						cpu = <&A65_11>;
+					};
+				};
+#endif
+			};
+		};
+
+		A65_0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x0>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p0 FBUS_CA65_0>;
+
+			L3_0: l3_cache {
+				compatible = "cache";
+			};
+		};
+
+		A65_1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x1>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p0 FBUS_CA65_0>;
+		};
+
+		A65_2: cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x100>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p0 FBUS_CA65_0>;
+		};
+
+		A65_3: cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x101>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p0 FBUS_CA65_0>;
+		};
+
+		A65_4: cpu@4 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x200>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p1 FBUS_CA65_1>;
+		};
+
+		A65_5: cpu@5 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x201>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p1 FBUS_CA65_1>;
+		};
+
+#if CPU_CEMODE_IS_SPLIT
+		A65_6: cpu@6 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x300>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p1 FBUS_CA65_1>;
+		};
+
+		A65_7: cpu@7 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x301>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p1 FBUS_CA65_1>;
+		};
+
+		A65_8: cpu@8 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x400>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p2 FBUS_CA65_2>;
+		};
+
+		A65_9: cpu@9 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x401>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p2 FBUS_CA65_2>;
+		};
+
+		A65_10: cpu@10 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x500>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p2 FBUS_CA65_2>;
+		};
+
+		A65_11: cpu@11 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a65";
+			reg = <0x501>;
+			enable-method = "psci";
+			next-level-cache = <&L3_0>;
+			operating-points-v2 = <&cpu_opp_table>;
+			#cooling-cells = <2>;
+			clocks = <&cpu_ca65_p2 FBUS_CA65_2>;
+		};
+#endif
+
+		cpu_opp_table: cpu_table {
+			compatible = "operating-points-v2";
+			opp-shared;
+		};
+	};
+
+	gic: interrupt-controller@40800000 {
+		compatible = "arm,gic-v3";
+		#interrupt-cells = <3>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		interrupt-controller;
+		reg =	<0x0 0x40800000 0x0 0x10000>,
+			<0x0 0x40880000 0x0 0x180000>;
+		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
+
+		its0: msi-controller@40840000 {
+			compatible = "arm,gic-v3-its";
+			msi-controller;
+			#msi-cells = <1>;
+			reg = <0x40840000 0x20000>;
+		};
+		its1: msi-controller@40860000 {
+			compatible = "arm,gic-v3-its";
+			msi-controller;
+			#msi-cells = <1>;
+			reg = <0x40860000 0x20000>;
+		};
+	};
+
+	timer: timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+
+		arm,no-tick-in-suspend;
+	};
+
+	pmu: arm_pmu {
+		compatible = "arm,armv8-pmuv3";
+		interrupts = <GIC_SPI 281 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-affinity = <&A65_0>;
+	};
+};

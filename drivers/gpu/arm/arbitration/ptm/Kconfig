@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT
+#
+# (C) COPYRIGHT 2022 Telechips Inc
+# (C) COPYRIGHT 2021-2022 ARM Limited. All rights reserved.
+#
+# This program is free software and is provided to you under the terms of the
+# GNU General Public License version 2 as published by the Free Software
+# Foundation, and any use by you of this program is subject to the terms
+# of such GNU license.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, you can access it online at
+# http://www.gnu.org/licenses/gpl-2.0.html.
+#
+#
+
+config MALI_PARTITION_MANAGER
+	tristate "Enable compilation of partition manager modules"
+	depends on MALI_ARBITRATION
+	default n
+	help
+	  This option enables the compilation of the partition manager
+	  modules used to configure the Mali-G78AE GPU.
+
+config TCC_MALI_VZ
+	bool "Mali Virtualisation"
+	depends on ARCH_TCC807X && MALI_PARTITION_MANAGER
+	default n
+
+config TCC_MALI_VERIFICATION_ENV
+	bool "Setup Telechips Verification Env."
+	depends on ARCH_TCC807X && MALI_PARTITION_MANAGER
+	default n
+	help
+	  For chip verification test
+
+if TCC_MALI_VERIFICATION_ENV
+choice
+	bool "TCC Verification No."
+
+config TCC_VERIFICATION_NO1
+	bool "1: Non-VZ AXI-A R0:S0:S1:S2:S3:P0:W0"
+	depends on !TCC807X_CA55_SUB && !TCC_MALI_VZ
+	
+config TCC_VERIFICATION_NO2
+        bool "2: Non-VZ AXI-A R1:S0:S1:S2:S3:P1:W1"
+	depends on !TCC807X_CA55_SUB && !TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO3
+        bool "3: Non-VZ AXI-B R2:S0:S1:S2:S3:P2:W2"
+	depends on TCC807X_CA55_SUB && !TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO4
+        bool "4: Non-VZ AXI-B R3:S0:S1:S2:S3:P3:W3"
+	depends on TCC807X_CA55_SUB && !TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO5
+        bool "5: VZ AXI-A R0:S0:P0:W4, AXI-B R1:S1:P1:W5"
+        depends on TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO6
+        bool "6: VZ AXI-A R1:S2:P2:W6, AXI-B R2:S3:P3:W7"
+        depends on TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO7
+        bool "7: VZ AXI-A R2:S0:S1:P0:W8, AXI-B R3:S2:S3:P2:W9"
+        depends on TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO8
+        bool "8: VZ AXI-A R3:S0:S2:P1:W10, AXI-B R0:S1:S3:P3:W11"
+        depends on TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO9
+        bool "9: VZ AXI-A R3:S0:S1:S2:P0:W12, AXI-B R0:S3:P1:W13"
+        depends on TCC_MALI_VZ
+
+config TCC_VERIFICATION_NO10
+        bool "10: VZ AXI-A R2:S0:P1:W4, AXI-B R1:S1:S2:S3:P0:W15"
+        depends on TCC_MALI_VZ
+
+endchoice
+endif
+
+config MALI_DEFAULT_PTM_CONFIG
+        depends on MALI_PARTITION_MANAGER
+	string 
+        default "\"A:S0:S1:S2:S3:P0:W0\"" if TCC_VERIFICATION_NO1
+        default "\",A:S0:S1:S2:S3:P1:W1\"" if TCC_VERIFICATION_NO2
+        default "\",,B:S0:S1:S2:S3:P2:W2\"" if TCC_VERIFICATION_NO3
+        default "\",,,B:S0:S1:S2:S3:P3:W3\"" if TCC_VERIFICATION_NO4
+	default "\"A:S0:P0:W4,B:S1:P1:W5\"" if TCC_VERIFICATION_NO5
+	default "\",A:S2:P2:W6,B:S3:P3:W7\"" if TCC_VERIFICATION_NO6
+	default "\",,A:S0:S1:P0:W8,B:S2:S3:P2:W9\"" if TCC_VERIFICATION_NO7
+	default "\"B:S0:S1:P3:W11,,,A:S2:S3:P1:W10\"" if TCC_VERIFICATION_NO8
+	default "\"B:S3:P1:W13,,,A:S0:S1:S2:P0:W12\"" if TCC_VERIFICATION_NO9
+	default "\",B:S1:S2:S3:P0:W15,A:S0:P1:W14\"" if TCC_VERIFICATION_NO10
+	default "\",B:S0:P0:W0,A:S1:S2:S3:P1:W1\"" if TCC_MALI_VZ && !TCC_MALI_VERIFICATION_ENV
+	default "\"B:S0:S1:S2:S3:P0:W0\"" if !TCC_MALI_VZ && !TCC_MALI_VERIFICATION_ENV
+        help
+          default ptm config
+

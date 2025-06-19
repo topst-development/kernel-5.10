@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc805x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	cb_wdt_main: cb_wdt_main {
+		compatible = "telechips,tcc-cb-wdt";
+		reg = <0x0 0x17020000 0x0 0x10000>, /* kick timer */
+		      <0x0 0x17010000 0x0 0x10000>; /* real watchdog */
+		clocks = <&clk_peri PERI_CB_WDT>;
+		clock-names = "clk_wdt";
+
+		assigned-clocks = <&clk_peri PERI_CB_WDT>;
+		assigned-clock-rates = <12000000>;
+
+		interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_HIGH>;
+
+		kick-interval = <5>;
+		timeout-sec = <20>;
+	};
+
+	cb_wdt_sub: cb_wdt_sub {
+		compatible = "telechips,tcc-cb-wdt";
+		reg = <0x0 0x17060000 0x0 0x10000>, /* kick timer */
+		      <0x0 0x17050000 0x0 0x10000>; /* real watchdog */
+		clocks = <&clk_peri PERI_CB_WDT>;
+		clock-names = "clk_wdt";
+
+		assigned-clocks = <&clk_peri PERI_CB_WDT>;
+		assigned-clock-rates = <12000000>;
+
+		interrupts = <GIC_SPI 162 IRQ_TYPE_LEVEL_HIGH>;
+
+		kick-interval = <5>;
+		timeout-sec = <20>;
+	};
+};

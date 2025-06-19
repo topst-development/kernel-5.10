@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+#
+#
+#
+
+config PCIE_TELECHIPS
+	tristate "Telechips PCIe controller"
+	depends on ARCH_TELECHIPS
+	select PHY_SEC14LPP_PCIE if ARCH_TCC803X
+	select PHY_SEC08LPP_PCIE if ARCH_TCC807X
+	select PHY_SS14LPP_X1NS_PCIE if (ARCH_TCC805X || ARCH_TCC750X)
+	select PHY_SS14LPP_X2NS_PCIE if ARCH_TCN100X
+	help
+	  This selects the TCC PCIe controller/PHY support.
+	  Select this if you have a PCIe interface on platform.
+	  The PCI controller on TCC is based on DesignWare hardware
+	  and therefore the driver re-uses the DesignWare core functions to
+	  implement the driver.
+
+config PCIE_TELECHIPS_HOST
+	bool "Telechips PCIe controller Host mode"
+	depends on PCIE_TELECHIPS
+	depends on PCI_MSI_IRQ_DOMAIN
+	select PCIE_DW_HOST
+	help
+	  Enables support for the PCIe controller in the Telechips SoC to work
+	  in host mode. This controller can work either as EP or RC.
+	  This uses the DesignWare core.
+
+config PCIE_TELECHIPS_EP
+	bool "Telechips PCIe controller Endpoint mode"
+	depends on PCIE_TELECHIPS && !ARCH_TCC803X
+	depends on PCI_ENDPOINT
+	depends on PCI_MSI_IRQ_DOMAIN
+	select PCIE_DW_EP
+	help
+	  Enables support for the PCIe controller in the Telechips SoC to work
+	  in endpoint mode. This controller can work either as EP or RC.
+	  This uses the DesignWare core.
+
+

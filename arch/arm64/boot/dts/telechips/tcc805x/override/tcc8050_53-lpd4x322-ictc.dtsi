@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+&ictc {
+	status = "disabled";
+	pinctrl-map = <&gpio>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&ictc_f_in>;
+	peri-clock-frequency = <12000000>;
+	f-in-gpio = <&gpsd1 10 0>;
+	f-in-rtc-wkup;
+	r-edge = <100>;
+	f-edge = <100>;
+	duty-rounding-value = <0x0ffffff0>;
+	prd-rounding-value = <0x0fffffff0>;
+	edge-matching-value = <0xffff>;
+	time-out = <0x000249A6>;
+	flt-f-mode = <0x1>;
+	flt-r-mode = <0x1>;
+	cmp-err-sel = <0>;
+	abs-sel = <0>;
+	edge-sel = <0>;
+	tck-pol = <0>;
+	tck-sel = <7>;
+	lock-en = <0>;
+	r-edge-int;
+	f-edge-int;
+	df-cnt-full-int;
+	f-chg-int;
+	d-chg-int;
+	e-cnt-full-int;
+	to-cnt-full-int;
+	nf-ed-cnt-full-int;
+	time-stamp-cnt;
+};
+
+&pinctrl {
+	ictc_f_in: ictc_f_in{
+		telechips,pins = "gpsd1-10";
+		telechips,input-enable;
+	};
+};

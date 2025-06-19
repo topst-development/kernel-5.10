@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+&i2c0 {
+	status = "okay";
+	port-mux = <6>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c6_bus_active>;
+	pinctrl-1 = <&i2c6_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+&i2c1 {
+	status = "okay";
+	port-mux = <15>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c15_bus_active>;
+	pinctrl-1 = <&i2c15_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+&pinctrl {
+	i2c6_bus_active: i2c6_bus_active {
+		telechips,pins = "gpa-22", "gpa-23";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c6_bus_sleep: i2c6_bus_sleep {
+		telechips,pins = "gpa-22", "gpa-23";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c15_bus_active: i2c15_bus_active {
+		telechips,pins = "gpb-20", "gpb-21";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c15_bus_sleep: i2c15_bus_sleep {
+		telechips,pins = "gpb-20", "gpb-21";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+};

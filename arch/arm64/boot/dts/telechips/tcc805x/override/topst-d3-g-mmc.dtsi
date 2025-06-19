@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/* eMMC */
+&tcc_sc_mmc {
+	status = "okay";
+
+	max-frequency = <200000000>;
+	bus-width = <8>;
+
+	no-sdio;
+	no-sd;
+	non-removable;
+	keep-power-in-suspend;
+	disable-wp;
+
+	mmc-hs400-1_8v;
+	mmc-hs400-enhanced-strobe;
+	vqmmc-supply = <&vqmmc_emmc>;
+};
+
+&vqmmc_emmc {
+	compatible = "regulator-fixed";
+	regulator-name = "vqmmc_emmc";
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-always-on;
+};
+
+/* SD slot */
+&sdhc2 {
+	/*
+	 * In order to reduce boot time,
+	 * we use the driver as module not built-in.
+	 */
+	//compatible = "telechips,tcc805x-sdhci,module-only";
+	compatible = "telechips,tcc805x-sdhci";
+	status = "okay";
+	pinctrl-names = "default", "sleep";
+
+	pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_bus4 &sd1_bus4_wp_cd>;
+	pinctrl-1 = <&sd2_clk &sd2_cmd &sd2_bus4 &sd1_bus4_wp_cd>;
+
+	broken-cd;
+	cd-inverted;
+	keep-power-in-suspend;
+
+	cd-gpios = <&gpsd1 6 0>;
+
+	vqmmc-supply = <&vqmmc_sd>;
+	vqmmc_sd: vqmmc_sd {
+		compatible = "regulator-fixed";
+		regulator-name = "vqmmc_sd";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+};
+
+
+/* GPIO */
+&pinctrl {
+	sd2_clk: sd2_clk {
+		telechips,pins = "gpsd2-0";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd2_cmd: sd2_cmd {
+		telechips,pins = "gpsd2-1";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd2_bus4: sd2_bus4 {
+		telechips,pins = "gpsd2-2", "gpsd2-3", "gpsd2-4", "gpsd2-5";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd1_bus4_wp_cd: sd1_bus4_wp_cd {
+		telechips,pins = "gpsd1-6", "gpsd1-7";
+		telechips,pin-function = <0>;
+		telechips,pull-up;
+		telechips,input-enable;
+		telechips,input_buffer_enable;
+	};
+};

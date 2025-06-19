@@ -1,0 +1,207 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include <dt-bindings/display/tcc8050-lpd4x322-sv0.1-panel.h>
+#include "tcc805x-disp-target-config.dtsi"
+#include "tcc805x-vioc.dtsi"
+#include "tcc805x-disp.dtsi"
+
+#include "tcc805x-linux-ivi-vioc.dtsi"
+/*==============================================================================
+ * TCC805x_Linux_IVI DISPLAY PATH
+ * ---------------------------
+ * VIOC0 : tccdrm_vioc0<vioc0_output_dp0> ->
+ *	   <dp0_in_vioc0>tccdrm_dp0<dp0_out_panel0> -> <panel0_in_dp0>panel_dp0
+ * VIOC1 : tccdrm_vioc1<vioc1_output_dp1> ->
+ *	   <dp1_in_vioc1>tccdrm_dp1<dp1_out_panel1> -> <panel1_in_dp1>panel_dp1
+ =============================================================================*/
+/* Backlight gpios */
+#if defined(LCD_PORT1_BLK_GPIO) && defined(LCD_PORT1_BLK_NUM)
+&lcd_port1_bl {
+	status = "okay";
+};
+#endif
+#if defined(LCD_PORT2_BLK_GPIO) && defined(LCD_PORT2_BLK_NUM)
+&lcd_port2_bl {
+	status = "okay";
+};
+#endif
+
+/* panel */
+&panel_dp0 {
+	status = "okay";
+	#if defined(LCD_PORT1_PWR) && defined(LCD_PORT1_RST) && \
+	    defined(LCD_PORT1_BLK)
+	pinctrl-0 = <&lcd_port_default1>;
+	pinctrl-1 = <&lcd_port_default1>;
+	pinctrl-2 = <&lcd_port_power_on1>;
+	pinctrl-3 = <&lcd_port_reset_off1>;
+	pinctrl-4 = <&lcd_port_blk_on1>;
+	pinctrl-5 = <&lcd_port_blk_off1>;
+	pinctrl-6 = <&lcd_port_reset_on1 &lcd_port_power_off1>;
+	#endif
+	#if defined(LCD_PORT1_BLK_GPIO) && defined(LCD_PORT1_BLK_NUM)
+	backlight = <&lcd_port1_bl>;
+	#endif
+};
+
+&panel_dp1 {
+	status = "okay";
+	#if defined(LCD_PORT2_PWR) && defined(LCD_PORT2_RST) && \
+	    defined(LCD_PORT2_BLK)
+	pinctrl-0 = <&lcd_port_default2>;
+	pinctrl-1 = <&lcd_port_default2>;
+	pinctrl-2 = <&lcd_port_power_on2>;
+	pinctrl-3 = <&lcd_port_reset_off2>;
+	pinctrl-4 = <&lcd_port_blk_on2>;
+	pinctrl-5 = <&lcd_port_blk_off2>;
+	pinctrl-6 = <&lcd_port_reset_on2 &lcd_port_power_off2>;
+	#endif
+	#if defined(LCD_PORT2_BLK_GPIO) && defined(LCD_PORT2_BLK_NUM)
+	backlight = <&lcd_port2_bl>;
+	#endif
+};
+
+/* dp0_out_panel0 -> panel0_in_dp0 */
+&panel0_in_dp0 {
+	remote-endpoint = <&dp0_out_panel0>;
+};
+
+/* dp1_out_panel1 -> panel1_in_dp1 */
+&panel1_in_dp1 {
+	remote-endpoint = <&dp1_out_panel1>;
+};
+
+/* drm vioc */
+&tccdrm_vioc0 {
+	status = "okay";
+};
+
+&tccdrm_vioc1 {
+	status = "okay";
+};
+
+&vioc0_out {
+	vioc0_output_dp0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dp0_in_vioc0>;
+	};
+};
+
+&vioc1_out {
+	vioc1_output_dp1: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dp1_in_vioc1>;
+	};
+};
+
+
+/* tcdrm dp */
+&tccdrm_dp0 {
+	status = "okay";
+};
+
+&tccdrm_dp1 {
+	status = "okay";
+};
+
+/* vioc0_output_dp0 -> dp0_in_vioc0 */
+&dp0_in {
+	dp0_in_vioc0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc0_output_dp0>;
+	};
+};
+
+/* dp0_out_panel0 -> panel0_in_dp0 */
+&dp0_out_panel0 {
+	remote-endpoint = <&panel0_in_dp0>;
+};
+
+/* vioc1_output_dp1 -> dp1_in_vioc1 */
+&dp1_in {
+	dp1_in_vioc1: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc1_output_dp1>;
+	};
+};
+
+/* dp1_out_panel1 -> panel1_in_dp1 */
+&dp1_out_panel1 {
+	remote-endpoint = <&panel1_in_dp1>;
+};
+
+/* screen_share_display_out -> tcc_drm_dummy0  */
+/* screen share */
+&tccdrm_screen_share {
+	status = "okay";
+};
+
+&screen_share_display_out {
+	screenshare_out_dummy0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dummy0_in_screenshare>;
+	};
+};
+
+/* drm dummy */
+&tcc_drm_dummy0 {
+	status = "okay";
+	connector_type ="VIRTUAL";
+};
+
+&dummy0_in {
+	dummy0_in_screenshare: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&screenshare_out_dummy0>;
+	};
+};
+
+&dpv14_tx {
+	status = "okay";
+	#if defined(DP_HPD_GPIO)
+	pinctrl-0 = <&dp_hpd_gpio>;
+	#endif
+};
+
+&max968xx_config {
+	status = "okay";
+	max968xx_evb_type = <1>;	/* 0: TCC8059 EVB, 1: TCC8050/3 sv0.1, 2:TCC8050/3 sv1.0 */
+	max96851_lane_02_13_swap = <1>;
+
+        #if defined(DP_SERDES_INTB) && defined(DP_SERDES_LOCK)
+	pinctrl-0 = <&serdes_intb>;
+	pinctrl-1 = <&serdes_lock>;
+	#endif
+};
+
+#if defined(CONFIG_MAINCORE_FB_TEST)
+/* FB0 */
+&fb0 {
+	status = "okay";
+};
+
+/* FB0 -> FB TM123XDHP90 */
+&fb0_display_out {
+	remote-endpoint = <&fb_lvds0_in>;
+};
+
+/* FB TM123XDHP90 */
+&fb_tm123xdhp90 {
+	status = "okay";
+	pinctrl-0 = <&lcd_port_default1>;
+	pinctrl-1 = <&lcd_port_power_on1>;
+	pinctrl-2 = <&lcd_port_reset_off1>;
+	pinctrl-3 = <&lcd_port_blk_on1>;
+	pinctrl-4 = <&lcd_port_blk_off1>;
+	pinctrl-5 = <&lcd_port_reset_on1 &lcd_port_power_off1>;
+	backlight = <&lcd_port1_bl>;
+};
+
+/* FB0 -> FB TM123XDHP90 */
+&fb_lvds0_in {
+	remote-endpoint = <&fb0_display_out>;
+};
+#endif
+/* end of file */

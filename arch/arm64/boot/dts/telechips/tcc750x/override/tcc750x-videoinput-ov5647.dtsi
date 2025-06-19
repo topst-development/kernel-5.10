@@ -1,0 +1,177 @@
+/ {
+	ov5647_vdddo: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "ov5647_vdddo";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpios = <&gpg 5 0x0>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	ov5647_vdda: fixedregulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "ov5647_vdda";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	ov5647_vddd: fixedregulator@2 {
+		compatible = "regulator-fixed";
+		regulator-name = "ov5647_vddd";
+		regulator-min-microvolt = <1500000>;
+		regulator-max-microvolt = <1500000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	ov5647_clk: ov5647_clk {
+		compatible = "fixed-clock";
+		#clock-cells = <1>;
+		clock-frequency = <25000000>;
+	};
+};
+
+&i2c3 {
+	ov5647@36 {
+		compatible = "ovti,ov5647";
+		status = "okay";
+		reg = <0x36>;
+
+		clocks = <&ov5647_clk 200>;
+		clock-names = "xclk";
+		clock-frequency = <25000000>;
+
+		vdddo-supply = <&ov5647_vdddo>;	// 1.8v
+		vdda-supply = <&ov5647_vdda>;	// 2.8v
+		vddd-supply = <&ov5647_vddd>;	// 1.5v
+
+		enable-gpios = <&gpg 6 GPIO_ACTIVE_HIGH>;
+		rst-gpios = <&gpg 3 GPIO_ACTIVE_LOW>;
+
+		rotation = <0>;
+		orientation = <2>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				ov5647_out0: endpoint@0 {
+					remote-endpoint = <&mipi_csi2_0_in0>;
+					io-direction = "output";
+					channel = <0>;
+
+					clock-lanes = <0>;
+					data-lanes = <1 2>;
+					clock-noncontinuous;
+					link-frequencies =
+						/bits/ 64 <297000000>;
+				};
+			};
+		};
+	};
+};
+
+&mipi_csi2_0 {
+	status = "okay";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		
+		port@0 {
+			reg = <0>;
+			mipi_csi2_0_in0: endpoint {
+				remote-endpoint = <&ov5647_out0>;
+				io-direction    = "input";
+				num-channel     = <1>;
+				channel = <0>;
+				/*
+				* 0: CH0 only, no data interleave
+				* 1: DT only
+				* 2: VC only
+				* 3: VC and DT
+				*/
+				interleave-mode = <0>;
+				hs-settle = <13>;
+				data-lanes = <1 2>;
+				};
+		};
+		port@1 {
+			reg = <1>;
+			mipi_csi2_0_out0: endpoint {
+				remote-endpoint = <&isp0_in>;
+				io-direction	= "output";
+				channel		= <0>;
+				/*
+				 * 0: Single pixel mode
+				 * 1: Dual pixel mode (RAW8/10/12, YUV422)
+				 * 2: Quad pixel mode (RAW8/10/12)
+				 * 3: Invalid
+				 */
+				pixel-mode = <0>;
+			};
+		};
+    };
+};
+
+&mipi_wrap {
+	isp0-bypass = <0>;
+};
+
+&isp0 {
+	status = "okay";
+	mem_share = <1>;
+	/*
+	 * 0: RGGB
+	 * 1: RCCB (ISP0 only)
+	 * 2: RCCC (ISP0 only)
+	 * 3: RGBIR (ISP0 only)
+	 */
+	cfa = <0>;
+
+	/* buffer for 3DNR */
+	//memory-region	= <&pmap_isp0_3dnr>;
+
+	/*
+	 * Crop output image (X, Y)
+	 * X: The number of left pixel. It will also crop X pixels of right.
+	 * Y: The number of top pixel. It will also crop Y pixels of bottom.
+	 * The default value is (8, 8).
+	 */
+	out_win_crop = <4 8>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			isp0_in: endpoint {
+				remote-endpoint = <&mipi_csi2_0_out0>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			isp0_out: endpoint {
+				remote-endpoint	= <&videoinput0_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&videoinput0 {
+	status = "okay";
+	cam-ch = <0>;
+	interrupt-delay = <0x1000>;
+	memory-region = <0 &pmap_rearcamera>;
+	port {
+		videoinput0_in: endpoint {
+			remote-endpoint	= <&isp0_out>;
+			io-direction	= "input";
+		};
+	};
+};

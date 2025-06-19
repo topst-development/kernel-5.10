@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	ictc0: ictc@4a600000 {
+		compatible = "telechips,ictc";
+		reg = <0x0 0x4A600000 0x0 0x4d>;
+		interrupts = <GIC_SPI 413 IRQ_TYPE_LEVEL_HIGH>;
+		pinctrl-map = <&gpio>;
+		clocks = <&peri_smu PERI_IO_ICTC0>;
+		status = "disabled";
+	};
+	ictc1: ictc@4a610000 {
+		compatible = "telechips,ictc";
+		reg = <0x0 0x4A610000 0x0 0x4d>;
+		interrupts = <GIC_SPI 414 IRQ_TYPE_LEVEL_HIGH>;
+		pinctrl-map = <&gpio>;
+		clocks = <&peri_smu PERI_IO_ICTC1>;
+		status = "disabled";
+	};
+	ictc2: ictc@4a620000 {
+		compatible = "telechips,ictc";
+		reg = <0x0 0x4A620000 0x0 0x4d>;
+		interrupts = <GIC_SPI 415 IRQ_TYPE_LEVEL_HIGH>;
+		pinctrl-map = <&gpio>;
+		clocks = <&peri_smu PERI_IO_ICTC2>;
+		status = "disabled";
+	};
+};

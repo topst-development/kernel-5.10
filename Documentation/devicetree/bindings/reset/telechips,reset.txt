@@ -1,0 +1,38 @@
+Telechips reset controller driver
+
+The reset controller provides reset signals of perpheral devices.
+
+Required properties:
+- compatible: should be one of the following:
+  - "telechips,reset" for common software reset
+  - "telechips,vpubus-reset" for VPU software reset
+  - "telechips,ddibus-reset" for DDI software reset
+  - "telechips,iobus-reset" for IO software reset
+  - "telechips,hsiobus-reset" for HSIO software reset
+
+(* "telechips,xxx-reset" are legacy compatibles for tcc805x and older)
+
+The reset of the properties should follow the generic reset description found
+in reset.txt.
+
+You can find SMUBUS_START macros in
+  include/dt-bindings/clocks/telechips,[board]-clks.h
+
+Example:
+	reset: reset-controller@144000b4 {
+		compatible "telechip,reset";
+		#reset-cells = <1>;
+		reset-range = <SMUBUS_START SMUBUS_END>;
+	}
+
+	reset_legacy: reset-controller@140000b4 {
+		compatible "telechip,reset";
+		#reset-cells = <1>;
+		reset-range = <0 32>;
+	};
+
+	pcie@11800000 {
+		...
+		resets = <&reset RESET_PCIE>;
+		...
+	};

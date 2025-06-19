@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+
+config TELECHIPS_DPTX_AUDIO
+	tristate "Telechips DPTX V1_4 Audio Link Driver"
+	depends on SND_SOC_TELECHIPS && TELECHIPS_DP_DRIVER_V1_4
+	default n
+	select SND_SOC_HDMI_CODEC
+	help
+		Telechips DisplayPort v1.4 Tx Audio Link Driver

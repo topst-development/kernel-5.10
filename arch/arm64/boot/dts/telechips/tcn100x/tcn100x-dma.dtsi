@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	dma0: dma@45200000 {
+		compatible = "arm,pl330", "arm,primecell";
+		reg = <0x0 0x45200000 0x0 0x1000>,
+			<0x0 0x45211000 0x0 0x60>;
+		interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 197 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 198 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 200 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 201 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 202 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 203 IRQ_TYPE_LEVEL_HIGH>;
+		#dma-cells = <1>;
+		#dma-channels = <8>;
+		#dma-requests = <32>;
+		clocks = <&fbus_smu FBUS_MEM>;
+		clock-names = "apb_pclk";
+	};
+
+	dma1: dma@45210000 {
+		compatible = "arm,pl330", "arm,primecell";
+		reg = <0x0 0x45210000 0x0 0x1000>,
+			<0x0 0x45211000 0x0 0x60>;
+		interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 197 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 198 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 200 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 201 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 202 IRQ_TYPE_LEVEL_HIGH>,
+				   <GIC_SPI 203 IRQ_TYPE_LEVEL_HIGH>;
+		#dma-cells = <1>;
+		#dma-channels = <8>;
+		#dma-requests = <32>;
+		clocks = <&fbus_smu FBUS_MEM>;
+		clock-names = "apb_pclk";
+	};
+};
+

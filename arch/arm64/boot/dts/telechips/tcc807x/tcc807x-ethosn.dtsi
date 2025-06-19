@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc807x-clks.h>
+
+/ {
+
+aliases: aliases {
+	ethosn0 = &ethosn0;
+};
+
+reserved_memory: reserved-memory {
+	ethosn_reserved: ethosn_reserved@0x0 {
+		compatible = "shared-dma-pool";
+		reg = <0x1 0xa0000000 0x0 0x20000000>;
+		status = "okay";
+		no-map;
+	};
+};
+
+ethosn0: ethosn@1f100000 {
+	compatible = "ethosn";
+	reg = <0 0x1f100000 0 0x100000>;
+
+	interrupts = <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>,
+		     <GIC_SPI 382 IRQ_TYPE_EDGE_RISING>,
+		     <GIC_SPI 383 IRQ_TYPE_EDGE_RISING>;
+	interrupt-names = "err", "debug", "job";
+
+	#address-cells = <0x0>;
+	#size-cells = <0x0>;
+	
+	/*
+	clocks = <&fbus_npu FBUS_NPU>;
+	clock-names = "ethosn-clk";
+	*/
+
+	clocks = <&subsys_dpll_3200 PLL_NPU NPU_CLKCTRL_SEL_PLL>, <&fbus_npu FBUS_NPU>;
+	clock-names = "pll_ethosn", "bus_ethosn";
+
+	assigned-clocks = <&subsys_dpll_3200 PLL_NPU NPU_CLKCTRL_SEL_PLL>, <&fbus_npu FBUS_NPU>;
+	assigned-clock-rates = <2000000000>, <1000000000>;
+
+	status = "disabled";
+};
+
+};

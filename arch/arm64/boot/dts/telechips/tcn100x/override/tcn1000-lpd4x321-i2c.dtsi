@@ -1,0 +1,77 @@
+/* SPDX-License-Identifier: (GPL-2.0-or-later OR MIT) */
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/* PMIC */
+&i2c0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	port-mux = <39>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c39_bus_active>;
+	pinctrl-1 = <&i2c39_bus_sleep>;
+};
+
+/* MCU */
+&i2c1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	port-mux = <28>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c28_bus_active>;
+	pinctrl-1 = <&i2c28_bus_sleep>;
+};
+
+/* DP SER, MIPI0_1 */
+&i2c4 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	port-mux = <42>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c42_bus_active>;
+	pinctrl-1 = <&i2c42_bus_sleep>;
+};
+
+&pinctrl {
+	i2c28_bus_active: i2c28_bus_active {
+		telechips,pins = "gpi-0", "gpi-1";
+		telechips,pin-function = <4>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c28_bus_sleep: i2c28_bus_sleep {
+		telechips,pins = "gpi-0", "gpi-1";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+	i2c39_bus_active: i2c39_bus_active {
+		telechips,pins = "gpl-4", "gpl-5";
+		telechips,pin-function = <4>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c39_bus_sleep: i2c39_bus_sleep {
+		telechips,pins = "gpl-4", "gpl-5";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c42_bus_active: i2c42_bus_active {
+		telechips,pins = "gpl-12", "gpl-13";
+		telechips,pin-function = <4>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c42_bus_sleep: i2c42_bus_sleep {
+		telechips,pins = "gpl-12", "gpl-13";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+};

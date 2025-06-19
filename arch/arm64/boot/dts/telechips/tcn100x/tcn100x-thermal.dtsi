@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/thermal/thermal.h>
+
+/ {
+	thermal0: chip_center@4b600000 {
+		compatible = "telechips,tsens";
+
+		init = "okay";
+		reg = <0x0 0x4b600000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+		core = <0>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal1: network_sub0@4b600000 {
+		compatible = "telechips,tsens";
+
+		init = "false";
+		reg = <0x0 0x4b600000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+		core = <1>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal2: cpu_sub@4b600000 {
+		compatible = "telechips,tsens";
+
+		init = "false";
+		reg = <0x0 0x4b600000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+		core = <2>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal3: memory_sub@4b600000 {
+		compatible = "telechips,tsens";
+
+		init = "okay";
+		reg = <0x0 0x4b600000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+		core = <3>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal4: pcie_sub@4b600000 {
+		compatible = "telechips,tsens";
+
+		init = "okay";
+		reg = <0x0 0x4b600000 0x0 0x160>; //0:Enable register
+		status = "okay";
+
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+		core = <4>;
+
+		threshold_high_temp = <75>;
+		threshold_low_temp = <(-40)>;
+		interval_time = <262143>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal_zone: thermal-zones {
+		center: center {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal0 0>;
+		};
+		net: net {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal1 1>;
+		};
+		cpu: cpu {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal2 2>;
+		};
+		mem: mem {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal3 3>;
+		};
+		pcie: pcie {
+			polling-delay = <1000>;
+			polling-delay-passive = <1000>;
+			thermal-sensors = <&thermal4 4>;
+		};
+	};
+};

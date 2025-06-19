@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&uart0 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&uart0_data>;
+	pinctrl-1 = <&uart0_data>;
+	status = "okay";
+};
+
+&pinctrl {
+	uart0_data: uart0_data {
+		telechips,pins = "gpa-15", "gpa-16";
+		telechips,pin-function = <3>;
+		telechips,input-enable;
+	};
+
+};

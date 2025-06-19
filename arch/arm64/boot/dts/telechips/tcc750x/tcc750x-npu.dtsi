@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+
+/ {
+	aliases: aliases {
+		npu0 = &npu0;
+		npu1 = &npu1;
+	};
+
+	npu0: npu@11000000 {
+		compatible = "telechips,npu";
+		reg = <0x0 0x11000000 0x0 0x400>;
+		interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&fbus_npu FBUS_NPU_0_ACLK &fbus_npu FBUS_NPU_PCLK
+				&fbus_npu FBUS_NPU_0_CCLK &fbus_npu FBUS_NPU_0_CPUCLK >;
+		clock-names = "npubus_aclk", "npubus_pclk", "npubus_cclk", "npubus_cpu";
+		disable-ue-fail = <0>;
+		disable-ce-fail = <0>;
+		disable-wdt = <0>;
+		/* <800000000> is 1000ms for timeout at 800MHz of MLX */
+		wdt-timeout-count = <800000000>;
+		/* <400000000> is 500ms for re-arm interval at 800Mhz of MLX */
+		wdt-rearm-count = <400000000>;
+		work-buffer-size = <200000000>;
+		status = "disabled";
+	};
+
+	npu1: npu@11000400 {
+		compatible = "telechips,npu";
+		reg = <0x0 0x11000400 0x0 0x400>;
+		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&fbus_npu FBUS_NPU_1_ACLK &fbus_npu FBUS_NPU_PCLK
+				&fbus_npu FBUS_NPU_1_CCLK &fbus_npu FBUS_NPU_1_CPUCLK >;
+		clock-names = "npubus_aclk", "npubus_pclk", "npubus_cclk", "npubus_cpu";
+		disable-ue-fail = <0>;
+		disable-ce-fail = <0>;
+		disable-wdt = <0>;
+		/* <800000000> is 1000ms for timeout at 800MHz of MLX */
+		wdt-timeout-count = <800000000>;
+		/* <400000000> is 500ms for re-arm interval at 800Mhz of MLX */
+		wdt-rearm-count = <400000000>;
+		work-buffer-size = <200000000>;
+		status = "disabled";
+	};
+};

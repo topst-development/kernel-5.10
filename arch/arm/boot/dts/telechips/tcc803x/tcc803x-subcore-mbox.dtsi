@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	/* A7S <-> A53 */
+	a7s_a53_mbox: mbox@17B00000 {
+		compatible = "telechips,mailbox-controller-v1";
+		reg = <0x17B00000 0x100>;
+		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+	};
+
+	/* A7S <-> R5 */
+	a7s_micom_mbox: mbox@1BA30000 {
+		compatible = "telechips,mailbox-controller-v1";
+		reg = <0x1BA30000 0x100>;
+		interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+	};
+
+	/* A7S <-> M4 */
+	a7s_hsm_mbox: mbox@19020000 {
+		compatible = "telechips,mailbox-controller-v1";
+		reg = <0x19020000 0x100>;
+		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+	};
+};

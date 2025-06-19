@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include <dt-bindings/display/display-defs.h>
+
+/* 1. Defination for DRM DUMMY configuration */
+#define DRM_DUMMY0_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+
+#define DRM_DUMMY2_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */
+#define DRM_DUMMY3_PANEL_INDEX LVDS_PANEL_AUO /* 0: BOE PANEL, 1: AUO PANEL */

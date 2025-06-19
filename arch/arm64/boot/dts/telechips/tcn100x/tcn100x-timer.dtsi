@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	tcc_timer0: timer@4B400000 { /* tc0~tc5 */
+		compatible = "telechips,timer";
+		reg = <0x0 0x4B400000 0x0 0xa0>;
+		interrupts = <GIC_SPI 417 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 418 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 419 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 420 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 421 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 422 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&peri_smu PERI_SM_TCT0>;
+		clock-frequency = <12000000>;
+
+		tcc-timer-reserved-for-lpo = <5>;
+	};
+
+	tcc_timer1: timer@4B410000 { /* tc0~tc5 */
+		compatible = "telechips,timer";
+		reg = <0x0 0x4B410000 0x0 0xa0>;
+		interrupts = <GIC_SPI 425 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 426 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 427 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 428 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 430 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&peri_smu PERI_SM_TCT1>;
+		clock-frequency = <12000000>;
+
+		tcc-timer-reserved-for-lpo = <5>;
+
+		status = "disabled";
+	};
+};

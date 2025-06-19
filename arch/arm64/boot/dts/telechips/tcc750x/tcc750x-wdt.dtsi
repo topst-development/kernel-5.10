@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	tcc_cb_wdt: tcc_cb_wdt@0 {
+		compatible = "telechips,tcc-cb-wdt";
+		reg =   <0x0 0x10020000 0x0 0x10000>, /* watchdog kick timer */
+			<0x0 0x10010000 0x0 0x10000>; /* real watchdog */
+
+		clocks = <&clk_peri PERI_CPU_WDT_TIMER>;
+		clock-names = "clk_wdt";
+
+		assigned-clocks = <&clk_peri PERI_CPU_WDT_TIMER>;
+		assigned-clock-rates = <12000000>;
+
+		interrupts = <GIC_SPI 100 IRQ_TYPE_LEVEL_HIGH>;
+
+		kick-interval = <5>;
+		timeout-sec = <20>;
+	};
+};

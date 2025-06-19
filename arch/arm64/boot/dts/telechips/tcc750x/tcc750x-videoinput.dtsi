@@ -1,0 +1,238 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include "tcc750x-cied.dtsi"
+#include <dt-bindings/css/tcc750x-css.h>
+
+&aliases {
+	mipi-csi2-0 = &mipi_csi2_0;
+	isp0 = &isp0;
+	isp1 = &isp1;
+	isp2 = &isp2;
+	isp3 = &isp3;
+	videoinput0 = &videoinput0;
+	videoinput1 = &videoinput1;
+	videoinput2 = &videoinput2;
+	videoinput3 = &videoinput3;
+	videoinput4 = &videoinput4;
+};
+
+/ {
+	tcc_cap_media: tcc_cap_media {
+		compatible = "telechips,tcc-cap-media";
+	};
+
+	cam_odw: cam_odw@16030000 {
+		compatible = "telechips,cam_odw";
+		reg = <0x0 0x16030000 0x0 0x1000>;
+	};
+
+	vin_wrap_vin: vin_wrap_vin@16040000 {
+		compatible = "telechips,vin_wrap_vin";
+		reg = <0x0 0x16040000 0x0 0x400 0x0 0x16040400 0x0 0x600
+		       0x0 0x16041000 0x0 0x400 0x0 0x16041400 0x0 0x600>;
+		interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vin_wrap_wdma: vin_wrap_wdma@16044000 {
+		compatible = "telechips,vin_wrap_wdma";
+		reg = <0x0 0x16044000 0x0 0x1000
+		       0x0 0x16045000 0x0 0x1000>;
+		interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vin_wrap_cfg: vin_wrap_cfg@16048000 {
+		compatible = "telechips,vin_wrap_cfg";
+		reg = <0x0 0x16048000 0x0 0x1000>;
+	};
+
+	vin_wrap_intr: vin_wrap_intr@1C048020 {
+		compatible = "telechips,vin_wrap_intr";
+		reg =  <0x0 0x16048410 0x0 0x100>;
+		interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>;
+		status = "disabled";
+	};
+
+	cam_cfg: cam_cfg@16004000 {
+		compatible = "telechips,cam_cfg";
+		reg = <0x0 0x16004000 0x0 0x1000>;
+	};
+
+	cam_mux: cam_mux@16004058 {
+		compatible = "telechips,cam_mux";
+		reg = <0x0 0x16004058 0x0 0x3>;
+		statue = "okay";
+	};
+
+	mipi_wrap: mipi_wrap {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		compatible = "simple-bus";
+		ranges;
+
+		/*
+		 * 1: bypass isp
+		 * 0: use isp
+		 */
+		isp0-bypass = <1>;
+		isp1-bypass = <1>;
+		isp2-bypass = <1>;
+		isp3-bypass = <1>;
+
+		mipi_csi2_0: mipi_csi2_0@16008000 {
+			compatible = "telechips,tcc750x-mipi-csi2";
+			status = "disabled";
+
+			reg = <0x0 0x16008000 0x0 0x640>,
+			      <0x0 0x1600C000 0x0 0x904>,
+			      <0x0 0x16004000 0x0 0x2b8>;
+			reg-names = "csi", "gdb", "cfg";
+
+			clocks = <&fbus_cam FBUS_CAM_PIX>;
+			clock-names = "camb-pclk";
+			clock-frequency = <550000000>;
+
+			interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "csi";
+		};
+
+		isp0: isp0@16080000 {
+			compatible = "telechips,tcc750x-isp";
+			status = "disabled";
+			reg = <0x0 0x16080000 0x0 0x10000>,
+			      <0x0 0x160E0000 0x0 0x20000>,
+			      <0x0 0x16004000 0x0 0x2b8>,
+			      <0x0 0x16028000 0x0 0x8>,
+			      <0x0 0x160D0000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "rgbir_sync_base",
+				    "scene_data_base";
+		};
+
+		isp1: isp1@16090000 {
+			compatible = "telechips,tcc750x-isp";
+			status = "disabled";
+			reg = <0x0 0x16090000 0x0 0x10000>,
+			      <0x0 0x160E0000 0x0 0x20000>,
+			      <0x0 0x16004000 0x0 0x2b8>,
+			      <0x0 0x160D2000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "scene_data_base";
+		};
+
+		isp2: isp2@160a0000 {
+			compatible = "telechips,tcc750x-isp";
+			status = "disabled";
+			reg = <0x0 0x160A0000 0x0 0x10000>,
+			      <0x0 0x160E0000 0x0 0x20000>,
+			      <0x0 0x16004000 0x0 0x2b8>,
+			      <0x0 0x16028008 0x0 0x8>,
+			      <0x0 0x160D4000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "rgbir_sync_base",
+				    "scene_data_base";
+		};
+
+		isp3: isp3@160b0000 {
+			compatible = "telechips,tcc750x-isp";
+			status = "disabled";
+			reg = <0x0 0x160B0000 0x0 0x10000>,
+			      <0x0 0x160E0000 0x0 0x20000>,
+			      <0x0 0x16004000 0x0 0x2b8>,
+			      <0x0 0x160D6000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "scene_data_base";
+		};
+	};
+
+	videoinput0: videoinput0 {
+		compatible	= "telechips,dewarp";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		interrupts	= <GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "odw-irq";
+		cam-mux		= <&cam_mux		0>;
+		odw-id		= <0>;
+		/*
+		 * 1: bypass dewarp
+		 * 0: use dewarp
+		 */
+		odw-bypass = <1>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput1: videoinput1 {
+		compatible	= "telechips,dewarp";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		interrupts	= <GIC_SPI 140 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "odw-irq";
+		cam-mux		= <&cam_mux		1>;
+		odw-id		= <1>;
+		/*
+		 * 1: bypass dewarp
+		 * 0: use dewarp
+		 */
+		odw-bypass = <0>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput2: videoinput2 {
+		compatible	= "telechips,video-input";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		cam-mux		= <&cam_mux		2>;
+		vin		= <&vin_wrap_vin	VIN_WRAP_VIN00>;
+		wdma		= <&vin_wrap_wdma	VIN_WRAP_WDMA0>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput3: videoinput3 {
+		compatible	= "telechips,video-input";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		cam-mux		= <&cam_mux		3>;
+		vin		= <&vin_wrap_vin	VIN_WRAP_VIN10>;
+		wdma		= <&vin_wrap_wdma	VIN_WRAP_WDMA1>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput4: videoinput4 {
+		compatible	= "telechips,idi2axi";
+		status		= "disabled";
+		reg		= <0x0 0x1600C000 0x0 0x904>;
+		reg-names	= "idi2axi";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		interrupts	= <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "idi2axi";
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+};

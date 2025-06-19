@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+
+/ {
+	compatible = "telechips,tcn100x";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen: chosen {
+		bootargs = "vmalloc=480M console=ttyAMA0,115200n8";
+		stdout-path = "serial0:115200n8,mmio32,0x4a100000";
+	};
+
+	aliases: aliases {};
+
+	memory: memory@60000000 {
+		device_type = "memory";
+		/* updated by U-Boot with actual size */
+		reg = <0x1 0x00000000 0x2 0x00000000>;
+	};
+
+	psci: psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		mcu {
+			reg = <0x1 0x00000000 0x0 0x80000000>;
+			no-map;
+		};
+
+		optee_os {
+			compatible = "optee.os";
+			reg = <0x1 0x8e000000 0x0 0x02000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+	};
+
+	firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
+};
+
+#include "tcn100x-cpu.dtsi"
+#include "tcn100x-clk.dtsi"
+#include "tcn100x-reset.dtsi"
+#include "tcn100x-gpio.dtsi"
+#include "tcn100x-uart.dtsi"
+#include "tcn100x-i2c.dtsi"
+#include "tcn100x-spi.dtsi"
+#include "tcn100x-mmc.dtsi"
+#include "tcn100x-adc.dtsi"
+#include "tcn100x-gmac.dtsi"
+#include "tcn100x-mbox.dtsi"
+#include "tcn100x-ipi.dtsi"
+#include "tcn100x-timer.dtsi"
+#include "tcn100x-rtc.dtsi"
+#include "tcn100x-wdt.dtsi"
+#include "tcn100x-dma.dtsi"
+#include "tcn100x-thermal.dtsi"
+#include "tcn100x-ecid.dtsi"
+#include "tcn100x-pwm.dtsi"
+#include "tcn100x-pcie.dtsi"
+#include "tcn100x-ictc.dtsi"

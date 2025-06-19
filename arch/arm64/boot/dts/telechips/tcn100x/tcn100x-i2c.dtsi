@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcn100x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	aliases: aliases {
+		i2c0  = &i2c0;
+		i2c1  = &i2c1;
+		i2c2  = &i2c2;
+		i2c3  = &i2c3;
+		i2c4  = &i2c4;
+	};
+
+	i2c0: i2c@4a300000 {
+		compatible = "telechips,tcn100x-i2c-v3";
+		reg = <0x0 0x4a300000 0x0 0x28>, /* master controller */
+		      <0x0 0x4b300818 0x0 0x14>, /* configuration */
+		      <0x0 0x4a380000 0x0 0x28>; /* virtual slave */
+		interrupts = <GIC_SPI 374 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&peri_smu PERI_IO_I2C0 &clk_io IO_I2C0 &fbus_smu FBUS_IO>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+	i2c1: i2c@4a310000 {
+		compatible = "telechips,tcn100x-i2c-v3";
+		reg = <0x0 0x4a310000 0x0 0x28>,
+		      <0x0 0x4b300818 0x0 0x14>,
+		      <0x0 0x4a390000 0x0 0x28>;
+		interrupts = <GIC_SPI 375 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&peri_smu PERI_IO_I2C1 &clk_io IO_I2C1 &fbus_smu FBUS_IO>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+	i2c2: i2c@4a320000 {
+		compatible = "telechips,tcn100x-i2c-v3";
+		reg = <0x0 0x4a320000 0x0 0x28>,
+		      <0x0 0x4b300818 0x0 0x14>,
+		      <0x0 0x4a3a0000 0x0 0x28>;
+		interrupts = <GIC_SPI 376 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&peri_smu PERI_IO_I2C2 &clk_io IO_I2C2 &fbus_smu FBUS_IO>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+	i2c3: i2c@4a330000 {
+		compatible = "telechips,tcn100x-i2c-v3";
+		reg = <0x0 0x4a330000 0x0 0x28>,
+		      <0x0 0x4b300818 0x0 0x14>,
+		      <0x0 0x4a3b0000 0x0 0x28>;
+		interrupts = <GIC_SPI 377 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&peri_smu PERI_IO_I2C3 &clk_io IO_I2C3 &fbus_smu FBUS_IO>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+	i2c4: i2c@4a340000 {
+		compatible = "telechips,tcn100x-i2c-v3";
+		reg = <0x0 0x4a340000 0x0 0x28>,
+		      <0x0 0x4b300818 0x0 0x14>,
+		      <0x0 0x4a3c0000 0x0 0x28>;
+		interrupts = <GIC_SPI 378 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&peri_smu PERI_IO_I2C4 &clk_io IO_I2C4 &fbus_smu FBUS_IO>;
+		clock-frequency = <400000>;
+		status = "disabled";
+	};
+
+};

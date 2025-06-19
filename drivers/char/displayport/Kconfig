@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) Telechips Inc.
+#
+
+config TELECHIPS_DP_DRIVER_V1_4
+	tristate "Support DisplayPort V1.4 drivers"
+	depends on ARCH_TCC805X || ARCH_TCC807X
+	default n
+	help
+		It supports DisplayPort Tx V1.4.
+		It will make kernel compile DisplayPort V1.4 drivers.
+		It's for DP Tx functionalities.
+		It's based on Vesa V1.4.
+
+config MAX968XX_DP_SERDES
+	tristate "Max968xx DP SerDes Driver"
+	default n
+	depends on TELECHIPS_DP_DRIVER_V1_4
+	help
+		Supports Max96851 as DP serailizer and 96878 as deserializer.
+
+config DPTX_V14_AUDIO
+	tristate "DP Tx Audio Driver"
+	default n
+	depends on TELECHIPS_DP_DRIVER_V1_4
+	help
+		Supports DP Tx Audio Driver Interface in DP Tx API. driver layer.

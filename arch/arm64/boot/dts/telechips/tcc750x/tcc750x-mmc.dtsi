@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	sdhc0: sdhc@15200000 {
+		compatible = "telechips,tcc750x-sdhci";
+		reg = <0x0 0x15200000 0x0 0x100>,
+		      <0x0 0x15210000 0x0 0x200>,
+		      <0x0 0x0 0x0 0x0> /* dummy */,
+		      <0x0 0x152100FC 0x0 0x4>;
+		interrupts = <GIC_SPI 156 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_SDMMC &fbus_smu FBUS_SDMMC>;
+		clock-names = "mmc_fclk", "mmc_hclk";
+		max-frequency = <50000000>;
+		bus-width = <4>;
+		controller-id = <0>;
+		status = "disabled";
+	};
+
+	vqmmc_emmc: vqmmc_emmc {};
+};

@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include "../tcc807x-videoinput.dtsi"
+
+&pinctrl {
+	isp_uart_tx: isp_uart_tx {
+		telechips,pins = "gpmb-0";
+		telechips,pin-function = <5>;
+		telechips,output-high;
+		telechips,input_buffer_disable;
+	};
+
+	isp_uart_rx: isp_uart_rx {
+		telechips,pins = "gpmb-1";
+		telechips,pin-function = <5>;
+		telechips,input-enable;
+		telechips,input_buffer_enable;
+	};
+};
+
+&isp0 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&isp_uart_tx &isp_uart_rx>;
+};
+
+&i2c13 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/* sensor */
+	arxxxx_1: arxxxx_1@50 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,arxxxx";
+		reg		= <0x50>;
+	};
+
+	/* external ISP */
+	cxd5700_1: cxd5700_1@18 {
+		status		= "disabled";
+		compatible	= "tcc-sony,cxd5700";
+		reg		= <0x18>;
+	};
+
+	/* serializer */
+	max96701_1: max96701_1@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96701";
+		reg		= <0x40>;
+	};
+
+	max9275_1: max9275_1@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9275";
+		reg		= <0x40>;
+	};
+
+	max9295_1: max9295_1@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9295";
+		reg		= <0x40>;
+	};
+
+	/* deserializer */
+	max9286_1: max9286_1@48 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9286";
+		pwd-gpios	= <&gpmb 28 1>;
+		reg		= <0x48>;
+	};
+
+	max96712_1: max96712_1@2a {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96712";
+		pwd-gpios	= <&gpmb 28 1>;
+		rst-gpios	= <&gpmb 26 1>;  /* linked to GPIO1 */
+		reg		= <0x2A>;
+	};
+};
+
+&i2c12 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/* sensor */
+	imx424_front: imx424_front@1c {
+		status		= "disabled";
+		compatible	= "tcc-sony,imx424";
+		/* translated by serdes (0x1b -> 0x1c) */
+		reg		= <0x1c>;
+	};
+
+	imx424_rear: imx424_rear@1d {
+		status		= "disabled";
+		compatible	= "tcc-sony,imx424";
+		/* translated by serdes (0x1b -> 0x1d) */
+		reg		= <0x1d>;
+	};
+
+	arxxxx: arxxxx@50 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,arxxxx";
+		reg		= <0x50>;
+	};
+
+	ar0147: ar0147@10 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,ar0147";
+		reg		= <0x10>;
+	};
+
+	ar0820: ar0820@10 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,ar0820";
+		reg		= <0x10>;
+	};
+
+	ar0231: ar0231@10 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,ar0231";
+		reg		= <0x10>;
+	};
+
+	ar0239: ar0239@10 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,ar0239";
+		reg		= <0x10>;
+	};
+
+	/* external ISP */
+	cxd5700: cxd5700@18 {
+		status		= "disabled";
+		compatible	= "tcc-sony,cxd5700";
+		reg		= <0x18>;
+	};
+
+	/* serializer */
+	max96717: max96717@40 {
+		/* imx424 rear cam */
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96717";
+		reg		= <0x40>;
+	};
+
+	max96701: max96701@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96701";
+		reg		= <0x40>;
+	};
+
+	max9275: max9275@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9275";
+		reg		= <0x40>;
+	};
+
+	max9295: max9295@40 {
+		/* ar0820 */
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9295";
+		reg		= <0x40>;
+	};
+
+	max96705: max96705@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96705";
+		reg		= <0x40>;
+	};
+
+	max9295e: max9295e@42 {
+		/* imx424 front cam */
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9295";
+		reg		= <0x42>;
+	};
+
+	/* deserializer */
+	max9286: max9286@48 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9286";
+		pwd-gpios	= <&gpmb 3 1>;
+		reg		= <0x48>;
+	};
+
+	max96712: max96712@2a {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96712";
+		pwd-gpios	= <&gpmb 3 1>;
+		rst-gpios	= <&gpmb 8 1>;  /* linked to GPIO1 */
+		reg		= <0x2A>;
+	};
+};

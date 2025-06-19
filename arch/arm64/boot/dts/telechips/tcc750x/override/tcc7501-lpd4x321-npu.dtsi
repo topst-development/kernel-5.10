@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&npu0 {
+	status = "okay";
+	aclk-freq = <800000000>;
+	pclk-freq = <200000000>;
+	cclk-freq = <1000000000>;
+	cpuclk-freq = <800000000>;
+};
+
+&npu1 {
+	status = "okay";
+	aclk-freq = <800000000>;
+	pclk-freq = <200000000>;
+	cclk-freq = <1000000000>;
+	cpuclk-freq = <800000000>;
+};

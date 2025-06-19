@@ -1,0 +1,918 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc805x-clks.h>
+
+/ {
+	osc24m: osc24m {
+		compatible = "fixed-clock";
+		#clock-cells = <2>;
+		clock-frequency = <24000000>;
+		clock-output-names = "osc24m";
+	};
+
+	osc32k: osc32k {
+		compatible = "fixed-clock";
+		#clock-cells = <2>;
+		clock-frequency = <32768>;
+		clock-output-names = "osc32k";
+	};
+
+	extclk0: extclk0 {
+		compatible = "fixed-clock";
+		#clock-cells = <2>;
+		clock-frequency = <0>;
+		clock-output-names = "extclk0";
+	};
+
+	extclk1: extclk1 {
+		compatible = "fixed-clock";
+		#clock-cells = <2>;
+		clock-frequency = <0>;
+		clock-output-names = "extclk1";
+	};
+
+	smu_dpll_3200: smu_dpll_3200 {
+		compatible = "telechips,clk-pll";
+		type-fixed;
+		#clock-cells = <2>;
+		clocks = <&osc24m 0 0>;
+		clock-indices = <PLL_4>, <PLL_3>, <PLL_2>;
+		clock-output-names = "pll4", "pll3", "pll2";
+
+		ccf-flags =	<(CLK_IGNORE_UNUSED)>,	/*PLL_4*/
+				<(CLK_IGNORE_UNUSED)>,	/*PLL_3*/
+				<(CLK_IGNORE_UNUSED)>;	/*PLL_2*/
+
+		tc-flags =	<(0)>,	/*PLL_4*/
+				<(0)>,	/*PLL_3*/
+				<(0)>;	/*PLL_2*/
+	};
+
+	smu_npll_3200: smu_npll_3200 {
+		compatible = "telechips,clk-pll";
+		type-fixed;
+		#clock-cells = <2>;
+		clocks = <&osc24m 0 0>;
+		clock-indices = <PLL_1>, <PLL_0>;
+		clock-output-names = "pll1", "pll0";
+
+		ccf-flags =	<(CLK_IGNORE_UNUSED)>,	/*PLL_1*/
+				<(CLK_IGNORE_UNUSED)>;	/*PLL_0*/
+
+		tc-flags =	<(0)>,	/*PLL_1*/
+				<(0)>;	/*PLL_0*/
+	};
+
+	fbus_smu: fbus_smu {
+		compatible = "telechips,clk-fbus";
+		type-fixed;
+		#clock-cells = <1>;
+		clocks =
+			<&smu_npll_3200	PLL_0	SMU_CLKCTRL_SEL_PLL0>,
+			<&smu_npll_3200	PLL_1	SMU_CLKCTRL_SEL_PLL1>,
+			<&smu_dpll_3200	PLL_2	SMU_CLKCTRL_SEL_PLL2>,
+			<&smu_dpll_3200	PLL_3	SMU_CLKCTRL_SEL_PLL3>,
+			<&smu_dpll_3200	PLL_4	SMU_CLKCTRL_SEL_PLL4>,
+			<&osc24m	OSC_XIN	SMU_CLKCTRL_SEL_XIN>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>,
+			<&smu_npll_3200	PLL_0	SMU_CLKCTRL_SEL_PLL0DIV>,
+			<&smu_npll_3200	PLL_1	SMU_CLKCTRL_SEL_PLL1DIV>,
+			<&smu_dpll_3200	PLL_2	SMU_CLKCTRL_SEL_PLL2DIV>,
+			<&smu_dpll_3200	PLL_3	SMU_CLKCTRL_SEL_PLL3DIV>,
+			<&smu_dpll_3200	PLL_4	SMU_CLKCTRL_SEL_PLL4DIV>,
+			<&osc24m	OSC_XIN	SMU_CLKCTRL_SEL_XINDIV>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>;
+
+		clock-indices =
+			<FBUS_CBUS>, <FBUS_CMBUS>, <FBUS_HSIO>, <FBUS_SMU>,
+			<FBUS_DDI>, <FBUS_IO>, <FBUS_HSM>;
+		clock-output-names =
+			"fbus_cbus", "fbus_cmbus", "fbus_hsio", "fbus_smu",
+			"fbus_ddi", "fbus_io", "fbus_hsm";
+		ccf-flags =
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_CBUS */
+			<(CLK_IGNORE_UNUSED)>,    /* FBUS_CMBUS */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_HSIO */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_SMU */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_DDI */
+			<(CLK_SET_RATE_GATE | CLK_IS_CRITICAL)>,    /* FBUS_IO */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>;    /* FBUS_HSM */
+		tc-flags =
+			<(0)>,    /* FBUS_CBUS */
+			<(0)>,    /* FBUS_CMBUS */
+			<(0)>,    /* FBUS_HSIO */
+			<(0)>,    /* FBUS_SMU */
+			<(0)>,    /* FBUS_DDI */
+			<(0)>,    /* FBUS_IO */
+			<(0)>;    /* FBUS_HSM */
+	};
+
+	fbus_pcie: fbus_pcie {
+		compatible = "telechips,clk-fbus";
+		#clock-cells = <1>;
+		clocks =
+			<&smu_npll_3200	PLL_0	SMU_CLKCTRL_SEL_PLL0>,
+			<&smu_npll_3200	PLL_1	SMU_CLKCTRL_SEL_PLL1>,
+			<&smu_dpll_3200	PLL_2	SMU_CLKCTRL_SEL_PLL2>,
+			<&smu_dpll_3200	PLL_3	SMU_CLKCTRL_SEL_PLL3>,
+			<&smu_dpll_3200	PLL_4	SMU_CLKCTRL_SEL_PLL4>,
+			<&osc24m	OSC_XIN	SMU_CLKCTRL_SEL_XIN>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>,
+			<&smu_npll_3200	PLL_0	SMU_CLKCTRL_SEL_PLL0DIV>,
+			<&smu_npll_3200	PLL_1	SMU_CLKCTRL_SEL_PLL1DIV>,
+			<&smu_dpll_3200	PLL_2	SMU_CLKCTRL_SEL_PLL2DIV>,
+			<&smu_dpll_3200	PLL_3	SMU_CLKCTRL_SEL_PLL3DIV>,
+			<&smu_dpll_3200	PLL_4	SMU_CLKCTRL_SEL_PLL4DIV>,
+			<&osc24m	OSC_XIN	SMU_CLKCTRL_SEL_XINDIV>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>,
+			<&osc24m	0	SMU_CLKCTRL_SEL_XIN>;
+
+		clock-indices = <FBUS_PCIe0>;
+		clock-output-names = "fbus_pcie0";
+		ccf-flags = <(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>;    /* FBUS_PCIe0 */
+		tc-flags = <(0)>;    /* FBUS_PCIe0 */
+	};
+
+	clk_peri: clk_peri {
+		compatible = "telechips,clk-peri";
+		#clock-cells = <1>;
+		clocks =
+			<&smu_npll_3200	PLL_0		SMU_PCLKCTRL_SEL_PLL0>,
+			<&smu_npll_3200	PLL_1		SMU_PCLKCTRL_SEL_PLL1>,
+			<&smu_dpll_3200	PLL_2		SMU_PCLKCTRL_SEL_PLL2>,
+			<&smu_dpll_3200	PLL_3		SMU_PCLKCTRL_SEL_PLL3>,
+			<&smu_dpll_3200	PLL_4		SMU_PCLKCTRL_SEL_PLL4>,
+			<&osc24m	OSC_XIN		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc32k	OSC_XTIN	SMU_PCLKCTRL_SEL_XIN>, /* Invalid Clock source ID */
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&smu_npll_3200	PLL_0		SMU_PCLKCTRL_SEL_PLL0DIV>,
+			<&smu_npll_3200	PLL_1		SMU_PCLKCTRL_SEL_PLL1DIV>,
+			<&smu_dpll_3200	PLL_2		SMU_PCLKCTRL_SEL_PLL2DIV>,
+			<&smu_dpll_3200	PLL_3		SMU_PCLKCTRL_SEL_PLL3DIV>,
+			<&smu_dpll_3200	PLL_4		SMU_PCLKCTRL_SEL_PLL4DIV>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>, /* PCIe PHY is not support */
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	0		SMU_PCLKCTRL_SEL_XIN>,
+			<&osc24m	OSC_XIN		SMU_PCLKCTRL_SEL_XINDIV>,
+			<&osc32k	OSC_XTIN	SMU_PCLKCTRL_SEL_XIN>,
+			<&extclk0	0		SMU_PCLKCTRL_SEL_EXTCLK0>,
+			<&extclk1	0		SMU_PCLKCTRL_SEL_EXTCLK1>;
+
+		clock-indices =
+			<PERI_TCT>, <PERI_TCZ>,
+			<PERI_LCDTIMER>, <PERI_LCD0>, <PERI_LCD1>,
+			<PERI_LCD2>, <PERI_LCD3>, <PERI_GMAC>,
+			<PERI_GMAC_PTP>, <PERI_PCIE0_PHY_CR_CLK>,
+			<PERI_RMT>, <PERI_GPSB3>,
+			<PERI_SDMMC1>, <PERI_SDMMC2>,
+			<PERI_MDAI0>, <PERI_MFLT0_DAI>, <PERI_MSPDIF0>,
+			<PERI_SRCH0_CORE>, <PERI_SRCH0_FILTER>,
+			<PERI_SRCH0_SPDIF>, <PERI_PDM>,
+			<PERI_TSADC>, <PERI_I2C0>, <PERI_I2C1>, <PERI_I2C2>,
+			<PERI_I2C3>, <PERI_UART0>, <PERI_UART1>,
+			<PERI_UART2>, <PERI_UART3>, <PERI_MDAI1>,
+			<PERI_MFLT1_DAI>, <PERI_MSPDIF1>, <PERI_MDAI2>,
+			<PERI_GPSB0>, <PERI_GPSB1>, <PERI_GPSB2>,
+			<PERI_GPSBMS0>, <PERI_GPSBMS1>, <PERI_GPSBMS2>,
+			<PERI_UART4>, <PERI_AUX0_INPUT>,
+			<PERI_AUX1_INPUT>, <PERI_MFLT2_DAI>,
+			<PERI_AUX0_OUTPUT>, <PERI_AUX1_OUTPUT>,
+			<PERI_MSPDIF2>, <PERI_IC_TC>, <PERI_SRCH1_CORE>,
+			<PERI_SRCH1_FILTER>, <PERI_SRCH1_SPDIF>,
+			<PERI_SRCH2_CORE>, <PERI_SRCH2_FILTER>,
+			<PERI_SRCH2_SPDIF>, <PERI_SRCH3_CORE>,
+			<PERI_SRCH3_FILTER>, <PERI_SRCH3_SPDIF>,
+			<PERI_UART5>, <PERI_UART6>, <PERI_UART7>,
+			<PERI_UART8>, <PERI_MDAI3>, <PERI_MFLT3_DAI>,
+			<PERI_MSPDIF3>, <PERI_TSRX0>, <PERI_TSRX1>,
+			<PERI_TSRX2>, <PERI_TSRX3>, <PERI_TSRX4>,
+			<PERI_TSRX5>, <PERI_TSRX6>, <PERI_TSRX7>,
+			<PERI_TSRX8>, <PERI_CB_WDT>, <PERI_OUT0>,
+			<PERI_OUT1>, <PERI_OUT2>, <PERI_OUT3>, <PERI_OUT4>,
+			<PERI_OUT5>, <PERI_HSMB>;
+
+			clock-output-names =
+			"peri_tct", "peri_tcz",
+			"peri_lcdtimer", "peri_lcd0", "peri_lcd1",
+			"peri_lcd2", "peri_lcd3", "peri_gmac",
+			"peri_gmac_ptp", "peri_pcie0_phy_cr_clk",
+			"peri_rmt", "peri_gpsb3",
+			"peri_sdmmc1", "peri_sdmmc2",
+			"peri_mdai0", "peri_mflt0_dai", "peri_mspdif0",
+			"peri_srch0_core", "peri_srch0_filter",
+			"peri_srch0_spdif", "peri_pdm",
+			"peri_tsadc", "peri_i2c0", "peri_i2c1", "peri_i2c2",
+			"peri_i2c3", "peri_uart0", "peri_uart1",
+			"peri_uart2", "peri_uart3", "peri_mdai1",
+			"peri_mflt1_dai", "peri_mspdif1", "peri_mdai2",
+			"peri_gpsb0", "peri_gpsb1", "peri_gpsb2",
+			"peri_gpsbms0", "peri_gpsbms1", "peri_gpsbms2",
+			"peri_uart4", "peri_aux0_input",
+			"peri_aux1_input", "peri_mflt2_dai",
+			"peri_aux0_output", "peri_aux1_output",
+			"peri_mspdif2", "peri_ic_tc", "peri_srch1_core",
+			"peri_srch1_filter", "peri_srch1_spdif",
+			"peri_srch2_core", "peri_srch2_filter",
+			"peri_srch2_spdif", "peri_srch3_core",
+			"peri_srch3_filter", "peri_srch3_spdif",
+			"peri_uart5", "peri_uart6", "peri_uart7",
+			"peri_uart8", "peri_mdai3", "peri_mflt3_dai",
+			"peri_mspdif3", "peri_tsrx0", "peri_tsrx1",
+			"peri_tsrx2", "peri_tsrx3", "peri_tsrx4",
+			"peri_tsrx5", "peri_tsrx6", "peri_tsrx7",
+			"peri_tsrx8", "peri_cb_wdt", "peri_out0",
+			"peri_out1", "peri_out2", "peri_out3", "peri_out4",
+			"peri_out5", "peri_hsmb";
+
+		ccf-flags =
+			<CLK_IGNORE_UNUSED>,    /* PERI_TCT */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TCZ */
+			<CLK_IGNORE_UNUSED>,    /* PERI_LCDTIMER */
+			<CLK_IGNORE_UNUSED>,    /* PERI_LCD0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_LCD1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_LCD2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_LCD3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GMAC */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GMAC_PTP */
+			<CLK_IGNORE_UNUSED>,    /* PERI_PCIE_PHY_CR_CLK */
+			<CLK_IGNORE_UNUSED>,    /* PERI_RMT */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GPSB3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SDMMC1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SDMMC2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MDAI0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MFLT0_DAI */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MSPDIF0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH0_CORE */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH0_FILTER */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH0_SPDIF */
+			<CLK_IGNORE_UNUSED>,    /* PERI_PDM */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSADC */
+			<CLK_IGNORE_UNUSED>,    /* PERI_I2C0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_I2C1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_I2C2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_I2C3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MDAI1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MFLT1_DAI */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MSPDIF1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MDAI2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GPSB0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GPSB1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GPSB2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GPSBMS0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GPSBMS1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_GPSBMS2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART4 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_AUX0_INPUT */
+			<CLK_IGNORE_UNUSED>,    /* PERI_AUX1_INPUT */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MFLT2_DAI */
+			<CLK_IGNORE_UNUSED>,    /* PERI_AUX0_OUTPUT */
+			<CLK_IGNORE_UNUSED>,    /* PERI_AUX1_OUTPUT */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MSPDIF2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_IC_TC */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH1_CORE */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH1_FILTER */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH1_SPDIF */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH2_CORE */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH2_FILTER */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH2_SPDIF */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH3_CORE */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH3_FILTER */
+			<CLK_IGNORE_UNUSED>,    /* PERI_SRCH3_SPDIF */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART5 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART6 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART7 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_UART8 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MDAI3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MFLT3_DAI */
+			<CLK_IGNORE_UNUSED>,    /* PERI_MSPDIF3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX4 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX5 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX6 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX7 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_TSRX8 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_CB_WDT */
+			<CLK_IGNORE_UNUSED>,    /* PERI_OUT0 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_OUT1 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_OUT2 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_OUT3 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_OUT4 */
+			<CLK_IGNORE_UNUSED>,    /* PERI_OUT5 */
+			<CLK_IGNORE_UNUSED>;    /* PERI_HSMB */
+
+		tc-flags =
+			<(0)>,    /* PERI_TCT */
+			<(0)>,    /* PERI_TCZ */
+			<(0)>,    /* PERI_LCDTIMER */
+			<(0)>,    /* PERI_LCD0 */
+			<(0)>,    /* PERI_LCD1 */
+			<(0)>,    /* PERI_LCD2 */
+			<(0)>,    /* PERI_LCD3 */
+			<(0)>,    /* PERI_GMAC */
+			<(0)>,    /* PERI_GMAC_PTP */
+			<(0)>,    /* PERI_PCIE_PHY_CR_CLK */
+			<(0)>,    /* PERI_RMT */
+			<(0)>,    /* PERI_GPSB3 */
+			<(0)>,    /* PERI_SDMMC1 */
+			<(0)>,    /* PERI_SDMMC2 */
+			<(0)>,    /* PERI_MDAI0 */
+			<(0)>,    /* PERI_MFLT0_DAI */
+			<(0)>,    /* PERI_MSPDIF0 */
+			<(0)>,    /* PERI_SRCH0_CORE */
+			<(0)>,    /* PERI_SRCH0_FILTER */
+			<(0)>,    /* PERI_SRCH0_SPDIF */
+			<(0)>,    /* PERI_PDM */
+			<(0)>,    /* PERI_TSADC */
+			<(0)>,    /* PERI_I2C0 */
+			<(0)>,    /* PERI_I2C1 */
+			<(0)>,    /* PERI_I2C2 */
+			<(0)>,    /* PERI_I2C3 */
+			<(0)>,    /* PERI_UART0 */
+			<(0)>,    /* PERI_UART1 */
+			<(0)>,    /* PERI_UART2 */
+			<(0)>,    /* PERI_UART3 */
+			<(0)>,    /* PERI_MDAI1 */
+			<(0)>,    /* PERI_MFLT1_DAI */
+			<(0)>,    /* PERI_MSPDIF1 */
+			<(0)>,    /* PERI_MDAI2 */
+			<(0)>,    /* PERI_GPSB0 */
+			<(0)>,    /* PERI_GPSB1 */
+			<(0)>,    /* PERI_GPSB2 */
+			<(0)>,    /* PERI_GPSBMS0 */
+			<(0)>,    /* PERI_GPSBMS1 */
+			<(0)>,    /* PERI_GPSBMS2 */
+			<(0)>,    /* PERI_UART4 */
+			<(0)>,    /* PERI_AUX0_INPUT */
+			<(0)>,    /* PERI_AUX1_INPUT */
+			<(0)>,    /* PERI_MFLT2_DAI */
+			<(0)>,    /* PERI_AUX0_OUTPUT */
+			<(0)>,    /* PERI_AUX1_OUTPUT */
+			<(0)>,    /* PERI_MSPDIF2 */
+			<(0)>,    /* PERI_IC_TC */
+			<(0)>,    /* PERI_SRCH1_CORE */
+			<(0)>,    /* PERI_SRCH1_FILTER */
+			<(0)>,    /* PERI_SRCH1_SPDIF */
+			<(0)>,    /* PERI_SRCH2_CORE */
+			<(0)>,    /* PERI_SRCH2_FILTER */
+			<(0)>,    /* PERI_SRCH2_SPDIF */
+			<(0)>,    /* PERI_SRCH3_CORE */
+			<(0)>,    /* PERI_SRCH3_FILTER */
+			<(0)>,    /* PERI_SRCH3_SPDIF */
+			<(0)>,    /* PERI_UART5 */
+			<(0)>,    /* PERI_UART6 */
+			<(0)>,    /* PERI_UART7 */
+			<(0)>,    /* PERI_UART8 */
+			<(0)>,    /* PERI_MDAI3 */
+			<(0)>,    /* PERI_MFLT3_DAI */
+			<(0)>,    /* PERI_MSPDIF3 */
+			<(0)>,    /* PERI_TSRX0 */
+			<(0)>,    /* PERI_TSRX1 */
+			<(0)>,    /* PERI_TSRX2 */
+			<(0)>,    /* PERI_TSRX3 */
+			<(0)>,    /* PERI_TSRX4 */
+			<(0)>,    /* PERI_TSRX5 */
+			<(0)>,    /* PERI_TSRX6 */
+			<(0)>,    /* PERI_TSRX7 */
+			<(0)>,    /* PERI_TSRX8 */
+			<(0)>,    /* PERI_CB_WDT */
+			<(0)>,    /* PERI_OUT0 */
+			<(0)>,    /* PERI_OUT1 */
+			<(0)>,    /* PERI_OUT2 */
+			<(0)>,    /* PERI_OUT3 */
+			<(0)>,    /* PERI_OUT4 */
+			<(0)>,    /* PERI_OUT5 */
+			<(0)>;    /* PERI_HSMB */
+	};
+
+	subsys_npll_3200: subsys_npll_3200 {
+		compatible = "telechips,clk-pll";
+		type-fixed;
+		#clock-cells = <2>;
+		clocks = <&osc24m 0 0>;
+		clock-indices =
+			<PLL_VIDEO_1>, <PLL_VIDEO_0>,
+			/*<PLL_DP>, <PLL_MIPI>,*/
+			<PLL_MEM>,
+			<PLL_G2D>, <PLL_GPU>,
+			<PLL_CA53>, <PLL_CA72>;
+		clock-output-names =
+			"pll_video_1", "pll_video_0",
+			/*"pll_dp", "pll_mipi",*/
+			"pll_mem",
+			"pll_g2d", "pll_gpu",
+			"pll_ca53", "pll_ca72";
+
+		ccf-flags =	<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,	/*PLL_VIDEO_1*/
+				<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,	/*PLL_VIDEO_0*/
+				/*<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,*/	/*PLL_DP*/
+				/*<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,*/	/*PLL_MIPI*/
+				<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,	/*PLL_MEM*/
+				<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,	/*PLL_G2D*/
+				<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,	/*PLL_GPU*/
+				<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>;	/*PLL_CA53*/
+
+		tc-flags =	<(0)>,	/*PLL_VIDEO_1*/
+				<(0)>,	/*PLL_VIDEO_0*/
+				/*<(0)>,*/	/*PLL_DP*/
+				/*<(0)>,*/	/*PLL_MIPI*/
+				<(0)>,	/*PLL_MEM*/
+				<(0)>,	/*PLL_G2D*/
+				<(0)>,	/*PLL_GPU*/
+				<(0)>;	/*PLL_CA53*/
+	};
+
+	mem_phy_pll_4300: mem_phy_pll_4300 {
+		compatible = "telechips,clk-pll";
+		type-fixed;
+		#clock-cells = <2>;
+		clocks = <&osc24m 0 0>;
+		clock-indices = <PLL_MEM_PHY_3>, <PLL_MEM_PHY_2>,
+				<PLL_MEM_PHY_1>, <PLL_MEM_PHY_0>;
+		clock-output-names =
+				"pll_mem_phy_3", "pll_mem_phy_2",
+				"pll_mem_phy_1", "pll_mem_phy_0";
+		ccf-flags =	<(CLK_IGNORE_UNUSED)>,	/*PLL_MEM_PHY_3*/
+				<(CLK_IGNORE_UNUSED)>,	/*PLL_MEM_PHY_2*/
+				<(CLK_IGNORE_UNUSED)>,	/*PLL_MEM_PHY_1*/
+				<(CLK_IGNORE_UNUSED)>;	/*PLL_MEM_PHY_0*/
+		tc-flags =	<(0)>,	/*PLL_MEM_PHY_3*/
+				<(0)>,	/*PLL_MEM_PHY_2*/
+				<(0)>,	/*PLL_MEM_PHY_1*/
+				<(0)>;	/*PLL_MEM_PHY_0*/
+	};
+
+	cpu_ca72: cpu_ca72 {
+		compatible = "telechips,clk-fbus";
+		#clock-cells = <1>;
+		clocks =
+			<&osc24m		OSC_XIN         CPU_CLKCTRL_SEL_XIN>,
+			<&subsys_npll_3200	PLL_CA72	CPU_CLKCTRL_SEL_PLL>,
+			<&subsys_npll_3200	PLL_CA72	CPU_CLKCTRL_SEL_PLLDIV>;
+		clock-indices = <FBUS_CA72>;
+		clock-output-names = "ca72";
+		ccf-flags =	<(CLK_IS_CRITICAL)>;
+		tc-flags =	<(0)>;
+	};
+
+	cpu_ca53: cpu_ca53 {
+		compatible = "telechips,clk-fbus";
+		#clock-cells = <1>;
+		clocks =
+			<&osc24m		OSC_XIN         CPU_CLKCTRL_SEL_XIN>,
+			<&subsys_npll_3200	PLL_CA53	CPU_CLKCTRL_SEL_PLL>,
+			<&subsys_npll_3200	PLL_CA53	CPU_CLKCTRL_SEL_PLLDIV>;
+		clock-indices = <FBUS_CA53>;
+		clock-output-names = "ca53";
+		ccf-flags =	<(CLK_IS_CRITICAL)>;
+		tc-flags =	<(0)>;
+	};
+
+	fbus_mem: fbus_mem {
+		compatible = "telechips,clk-fbus";
+		#clock-cells = <1>;
+		clocks =
+			<&osc24m		OSC_XIN		MEMORY_CLKCTRL_SEL_XIN>,
+			<&subsys_npll_3200	PLL_MEM		MEMORY_CLKCTRL_SEL_PLL>,
+			<&subsys_npll_3200	PLL_MEM		MEMORY_CLKCTRL_SEL_PLL>,
+			<&subsys_npll_3200	PLL_MEM		MEMORY_CLKCTRL_SEL_PLLDIV0>,
+			<&subsys_npll_3200	PLL_MEM		MEMORY_CLKCTRL_SEL_PLLDIV1>,
+			<&subsys_npll_3200	PLL_MEM		MEMORY_CLKCTRL_SEL_PLLDIV2>,
+			<&subsys_npll_3200	PLL_MEM		MEMORY_CLKCTRL_SEL_PLLDIV3>,
+			<&osc32k		OSC_XTIN	MEMORY_CLKCTRL_SEL_XTIN>;
+		clock-indices =
+			<FBUS_MEM>, <FBUS_MEM_SUB>,
+			<FBUS_MEM_PHY_USER>, <FBUS_MEM_PHY_PERI>;
+		clock-output-names =
+			"fbus_mem", "fbus_mem_sub",
+			"fbus_mem_phy_user", "fbus_mem_phy_peri";
+		ccf-flags =
+			<(CLK_IS_CRITICAL | CLK_IGNORE_UNUSED)>,    /* FBUS_MEM */
+			<(CLK_IS_CRITICAL | CLK_IGNORE_UNUSED)>,    /* FBUS_MEM_SUB */
+			<(CLK_IS_CRITICAL | CLK_IGNORE_UNUSED)>,    /* FBUS_MEM_PHY_USER */
+			<(CLK_IS_CRITICAL | CLK_IGNORE_UNUSED)>;    /* FBUS_MEM_PHY_PERI */
+		tc-flags =
+			<(0)>,    /* FBUS_MEM */
+			<(0)>,    /* FBUS_MEM_SUB */
+			<(0)>,    /* FBUS_MEM_PHY_USER */
+			<(0)>;    /* FBUS_MEM_PHY_PERI */
+	};
+
+	fbus_gpu: fbus_gpu {
+		compatible = "telechips,clk-fbus";
+		#clock-cells = <1>;
+		clocks =
+			<&osc24m		OSC_XIN         GPU_CLKCTRL_SEL_XIN>,
+			<&subsys_npll_3200	PLL_GPU		GPU_CLKCTRL_SEL_PLL>,
+			<&subsys_npll_3200	PLL_GPU		GPU_CLKCTRL_SEL_PLLDIV>;
+		clock-indices = <FBUS_GPU>;
+		clock-output-names = "fbus_gpu";
+		ccf-flags = <(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>;
+		tc-flags = <(0)>;
+	};
+
+	fbus_g2d: fbus_g2d {
+		compatible = "telechips,clk-fbus";
+		#clock-cells = <1>;
+		clocks =
+			<&osc24m		OSC_XIN         GPU_CLKCTRL_SEL_XIN>,
+			<&subsys_npll_3200	PLL_G2D		GPU_CLKCTRL_SEL_PLL>,
+			<&subsys_npll_3200	PLL_G2D		GPU_CLKCTRL_SEL_PLLDIV>;
+		clock-indices = <FBUS_G2D>;
+		clock-output-names = "fbus_g2d";
+		ccf-flags = <(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>;
+		tc-flags = <(0)>;
+	};
+
+	clk_io: gate_io {
+		compatible = "telechips,clk-gate";
+		#clock-cells = <1>;
+		clocks = <&fbus_smu FBUS_IO>;
+		clock-indices =
+			<IOBUS_IC_TC>, <IOBUS_PL080>, <IOBUS_ASRC>,
+			<IOBUS_DMA0>, <IOBUS_DMA1>, <IOBUS_DMA2>,
+			<IOBUS_DMA>, <IOBUS_PWM>, <IOBUS_I2C_S2>,
+			<IOBUS_REMOCON>, <IOBUS_PRT>, <IOBUS_ADMA0>,
+			<IOBUS_DAI0>, <IOBUS_SPDIF0>, <IOBUS_AUDIO0>,
+			<IOBUS_ADMA3>, <IOBUS_DAI3>, <IOBUS_SPDIF3>,
+			<IOBUS_AUDIO3>, <IOBUS_I2C_M0>,	<IOBUS_I2C_M1>,
+			<IOBUS_I2C_M2>,
+
+			<IOBUS_I2C_M3>,	<IOBUS_I2C_S0>, <IOBUS_I2C_S1>,
+			<IOBUS_I2C0>, <IOBUS_I2C1>, <IOBUS_GPSB_2>,
+			<IOBUS_GPSB0>, <IOBUS_GPSB1>, <IOBUS_GPSB2>,
+			<IOBUS_GPSB3>, <IOBUS_GPSB4>, <IOBUS_GPSB5>,
+			<IOBUS_GPSB>, <IOBUS_I2C_S3>, <IOBUS_I2C_M4>,
+			<IOBUS_I2C_M5>,	<IOBUS_I2C_M6>, <IOBUS_I2C_M7>,
+
+			<IOBUS_UART0>, <IOBUS_UART1>, <IOBUS_UART2>,
+			<IOBUS_UART3>, <IOBUS_UART4>, <IOBUS_UART5>,
+			<IOBUS_UART6>, <IOBUS_UART7>, <IOBUS_UART8>,
+			<IOBUS_UDMA0>, <IOBUS_UDMA1>, <IOBUS_UDMA2>,
+			<IOBUS_UDMA3>, <IOBUS_UDMA4>, <IOBUS_UDMA5>,
+			<IOBUS_UDMA6>, <IOBUS_UDMA7>, <IOBUS_UDMA8>,
+
+			<IOBUS_ADMA1>, <IOBUS_DAI1>, <IOBUS_SPDIF1>,
+			<IOBUS_AUDIO1>, <IOBUS_ADMA2>, <IOBUS_DAI2>,
+			<IOBUS_SPDIF2>, <IOBUS_AUDIO2>, <IOBUS_ADMA4>,
+			<IOBUS_DAI4>, <IOBUS_SPDIF4>, <IOBUS_AUDIO4>,
+			<IOBUS_ADMA5>, <IOBUS_DAI5>, <IOBUS_SPDIF5>,
+			<IOBUS_AUDIO5>, <IOBUS_ADMA6>, <IOBUS_DAI6>,
+			<IOBUS_SPDIF6>, <IOBUS_AUDIO6>, <IOBUS_ADMA7>,
+			<IOBUS_DAI7>, <IOBUS_AUDIO7>,
+			<IOBUS_GDMA1>, <IOBUS_SDMMC1>, <IOBUS_SDMMC2>,
+			<IOBUS_SDMMC>, <IOBUS_RTC>;
+		clock-output-names =
+			"iobus_ic_tc", "iobus_pl080",
+			"iobus_asrc", "iobus_dma0", "iobus_dma1",
+			"iobus_dma2", "iobus_dma", "iobus_pwm",
+			"iobus_i2c_s2", "iobus_remocon", "iobus_prt",
+			"iobus_adma0", "iobus_dai0", "iobus_spdif0",
+			"iobus_audio0", "iobus_adma3", "iobus_dai3",
+			"iobus_spdif3", "iobus_audio3", "iobus_i2c_m0",
+			"iobus_i2c_m1", "iobus_i2c_m2",
+
+			"iobus_i2c_m3",	"iobus_i2c_s0", "iobus_i2c_s1",
+			"iobus_i2c0", "iobus_i2c1", "iobus_gpsb_2",
+			"iobus_gpsb0", "iobus_gpsb1", "iobus_gpsb2",
+			"iobus_gpsb3", "iobus_gpsb4", "iobus_gpsb5",
+			"iobus_gpsb", "iobus_i2c_s3", "iobus_i2c_m4",
+			"iobus_i2c_m5",	"iobus_i2c_m6", "iobus_i2c_m7",
+
+			"iobus_uart0", "iobus_uart1", "iobus_uart2",
+			"iobus_uart3", "iobus_uart4", "iobus_uart5",
+			"iobus_uart6", "iobus_uart7", "iobus_uart8",
+			"iobus_udma0", "iobus_udma1", "iobus_udma2",
+			"iobus_udma3", "iobus_udma4", "iobus_udma5",
+			"iobus_udma6", "iobus_udma7", "iobus_udma8",
+
+			"iobus_adma1", "iobus_dai1", "iobus_spdif1",
+			"iobus_audio1", "iobus_adma2", "iobus_dai2",
+			"iobus_spdif2", "iobus_audio2", "iobus_adma4",
+			"iobus_dai4", "iobus_spdif4", "iobus_audio4",
+			"iobus_adma5", "iobus_dai5", "iobus_spdif5",
+			"iobus_audio5", "iobus_adma6", "iobus_dai6",
+			"iobus_spdif6", "iobus_audio6", "iobus_adma7",
+			"iobus_dai7", "iobus_audio7",
+			"iobus_gdma1", "iobus_sdmmc1", "iobus_sdmmc2",
+			"iobus_sdmmc", "iobus_rtc";
+		ccf-flags =
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_IC_TC */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_PL080 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ASRC */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DMA0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DMA1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DMA2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DMA */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_PWM */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_S2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_PRT */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SPDIF0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SPDIF3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M2 */
+
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_S0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_S1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB_2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GPSB */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_S3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M6 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_I2C_M7 */
+
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART6 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART7 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UART8 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA0 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA3 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA6 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA7 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_UDMA8 */
+
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SPDIF1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SPDIF2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SPDIF4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO4 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SPDIF5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO5 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA6 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI6 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SPDIF6 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO6 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_ADMA7 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_DAI7 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_AUDIO7 */
+
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_GDMA1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SDMMC1 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SDMMC2 */
+			<CLK_IGNORE_UNUSED>,    /* IOBUS_SDMMC */
+			<CLK_IGNORE_UNUSED>;    /* IOBUS_RTC */
+
+		tc-flags =
+			<(0)>,    /* IOBUS_IC_TC */
+			<(0)>,    /* IOBUS_PL080 */
+			<(0)>,    /* IOBUS_ASRC */
+			<(0)>,    /* IOBUS_DMA0 */
+			<(0)>,    /* IOBUS_DMA1 */
+			<(0)>,    /* IOBUS_DMA2 */
+			<(0)>,    /* IOBUS_DMA */
+			<(0)>,    /* IOBUS_PWM */
+			<(0)>,    /* IOBUS_I2C_S2 */
+			<(0)>,    /* IOBUS_PRT */
+			<(0)>,    /* IOBUS_ADMA0 */
+			<(0)>,    /* IOBUS_DAI0 */
+			<(0)>,    /* IOBUS_SPDIF0 */
+			<(0)>,    /* IOBUS_AUDIO0 */
+			<(0)>,    /* IOBUS_ADMA3 */
+			<(0)>,    /* IOBUS_DAI3 */
+			<(0)>,    /* IOBUS_SPDIF3 */
+			<(0)>,    /* IOBUS_AUDIO3 */
+			<(0)>,    /* IOBUS_I2C_M0 */
+			<(0)>,    /* IOBUS_I2C_M1 */
+			<(0)>,    /* IOBUS_I2C_M2 */
+
+			<(0)>,    /* IOBUS_I2C_M3 */
+			<(0)>,    /* IOBUS_I2C_S0 */
+			<(0)>,    /* IOBUS_I2C_S1 */
+			<(0)>,    /* IOBUS_I2C0 */
+			<(0)>,    /* IOBUS_I2C1 */
+			<(0)>,    /* IOBUS_GPSB_2 */
+			<(0)>,    /* IOBUS_GPSB0 */
+			<(0)>,    /* IOBUS_GPSB1 */
+			<(0)>,    /* IOBUS_GPSB2 */
+			<(0)>,    /* IOBUS_GPSB3 */
+			<(0)>,    /* IOBUS_GPSB4 */
+			<(0)>,    /* IOBUS_GPSB5 */
+			<(0)>,    /* IOBUS_GPSB */
+			<(0)>,    /* IOBUS_I2C_S3 */
+			<(0)>,    /* IOBUS_I2C_M4 */
+			<(0)>,    /* IOBUS_I2C_M5 */
+			<(0)>,    /* IOBUS_I2C_M6 */
+			<(0)>,    /* IOBUS_I2C_M7 */
+
+			<(0)>,    /* IOBUS_UART0 */
+			<(0)>,    /* IOBUS_UART1 */
+			<(0)>,    /* IOBUS_UART2 */
+			<(0)>,    /* IOBUS_UART3 */
+			<(0)>,    /* IOBUS_UART4 */
+			<(0)>,    /* IOBUS_UART5 */
+			<(0)>,    /* IOBUS_UART6 */
+			<(0)>,    /* IOBUS_UART7 */
+			<(0)>,    /* IOBUS_UART8 */
+			<(0)>,    /* IOBUS_UDMA0 */
+			<(0)>,    /* IOBUS_UDMA1 */
+			<(0)>,    /* IOBUS_UDMA2 */
+			<(0)>,    /* IOBUS_UDMA3 */
+			<(0)>,    /* IOBUS_UDMA4 */
+			<(0)>,    /* IOBUS_UDMA5 */
+			<(0)>,    /* IOBUS_UDMA6 */
+			<(0)>,    /* IOBUS_UDMA7 */
+			<(0)>,    /* IOBUS_UDMA8 */
+
+			<(0)>,    /* IOBUS_ADMA1 */
+			<(0)>,    /* IOBUS_DAI1 */
+			<(0)>,    /* IOBUS_SPDIF1 */
+			<(0)>,    /* IOBUS_AUDIO1 */
+			<(0)>,    /* IOBUS_ADMA2 */
+			<(0)>,    /* IOBUS_DAI2 */
+			<(0)>,    /* IOBUS_SPDIF2 */
+			<(0)>,    /* IOBUS_AUDIO2 */
+			<(0)>,    /* IOBUS_ADMA4 */
+			<(0)>,    /* IOBUS_DAI4 */
+			<(0)>,    /* IOBUS_SPDIF4 */
+			<(0)>,    /* IOBUS_AUDIO4 */
+			<(0)>,    /* IOBUS_ADMA5 */
+			<(0)>,    /* IOBUS_DAI5 */
+			<(0)>,    /* IOBUS_SPDIF5 */
+			<(0)>,    /* IOBUS_AUDIO5 */
+			<(0)>,    /* IOBUS_ADMA6 */
+			<(0)>,    /* IOBUS_DAI6 */
+			<(0)>,    /* IOBUS_SPDIF6 */
+			<(0)>,    /* IOBUS_AUDIO6 */
+			<(0)>,    /* IOBUS_ADMA7 */
+			<(0)>,    /* IOBUS_DAI7 */
+			<(0)>,    /* IOBUS_AUDIO7 */
+
+			<(0)>,    /* IOBUS_GDMA1 */
+			<(0)>,    /* IOBUS_SDMMC1 */
+			<(0)>,    /* IOBUS_SDMMC2 */
+			<(0)>,    /* IOBUS_SDMMC */
+			<(0)>;    /* IOBUS_RTC */
+	};
+
+	clk_hsio: gate_hsio {
+		compatible = "telechips,clk-gate";
+		#clock-cells = <1>;
+		clocks = <&fbus_smu FBUS_HSIO>;
+		clock-indices =
+			<HSIOBUS_USB30>, <HSIOBUS_GMAC>,
+			<HSIOBUS_USB20H>, <HSIOBUS_CIPHER>,
+			<HSIOBUS_DWC_OTG>, <HSIOBUS_SECURE_WRAP>,
+			<HSIOBUS_TRNG>;
+		clock-output-names =
+			"hsiobus_usb30", "hsiobus_gmac",
+			"hsiobus_usb20h", "hsiobus_cipher",
+			"hsiobus_dwc_otg", "hsiobus_secure_wrap",
+			"hsiobus_trng";
+		ccf-flags =
+			<CLK_IGNORE_UNUSED>,    /* HSIOBUS_USB30 */
+			<CLK_IGNORE_UNUSED>,    /* HSIOBUS_GMAC */
+			<CLK_IGNORE_UNUSED>,    /* HSIOBUS_USB20H */
+			<CLK_IGNORE_UNUSED>,    /* HSIOBUS_CIPHER */
+			<CLK_IGNORE_UNUSED>,    /* HSIOBUS_DWC_OTG */
+			<CLK_IGNORE_UNUSED>,    /* HSIOBUS_SECURE_WRAP */
+			<CLK_IGNORE_UNUSED>;    /* HSIOBUS_TRNG */
+
+		tc-flags =
+			<(0)>,    /* HSIOBUS_USB30 */
+			<(0)>,    /* HSIOBUS_GMAC */
+			<(0)>,    /* HSIOBUS_USB20H */
+			<(0)>,    /* HSIOBUS_CIPHER */
+			<(0)>,    /* HSIOBUS_DWC_OTG */
+			<(0)>,    /* HSIOBUS_SECURE_WRAP */
+			<(0)>;    /* HSIOBUS_TRNG */
+	};
+
+	clk_ddi: gate_ddi {
+		compatible = "telechips,clk-gate";
+		#clock-cells = <1>;
+		clocks = <&fbus_smu FBUS_DDI>;
+		clock-indices =
+			<DDIBUS_VIOC>, <DDIBUS_HDMI>, <DDIBUS_MIPI>,
+			<DDIBUS_LVDS>;
+		clock-output-names =
+			"ddibus_vioc", "ddibus_hdmi", "ddibus_mipi",
+			"ddibus_lvds";
+		ccf-flags =
+			<(CLK_IGNORE_UNUSED | CLK_IS_CRITICAL)>,	/* DDIBUS_VIOC */
+			<CLK_IGNORE_UNUSED>,	/* DDIBUS_HDMI */
+			<CLK_IGNORE_UNUSED>,	/* DDIBUS_MIPI */
+			<CLK_IGNORE_UNUSED>;	/* DDIBUS_LVDS */
+
+		tc-flags =
+			<(0)>,	/* DDIBUS_VIOC */
+			<(0)>,	/* DDIBUS_HDMI */
+			<(0)>,	/* DDIBUS_MIPI */
+			<(0)>;	/* DDIBUS_LVDS */
+	};
+
+	fbus_vpu: fbus_vpu {
+		compatible = "telechips,clk-fbus";
+		#clock-cells = <1>;
+		clocks =
+			<&osc24m		OSC_XIN		VIDEO_CLKCTRL_SEL_XIN>,
+			<&subsys_npll_3200	PLL_VIDEO_0	VIDEO_CLKCTRL_SEL_PLL0>,
+			<&subsys_npll_3200	PLL_VIDEO_1	VIDEO_CLKCTRL_SEL_PLL1>,
+			<&subsys_npll_3200	PLL_VIDEO_0	VIDEO_CLKCTRL_SEL_PLL0_DIV0>,
+			<&subsys_npll_3200	PLL_VIDEO_0	VIDEO_CLKCTRL_SEL_PLL0_DIV1>,
+			<&subsys_npll_3200	PLL_VIDEO_1	VIDEO_CLKCTRL_SEL_PLL1_DIV0>,
+			<&subsys_npll_3200	PLL_VIDEO_1	VIDEO_CLKCTRL_SEL_PLL1_DIV1>;
+		clock-indices =
+			<FBUS_VBUS>, <FBUS_CODA>, <FBUS_CHEVCDEC>,
+			<FBUS_BHEVCDEC>, <FBUS_CHEVCENC>, <FBUS_BHEVCENC>;
+		clock-output-names =
+			"fbus_vbus", "fbus_coda", "fbus_chevcdec",
+			"fbus_bhevcdec", "fbus_chevcenc", "fbus_bhevcenc";
+		ccf-flags =
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_VBUS */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_CODA */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_CHEVCDEC */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_BHEVCDEC */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>,    /* FBUS_CHEVCENC */
+			<(CLK_SET_RATE_GATE | CLK_IGNORE_UNUSED)>;    /* FBUS_BHEVCENC */
+
+		tc-flags =
+			<(0)>,    /* FBUS_VBUS */
+			<(0)>,    /* FBUS_CODA */
+			<(0)>,    /* FBUS_CHEVCDEC */
+			<(0)>,    /* FBUS_BHEVCDEC */
+			<(0)>,    /* FBUS_CHEVCENC */
+			<(0)>;    /* FBUS_BHEVCENC */
+	};
+
+	clk_vpu: gate_vpu {
+		compatible = "telechips,clk-gate";
+		#clock-cells = <1>;
+		clocks = <&fbus_vpu FBUS_VBUS>;
+		clock-indices =
+			<VIDEOBUS_JPEG>, <VIDEOBUS_CODA_BUS>,
+			<VIDEOBUS_CODA_CORE>, <VIDEOBUS_HEVC_BUS>,
+			<VIDEOBUS_HEVC_CORE>, <VIDEOBUS_HEVC_ENCODER>;
+		clock-output-names =
+			"videobus_jpeg", "videobus_coda_bus",
+			"videobus_coda_core", "videobus_hevc_bus",
+			"videobus_hevc_core", "videobus_hevc_encoder";
+		ccf-flags =
+			<CLK_IGNORE_UNUSED>,	/* VIDEOBUS_JPEG */
+			<CLK_IGNORE_UNUSED>,	/* VIDEOBUS_CODA_BUS */
+			<CLK_IGNORE_UNUSED>,	/* VIDEOBUS_CODA_CORE */
+			<CLK_IGNORE_UNUSED>,	/* VIDEOBUS_HEVC_BUS */
+			<CLK_IGNORE_UNUSED>,	/* VIDEOBUS_HEVC_CORE */
+			<CLK_IGNORE_UNUSED>;	/* VIDEOBUS_HEVC_ENCODER */
+		tc-flags =
+			<0>,	/* VIDEOBUS_JPEG */
+			<0>,	/* VIDEOBUS_CODA_BUS */
+			<0>,	/* VIDEOBUS_CODA_CORE */
+			<0>,	/* VIDEOBUS_HEVC_BUS */
+			<0>,	/* VIDEOBUS_HEVC_CORE */
+			<0>;	/* VIDEOBUS_HEVC_ENCODER */
+	};
+};

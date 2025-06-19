@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+
+config TELECHIPS_SNOR_UPDATER
+	tristate "TCC SNOR Update Driver for TCC805x"
+	default n
+	depends on TCC_IPI_PROTOCOL
+	help
+		This driver only supports TCC805x.
+		This driver communicate with the internal mcu to update SNOR.

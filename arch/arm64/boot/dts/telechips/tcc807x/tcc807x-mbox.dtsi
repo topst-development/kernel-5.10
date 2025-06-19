@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	/* MAIN <-> SC */
+	a55mp_sc_mbox: mbox@1D210000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x1D210000 0x0 0x80>;
+		interrupts = <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>,
+		             <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+	};
+
+	/* MAIN a55mp <-> SUB a55sp */
+	a55mp_a55sp_mbox: mbox@17460000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x17460000 0x0 0x100>;
+		interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+	};
+
+	/* MAIN a55mp <-> MICOM */
+	a55mp_micom_mbox: mbox@1BA30000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x1BA30000 0x0 0x100>;
+		interrupts = <GIC_SPI 663 IRQ_TYPE_LEVEL_HIGH>,
+		   		<GIC_SPI 664 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+	};
+
+	/* MAIN a55mp <-> HSM core */
+	a55mp_hsm_mbox: mbox@1E110000 {
+		compatible = "telechips,mailbox-controller-v2";
+		reg = <0x0 0x1E110000 0x0 0x100>;
+		interrupts = <GIC_SPI 306 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+	};
+};

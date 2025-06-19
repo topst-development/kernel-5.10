@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/thermal/thermal.h>
+
+/ {
+	thermal: thermal@14700000 {
+		compatible = "telechips,tsens";
+		reg = <0x0 0x14700000 0x0 0x160>;   //0: Control register
+		status = "okay";
+		cal_type = "TYPE_ONE_POINT_TRIMMING";
+		threshold_temp = <85>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	thermal_zone: thermal-zones {
+		cpu-thermal {
+			polling-delay-passive = <1000>;
+			polling-delay = <1000>;
+			thermal-sensors = <&thermal 0>;
+			trips {
+				trip0: trip-point@0 {
+					temperature = <75000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+			};
+			cooling-maps {
+				map0 {
+					trip = <&trip0>;
+					cooling-device =
+						<&A53_0 0 1>;
+				};
+			};
+		};
+	};
+};

@@ -1,0 +1,290 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&i2c0 {
+	status = "okay";
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c_scl_mfio_25_a &i2c_sda_mfio_26_a>;
+	pinctrl-1 = <&i2c_scl_mfio_25_s &i2c_sda_mfio_26_s>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	bd96801_pmic1: pmic@60 {
+		compatible = "rohm,bd96801";
+		reg = <0x60>;
+
+		regulators {
+			cpu_0p9: BUCK1 {
+				regulator-name = "cpu_0p9";
+				rohm,initial-voltage-microvolt = <900000>;
+				regulator-min-microvolt = <855000>;
+				regulator-max-microvolt = <945000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to CPU_0P9
+
+			io_3p3: BUCK2 {
+				regulator-name = "io_3p3";
+				rohm,initial-voltage-microvolt = <3300000>;
+				regulator-min-microvolt = <3300000>; /* FIXME */
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to IO_3P3
+
+			core_0p8: BUCK3 {
+				regulator-name = "core_0p8";
+				rohm,initial-voltage-microvolt = <800000>;
+				regulator-min-microvolt = <720000>;
+				regulator-max-microvolt = <800000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to CORE_0P8
+		};
+	};
+
+	bd96801_pmic2: pmic@61 {
+		compatible = "rohm,bd96801";
+		reg = <0x61>;
+
+		regulators {
+			/*
+			The nodes of BUCK1 and LDO5 were removed for the following reasons:
+
+			- BUCK1
+			The voltage used by peripherals connected to the IO subsystem,
+			so it needs to be fixed to 3.3V (default voltage = 3.3V)
+
+			- LDO5
+			The LDO5 supplies a voltage to the CPU_1P2 of the tcc750x.
+			Changing the initial voltage of LDO5 is accomplished by the
+			set_ldo_initial_voltage() function of the pmic driver.
+			When changing the voltage, only 0.3V, 0.5V, 1.8V, and 3.3V can be changed.
+			However, the allowable voltage range of the CPU_1P2 is 1.14V to 1.26V.
+			Therefore, changing the mode may cause chip specout. (default voltage = 1.2V)
+			*/
+
+			mem_1p1: BUCK1 {
+				regulator-name = "mem_1p1";
+				rohm,initial-voltage-microvolt = <1100000>;
+				regulator-min-microvolt = <1060000>;
+				regulator-max-microvolt = <1170000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to MEM_1P1
+
+			memq_0p6: BUCK2 {
+				regulator-name = "memq_0p6";
+				rohm,initial-voltage-microvolt = <600000>;
+				regulator-min-microvolt = <570000>;
+				regulator-max-microvolt = <650000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to MEMQ_0P6
+
+			io_1p8: BUCK3 {
+				regulator-name = "io_1p8";
+				rohm,initial-voltage-microvolt = <1800000>;
+				regulator-min-microvolt = <1650000>;
+				regulator-max-microvolt = <1950000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to IO_1P8
+
+			dmc_0p9: BUCK4 {
+				regulator-name = "dmc_0p9";
+				rohm,initial-voltage-microvolt = <900000>;
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <900000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to dmc_0p9
+
+			mipi_1p2: LDO5 {
+				regulator-name = "mipi_1p2";
+				rohm,initial-voltage-microvolt = <1200000>;
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <1200000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to MIPI_1P2
+
+			hvbucken: LDO7 {
+				regulator-name = "hvbucken";
+				rohm,initial-voltage-microvolt = <3300000>;
+				regulator-min-microvolt = <300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to HVBUCK EN Signal
+		};
+	};
+
+	bd96801_pmic3: pmic@63 {
+		compatible = "rohm,bd96801";
+		reg = <0x63>;
+
+		regulators {
+			npu_0p8: BUCK1 {
+				regulator-name = "npu_0p8";
+				rohm,initial-voltage-microvolt = <800000>;
+				regulator-min-microvolt = <720000>;
+				regulator-max-microvolt = <900000>;
+				regulator-always-on;
+				regulator-boot-on;
+			}; //Connected to NPU_0P8
+        };
+    };
+};
+
+&i2c1 {
+        status = "okay";
+        pinctrl-names = "default", "sleep";
+        pinctrl-0 = <&i2c_scl_mfio_40_a &i2c_sda_mfio_41_a>;
+        pinctrl-1 = <&i2c_scl_mfio_40_s &i2c_sda_mfio_41_s>;
+
+        #address-cells = <1>;
+        #size-cells = <0>;
+};
+
+
+&i2c3 {
+	status = "okay";
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c_scl_mfio_4_a &i2c_sda_mfio_5_a>;
+	pinctrl-1 = <&i2c_scl_mfio_4_s &i2c_sda_mfio_5_s>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+
+
+&pinctrl {
+	/* Active state */
+	i2c_scl_mfio_25_a: i2c_scl_mfio_25_a {
+		telechips,pins = "gpe-3";
+		telechips,pin-function = <7>;
+		telechips,input-enable;
+		telechips,no-pull;
+		telechips,mfio = <0>;
+	};
+
+	/* Sleep state */
+	i2c_scl_mfio_25_s: i2c_scl_mfio_25_s {
+		telechips,pins = "gpe-3";
+		telechips,pin-function = <0>;
+	};
+
+	/* Active state */
+	i2c_sda_mfio_26_a: i2c_sda_mfio_26_a {
+		telechips,pins = "gpe-4";
+		telechips,pin-function = <7>;
+		telechips,input-enable;
+		telechips,no-pull;
+		telechips,mfio = <1>;
+	};
+
+	/* Sleep state */
+	i2c_sda_mfio_26_s: i2c_sda_mfio_26_s {
+		telechips,pins = "gpe-4";
+		telechips,pin-function = <0>;
+	};
+
+	/* Active state */
+	i2c_scl_mfio_12_a: i2c_scl_mfio_12_a {
+		telechips,pins = "gpc-6";
+		telechips,pin-function = <7>;
+		telechips,input-enable;
+		telechips,no-pull;
+		telechips,mfio = <2>;
+	};
+
+	/* Sleep state */
+	i2c_scl_mfio_12_s: i2c_scl_mfio_12_s {
+		telechips,pins = "gpc-6";
+		telechips,pin-function = <0>;
+	};
+
+	/* Active state */
+	i2c_sda_mfio_13_a: i2c_sda_mfio_13_a {
+		telechips,pins = "gpc-7";
+		telechips,pin-function = <7>;
+		telechips,input-enable;
+		telechips,no-pull;
+		telechips,mfio = <3>;
+	};
+
+	/* Sleep state */
+	i2c_sda_mfio_13_s: i2c_sda_mfio_13_s {
+		telechips,pins = "gpc-7";
+		telechips,pin-function = <0>;
+	};
+
+	/* Active state */
+	i2c_scl_mfio_4_a: i2c_scl_mfio_4_a {
+		telechips,pins = "gpg-4";
+		telechips,pin-function = <7>;
+		telechips,input-enable;
+		telechips,no-pull;
+		telechips,mfio = <28>;
+	};
+
+	/* Sleep state */
+	i2c_scl_mfio_4_s: i2c_scl_mfio_4_s {
+		telechips,pins = "gpg-4";
+		telechips,pin-function = <0>;
+	};
+
+	/* Active state */
+	i2c_sda_mfio_5_a: i2c_sda_mfio_5_a {
+		telechips,pins = "gpg-5";
+		telechips,pin-function = <7>;
+		telechips,input-enable;
+		telechips,no-pull;
+		telechips,mfio = <29>;
+	};
+
+	/* Sleep state */
+	i2c_sda_mfio_5_s: i2c_sda_mfio_5_s {
+		telechips,pins = "gpg-5";
+		telechips,pin-function = <0>;
+	};
+
+
+	/* Active state */
+        i2c_scl_mfio_40_a: i2c_scl_mfio_40_a {
+                telechips,pins = "gpf-14";
+                telechips,pin-function = <7>;
+                telechips,input-enable;
+                telechips,no-pull;
+                telechips,mfio = <2>;
+        };
+
+        /* Sleep state */
+        i2c_scl_mfio_40_s: i2c_scl_mfio_40_s {
+                telechips,pins = "gpf-14";
+                telechips,pin-function = <0>;
+        };
+
+	 /* Active state */
+        i2c_sda_mfio_41_a: i2c_sda_mfio_41_a {
+                telechips,pins = "gpf-15";
+                telechips,pin-function = <7>;
+                telechips,input-enable;
+                telechips,no-pull;
+                telechips,mfio = <3>;
+        };
+
+        /* Sleep state */
+        i2c_sda_mfio_41_s: i2c_sda_mfio_41_s {
+                telechips,pins = "gpf-15";
+                telechips,pin-function = <0>;
+        };
+
+
+
+};

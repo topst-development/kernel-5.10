@@ -1,0 +1,165 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/pmap/tcc807x/pmap-tcc807x-linux-ivi-display.h>
+
+/*=======================================================================================
+ * TCC807x_Linux_IVI VIOC PATH
+ * ---------------------------
+ *
+ *            fb/drm: GRDMA14 --------------------------- DISP3 --> HUD
+ *
+ * (RVC) tcc_overlay: GRDMA01 --------- SC0(4K) - WMIX0 - DISP0 --> IVI        [sub-core, main core]
+ *    (D/PGL) fb/vin: GRDMA02 ------------------+                              [sub-core]
+ *        vout0_disp: VRDMA03 ------------------+
+ *
+ *       wmixer_drv0: GRDMA06 ------------------- WMIX1 - WDMA01  (disabled)
+ *                    VRDMA07 ------------------+
+ *
+ *  tcc_overlay_drv1: VRDMA09 ------------------- WMIX2 - DISP2 --> Cluster    [sub-core]
+ *
+ *         vout0_m2m: VRDMA11 - VIQE0 - SC1(4K) - WMIX3 - WDMA03
+ *
+ *       scaler_drv2: VRDMA12 --------- SC2(2K) --------- WDMA04 --> NPU
+ *       scaler_drv3: VRDMA13 --------- SC3(2K) --------- WDMA05 --> NPU
+ *
+ *=======================================================================================
+ */
+&tcc_overlay {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03
+						VIOC_RDMA04 VIOC_RDMA05 VIOC_RDMA06 VIOC_RDMA07
+						VIOC_RDMA08 VIOC_RDMA09>;
+	wmixs = <&vioc_wmix VIOC_WMIX0 VIOC_WMIX1 VIOC_WMIX2>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+
+	display_num = <0>;
+	rdma_init_layer = <1>;
+
+	status = "okay";
+};
+
+&wmixer_drv0 {
+	rdmas = <&vioc_rdma VIOC_RDMA07>;
+	wmixs = <&vioc_wmix VIOC_WMIX1>;
+	wdmas = <&vioc_wdma VIOC_WDMA01>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+	wmix_bypass = <1>;
+	status = "disabled";
+};
+
+&scaler_drv2 {
+	rdmas = <&vioc_rdma VIOC_RDMA12>;
+	wmixs = <&vioc_wmix VIOC_WMIX4>;
+	wdmas = <&vioc_wdma VIOC_WDMA05>;
+	scalers = <&vioc_scaler VIOC_SCALER2>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+	wmix_bypass = <1>;
+	status = "okay";
+};
+
+&scaler_drv3 {
+	rdmas = <&vioc_rdma VIOC_RDMA13>;
+	wmixs = <&vioc_wmix VIOC_WMIX4>;
+	wdmas = <&vioc_wdma VIOC_WDMA06>;
+	scalers = <&vioc_scaler VIOC_SCALER3>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+	wmix_bypass = <0>;
+	status = "okay";
+};
+
+&vout_drv0 {
+	rdma = <&vioc_rdma VIOC_RDMA03>;
+	wmix = <&vioc_wmix VIOC_WMIX0>;
+	disp = <&vioc_disp VIOC_DISP0>;
+
+	m2m_rdma = <&vioc_rdma VIOC_RDMA11>;
+	m2m_wmix = <&vioc_wmix VIOC_WMIX3>;
+	m2m_wdma = <&vioc_wdma VIOC_WDMA04>;
+
+	/* boot animation is display at Cluster */
+	rdma_bootani = <&vioc_rdma VIOC_RDMA09>;
+	wmix_bootani = <&vioc_wmix VIOC_WMIX2>;
+	disp_bootani = <&vioc_disp VIOC_DISP2>;
+
+	deintl_block = <&vioc_viqe VIOC_VIQE0>;
+	scaler = <&vioc_scaler VIOC_SCALER1>;
+	mc = <&vioc_mc VIOC_MC1>;
+
+	status = "okay";
+};
+
+/*------------------------------------------------------------------------------
+ * pmap
+ *------------------------------------------------------------------------------
+ */
+
+&pmap_osd {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "osd";
+	size = <0x0 PMAP_SIZE_OSD>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_overlay {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay";
+	size = <0x0 PMAP_SIZE_OVERLAY>;
+	no-map;
+	status = "disable";
+};
+
+&pmap_overlay1 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay1";
+	size = <0x0 PMAP_SIZE_OVERLAY1>;
+	no-map;
+	status = "disable";
+};
+
+&pmap_overlay_rot {
+	/* for rotation in vout driver */
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay_rot";
+	size = <0x0 PMAP_SIZE_OVERLAY_ROT>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_v4l2_vout0 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "v4l2_vout0";
+	size = <0x0 PMAP_SIZE_V4L2_VOUT0>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_v4l2_vout1 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "v4l2_vout1";
+	size = <0x0 PMAP_SIZE_V4L2_VOUT1>;
+	no-map;
+	status = "disable";
+};
+
+&pmap_viqe0 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "viqe";
+	size = <0x0 PMAP_SIZE_VIQE0>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_fb_wmixer {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "fb_wmixer";
+	size = <0x0 PMAP_SIZE_FB_WMIXER>;
+	no-map;
+	status = "disable";
+};
+
+/* end of file */

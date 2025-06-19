@@ -1,0 +1,206 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/pmap/tcc807x/pmap-tcc807x-android-ivi-display.h>
+
+/*=======================================================================================
+ * TCC807x_Android_IVI VIOC PATH
+ * -----------------------------
+ *
+ *            fb/drm: GRDMA14 --------------------------- DISP3 --> HUD
+ *
+ *       tcc_overlay: VRDMA03 ------------------- WMIX0 - DISP0 --> IVI
+ *
+ *       wmixer_drv0: GRDMA06 ------------------- WMIX1 - WDMA01  (disabled)
+ *                    VRDMA07 ------------------+
+ *
+ *       wmixer_drv1: VRDMA10 ------------(bypass WMIX3)- WDMA02
+ *       scaler_drv1: VRDMA11 -(VIQE0)- SC1(4K) - WMIX3 - WDMA03
+ *
+ *       scaler_drv2: VRDMA12 --------- SC2(2K) --------- WDMA04 --> NPU
+ *       scaler_drv3: VRDMA13 --------- SC3(2K) --------- WDMA05 --> NPU
+ *
+ *=======================================================================================
+ */
+&tcc_overlay {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03
+						VIOC_RDMA04 VIOC_RDMA05 VIOC_RDMA06 VIOC_RDMA07
+						VIOC_RDMA08 VIOC_RDMA09>;
+	wmixs = <&vioc_wmix VIOC_WMIX0 VIOC_WMIX1 VIOC_WMIX2>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+
+	display_num = <0>;
+	rdma_init_layer = <3>;
+
+	status = "okay";
+};
+
+&wmixer_drv0 {
+	rdmas = <&vioc_rdma VIOC_RDMA07>;
+	wmixs = <&vioc_wmix VIOC_WMIX1>;
+	wdmas = <&vioc_wdma VIOC_WDMA01>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+	wmix_bypass = <0>;
+	status = "disabled";
+};
+
+&wmixer_drv1 {
+	rdmas = <&vioc_rdma VIOC_RDMA10>;
+	wmixs = <&vioc_wmix VIOC_WMIX3>;
+	wdmas = <&vioc_wdma VIOC_WDMA03>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	mc = <&vioc_mc VIOC_MC0>;
+	wmix_bypass = <1>;
+	status = "okay";
+};
+
+&scaler_drv1 {
+	rdmas = <&vioc_rdma VIOC_RDMA11>;
+	wmixs = <&vioc_wmix VIOC_WMIX3>;
+	wdmas = <&vioc_wdma VIOC_WDMA04>;
+	scalers = <&vioc_scaler VIOC_SCALER1>;
+	mc = <&vioc_mc VIOC_MC1>;
+	wmix_bypass = <0>;
+	status = "okay";
+};
+
+&scaler_drv2 {
+	rdmas = <&vioc_rdma VIOC_RDMA12>;
+	wmixs = <&vioc_wmix VIOC_WMIX4>;
+	wdmas = <&vioc_wdma VIOC_WDMA05>;
+	scalers = <&vioc_scaler VIOC_SCALER2>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+	wmix_bypass = <1>;
+	status = "okay";
+};
+
+&scaler_drv3 {
+	rdmas = <&vioc_rdma VIOC_RDMA13>;
+	wmixs = <&vioc_wmix VIOC_WMIX4>;
+	wdmas = <&vioc_wdma VIOC_WDMA06>;
+	scalers = <&vioc_scaler VIOC_SCALER3>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+	wmix_bypass = <0>;
+	status = "okay";
+};
+
+&wdma_drv0 {
+	disp = <&vioc_disp VIOC_DISP0>;
+	wdmas = <&vioc_wdma VIOC_WDMA00>;
+	wmixs = <&vioc_wmix VIOC_WMIX0>;
+	scalers = <&vioc_scaler VIOC_SCALER3>;
+	status = "okay";
+};
+
+&tcc_viqe {
+	tcc_viqe_viqe_common {
+		telechips,viqe,0 = <&vioc_viqe VIOC_VIQE0>;
+		board_num = <0>;
+	};
+
+	tcc_video_viqe_lcd {
+		telechips,wmixer = <&vioc_wmix VIOC_WMIX1>;
+		telechips,rdma,60 = <&vioc_rdma VIOC_RDMA07>;
+		telechips,disp = <&vioc_disp VIOC_DISP1>;
+		telechips,sc = <&vioc_scaler VIOC_SCALER1>;
+	};
+
+	tcc_video_viqe_external {
+		telechips,wmixer = <&vioc_wmix VIOC_WMIX0>;
+		telechips,rdma,60 = <&vioc_rdma VIOC_RDMA03>;
+		telechips,disp = <&vioc_disp VIOC_DISP0>;
+		telechips,sc = <&vioc_scaler VIOC_SCALER1>;
+	};
+
+	tcc_video_viqe_external_sub {
+		telechips,wmixer = <&vioc_wmix VIOC_WMIX0>;
+		telechips,rdma,60 = <&vioc_rdma VIOC_RDMA02>;
+		telechips,disp = <&vioc_disp VIOC_DISP0>;
+		telechips,sc = <&vioc_scaler VIOC_SCALER3>;
+	};
+
+	tcc_video_main_m2m{
+		telechips,main_rdma,m2m = <&vioc_rdma VIOC_RDMA11>;
+	};
+
+	tcc_video_sub_m2m {
+		telechips,sub_rdma,m2m = <&vioc_rdma VIOC_RDMA07>;
+	};
+
+	tcc_video_scaler_main_m2m {
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		m2m_sc_rdma = <&vioc_rdma VIOC_RDMA11>;
+		m2m_sc_scaler = <&vioc_scaler VIOC_SCALER1>;
+		m2m_sc_wmix = <&vioc_wmix VIOC_WMIX3>;
+		m2m_sc_wdma = <&vioc_wdma VIOC_WDMA04>;
+		m2m_sc_settop_support = <1>;	/* 1: pixel alpha, 0: global alpha */
+	};
+
+	tcc_video_scaler_sub_m2m {
+		clocks = <&clk_ddi DDIBUS_VIOC>;
+		m2m_sc_rdma = <&vioc_rdma VIOC_RDMA07>;
+		m2m_sc_scaler = <&vioc_scaler VIOC_SCALER3>;
+		m2m_sc_wmix = <&vioc_wmix VIOC_WMIX1>;
+		m2m_sc_wdma = <&vioc_wdma VIOC_WDMA01>;
+		m2m_sc_settop_support = <1>;
+	};
+};
+
+/*-----------------------------------------------------------
+ * VIOC PMAP
+ *-----------------------------------------------------------
+ */
+
+&pmap_osd {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "osd";
+	size = <0x0 PMAP_SIZE_OSD>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_overlay {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay";
+	size = <0x0 PMAP_SIZE_OVERLAY>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_overlay_rot {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay_rot";
+	size = <0x0 PMAP_SIZE_OVERLAY_ROT>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_viqe0 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "viqe";
+	size = <0x0 PMAP_SIZE_VIQE0>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_video_dual {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "video_dual";
+	size = <0x0 PMAP_SIZE_VIDEO_DUAL>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_fb_wmixer {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "fb_wmixer";
+	size = <0x0 PMAP_SIZE_FB_WMIXER>;
+	no-map;
+	status = "disabled";
+};
+
+/* end of file */

@@ -1,0 +1,54 @@
+/* SPDX-License-Identifier: (GPL-2.0-or-later OR MIT) */
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+&pcie_phy {
+	bifurcation = <0x0>;
+	status = "okay";
+};
+
+&pcie0 {
+	pinctrl-names = "default", "idle", "sleep";
+	pinctrl-0 = <&pcie_rst>;
+	pinctrl-1 = <&pcie_rst_idle>;
+	pinctrl-2 = <&pcie_rst_idle>;
+	refclk_type = <1>;
+};
+
+&pcie1 {
+	pinctrl-names = "default", "idle", "sleep";
+	pinctrl-0 = <&pcie_rst>;
+	pinctrl-1 = <&pcie_rst_idle>;
+	pinctrl-2 = <&pcie_rst_idle>;
+	refclk_type = <1>;
+};
+
+&pcie_epc0 {
+	pinctrl-names = "default", "idle", "sleep";
+	pinctrl-0 = <&pcie_rst>;
+	pinctrl-1 = <&pcie_rst_idle>;
+	pinctrl-2 = <&pcie_rst_idle>;
+	refclk_type = <1>;
+};
+
+&pcie_epc1 {
+	pinctrl-names = "default", "idle", "sleep";
+	pinctrl-0 = <&pcie_rst>;
+	pinctrl-1 = <&pcie_rst_idle>;
+	pinctrl-2 = <&pcie_rst_idle>;
+	refclk_type = <1>;
+};
+
+&pinctrl {
+	pcie_rst: pcie_rst {
+		telechips,pins = "gph-10";
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+
+	pcie_rst_idle: pcie_rst_idle {
+		telechips,pins = "gph-10";
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+};
