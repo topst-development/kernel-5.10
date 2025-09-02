@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc803x.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8030 LPD4321 Main Core";
+	board-id = <BOARD_ID_TCC8030_EVB>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc803x-dma.dtsi"
+#include "override/tcc803x-gmac.dtsi"
+#include "override/tcc803x-audio.dtsi"
+#include "override/tcc803x-vpu.dtsi"
+#include "override/tcc8030_31pe-cpu.dtsi"
+#include "override/tcc8030-lpd4321-gpio.dtsi"
+#include "override/tcc8030-lpd4321-uart.dtsi"
+#include "override/tcc8030-lpd4321-mmc.dtsi"
+#include "override/tcc8030-lpd4321-i2c.dtsi"
+#include "override/tcc8030-lpd4321-spi.dtsi"
+#include "override/tcc8030-lpd4321-ictc.dtsi"
+#include "override/tcc8030-lpd4321-usb.dtsi"
+#include "override/tcc8030-lpd4321-pcie.dtsi"
+#include "override/tcc8030-lpd4321-display.dtsi"
+#include "override/tcc8030-lpd4321-camera.dtsi"

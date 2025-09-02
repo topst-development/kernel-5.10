@@ -1,0 +1,7932 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright (C) Telechips Inc.
+ */
+#include <linux/io.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/err.h>
+#include <linux/string.h>
+#include <linux/mm.h>
+#include <linux/mm_types.h>
+#include <linux/slab.h>
+#include <linux/delay.h>
+#include <linux/kthread.h>
+#include <linux/fb.h>
+#include <linux/init.h>
+#include <linux/dma-mapping.h>
+#include <linux/interrupt.h>
+#include <linux/workqueue.h>
+#include <linux/wait.h>
+#include <linux/platform_device.h>
+#include <linux/clk.h>
+#include <linux/cpufreq.h>
+#include <linux/gpio.h>
+#include <linux/irq.h>
+#include <linux/miscdevice.h>
+#include <linux/uaccess.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#include <linux/compat.h>
+#ifdef CONFIG_PM
+#include <linux/pm.h>
+#endif
+
+#include <soc/telechips/timer_api.h>
+
+#include <video/telechips/tcc_types.h>
+#include <video/telechips/vioc_disp.h>
+#include <video/telechips/vioc_wdma.h>
+#include <video/telechips/vioc_rdma.h>
+#include <video/telechips/vioc_global.h>
+#include <video/telechips/vioc_config.h>
+
+#include <video/telechips/tccfb_ioctrl.h>
+#include <video/telechips/tcc_vsync_ioctl.h>
+#include <video/telechips/tcc_wmixer_ioctrl.h>
+#include <video/telechips/tcc_scaler_ioctrl.h>
+
+#ifdef CONFIG_VIOC_MAP_DECOMP
+#include <video/telechips/tca_map_converter.h>
+#endif
+
+#if defined(CONFIG_VIOC_DOLBY_VISION_EDR)
+#include <video/telechips/vioc_v_dv.h>
+#include <video/telechips/vioc_dv_cfg.h>
+
+extern unsigned int DV_PROC_CHECK;
+#define LAST_FRAME_FORMAT TCC_LCDC_IMG_FMT_YUYV //TCC_LCDC_IMG_FMT_RGB888_3
+#else
+#define LAST_FRAME_FORMAT TCC_LCDC_IMG_FMT_YUYV
+#endif
+
+#ifdef CONFIG_VIDEO_DISPLAY_DEINTERLACE_MODE
+#include "tcc_vioc_viqe_interface.h"
+#include "viqe.h"
+#endif
+
+#include "tcc_vsync.h"
+#define DEVICE_NAME "tcc_vsync"
+struct tcc_video_disp tccvid_vsync[VSYNC_MAX];
+struct tcc_video_lastframe tccvid_lastframe[VSYNC_MAX];
+unsigned int vsync_rdma_off[VSYNC_MAX];	// RDMA_VIDEO enable/disable
+
+#define WMIXER_PATH	"/dev/wmixer1"
+
+#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+spinlock_t LastFrame_lockDisp;
+
+
+//#define USE_SCALER2_FOR_LASTFRAME
+#ifdef USE_SCALER2_FOR_LASTFRAME
+#define SCALER_PATH	"/dev/scaler2"
+#endif
+
+#ifdef CONFIG_DISPLAY_EXT_FRAME
+static int bExt_Frame;
+static int bCamera_mode;
+static int bToggleBuffer;
+int restricted_ExtFrame;
+struct mutex ext_mutex;
+void __iomem *pExtFrame_RDMABase;
+static struct tcc_lcdc_image_update last_backup;
+#endif
+#endif
+
+#if defined(CONFIG_FB_TCC_COMPOSITE)
+extern void tcc_composite_set_bypass(char bypass_mode);
+#endif
+
+#if defined(CONFIG_TCC_DISPLAY_MODE_USE) && !defined(CONFIG_TCC_DISPLAY_MODE_AUTO_DETECT)
+extern void tca_fb_attach_update_flag(void);
+#endif
+
+extern int tca_fb_divide_get_status(void);
+
+
+#if defined(CONFIG_TCC_VTA)
+extern int vta_cmd_notify_change_status(const char *);
+#endif
+
+#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+static int vsync_started_device = LCD_START_VSYNC;
+//static int vsync_started;
+#endif
+
+static unsigned int EX_OUT_LCDC;
+static unsigned int LCD_LCDC_NUM;
+static char vsync_power_state;
+static int lcdc_interrupt_onoff;
+static int video_display_disable_check;
+
+
+/*--------------------------------------------------------------------------->>>
+ * Debugging
+ */
+//#define DEBUG_VSYNC_FRAME
+#ifdef DEBUG_VSYNC_FRAME
+//#define USE_ALWAYS_UNPLUGGED_INT
+#define GAP_CNT 60
+#endif
+
+//#define DEBUG_VSYNC	// for general debugging
+//#define DEBUG_VSYNC_V	// for vsync process
+//#define DEBUG_VSYNC_D	// for frame drop/skip
+
+#ifdef DEBUG_VSYNC
+#define dbg(msg...) pr_info("[DBG][VSYNC] " msg)
+#define dbg_ext(msg...) pr_info("[DBG][VSYNC-E] " msg)
+#else
+#define dbg(msg...)
+#define dbg_ext(msg...)
+#endif
+
+#ifdef DEBUG_VSYNC_V
+#define dbg_v(msg...) pr_info("[DBG][VSYNC-V] " msg)
+#else
+#define dbg_v(msg...)
+#endif
+
+#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+#define dbg_d(msg...) pr_info("[DBG][VSYNC] " msg)
+#define dbg_dv(msg...) pr_info("[DBG][VSYNC-DV] " msg)	// for DolbyVision
+#else
+#ifdef DEBUG_VSYNC_D
+#define dbg_d(msg...) pr_info("[DBG][VSYNC] " msg)
+#else
+#define dbg_d(msg...)
+#endif
+#define dbg_dv(msg...)
+#endif
+//<<<---------------------------------------------------------------------------
+
+static inline int tcc_vsync_get_time(struct tcc_video_disp *p);
+static inline void tcc_vsync_set_time(struct tcc_video_disp *p, int time);
+#define USE_VSYNC_TIMER
+
+//#define USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT
+
+/* if time gab of video frame over base time is bigger than this value,
+ * that frame is skipped.
+ */
+#define VIDEO_SYNC_MARGIN_LATE (50)
+/* if time gap of video frame over base time is less than this value,
+ * that frame is displayed immediately.
+ */
+#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST) && defined(DV_PREVENT_FRAME_DROP_AND_DUPLICATION)
+#define VIDEO_SYNC_MARGIN_EARLY (50)
+#else
+#define VIDEO_SYNC_MARGIN_EARLY (50)
+#endif
+#define GAP_FOR_RESET_SYNC_TIME (200)
+
+#define TIME_MARK_SKIP (-1)
+
+spinlock_t vsync_lock;
+spinlock_t vsync_lockDisp;
+
+
+DECLARE_WAIT_QUEUE_HEAD(wq_consume);
+
+#ifdef CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST
+static struct work_struct dolby_out_change_work_q;
+#endif
+
+#ifdef USE_VSYNC_TIMER
+static struct tcc_timer *vsync_timer;
+static int g_is_vsync0_opened;
+static int g_is_vsync1_opened;
+#ifdef CONFIG_USE_SUB_MULTI_FRAME
+static int g_is_vsync2_opened;
+static int g_is_vsync3_opened;
+#endif
+#endif
+#ifdef USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT
+static struct tcc_timer *vsync_unpluged_int_timer;
+static int g_is_unplugged_int_enabled;
+#endif
+
+struct tcc_vsync_display_info_t vsync_vioc1_disp;
+struct tcc_vsync_display_info_t vsync_vioc0_disp;
+
+static int tcc_vsync_mvc_status;
+static int tcc_vsync_mvc_overlay_priority;
+
+#if defined(CONFIG_VSYNC_DRV_ALWAYS_ACCEPT_START_VSYNC)
+static struct tcc_lcdc_image_update *prepare_input_image_info[VSYNC_MAX];
+#endif
+
+/*--------------------------------------------------------------------------->>>
+ * TODO:AlanK Check!!!
+ *
+ * HDMI_video_hz - Check it after HDMI driver avaiable
+ * Output_SelectMode - called by TCC_LCDC_HDMI_TIMING, TCC_LCDC_SET_M2M_LASTFRAME
+ */
+unsigned int HDMI_video_hz;
+enum TCC_OUTPUT_TYPE Output_SelectMode = TCC_OUTPUT_NONE;
+EXPORT_SYMBOL(Output_SelectMode);
+
+struct tccfb_platform_data tccfb_pdata;
+
+/* from TCCxxxx_VPU_CODEC_COMMON.h */
+#define PA 0	// physical address
+#define VA 1	// virtual  address
+//<<<---------------------------------------------------------------------------
+
+/*--------------------------------------------------------------------------->>>
+ * New interface functions
+ */
+static signed int pmap_get_info(const char *name, struct tccmisc_user_t *pmap)
+{
+	int ret = 1;
+
+	ret = scnprintf(pmap->name, sizeof(pmap->name), "%s", name);
+	if (ret == 0) {
+		(void)pr_err("[ERR][VSYNC] %s: copy pname failed(%s, %s)\n", __func__, pmap->name, name);
+		goto get_pmap_exit;
+	}
+
+	if (tccmisc_pmap(pmap) < 0) {
+		(void)pr_err("[ERR][VSYNC] %s: copy pname failed(%s, %s)\n", __func__, pmap->name, name);
+		ret = -1;
+	} else {
+		dbg("[DBG][VSYNC] %s - base=%4llx, size=%4llx\n", pmap->name, pmap->base, pmap->size);
+	}
+
+get_pmap_exit:
+	return ret;	// error: ret <= 0
+}
+
+struct tcc_dp_device *tca_fb_get_displayType(enum TCC_OUTPUT_TYPE check_type)
+{
+ 	struct tcc_dp_device *dp_device;
+
+	if (tccfb_pdata.Mdp_data.DispDeviceType == check_type) {
+		dp_device = &tccfb_pdata.Mdp_data;
+	} else if (tccfb_pdata.Sdp_data.DispDeviceType == check_type) {
+		dp_device = &tccfb_pdata.Sdp_data;
+	} else {
+		dp_device = NULL;
+		pr_err("[ERR][VSYNC] %s: Invalid DispDeviceType(%d) != M(%d) or S(%d)\n",
+			__func__, check_type, tccfb_pdata.Mdp_data.DispDeviceType, tccfb_pdata.Sdp_data.DispDeviceType);
+	}
+ 
+	return dp_device;
+}
+EXPORT_SYMBOL(tca_fb_get_displayType);
+
+unsigned int tca_get_scaler_num(enum TCC_OUTPUT_TYPE Output, unsigned int Layer)
+{
+	unsigned int iSCNum = VIOC_SCALER3;
+
+#ifdef CONFIG_ANDROID
+	if (Output == TCC_OUTPUT_LCD) {
+		// lvds
+		iSCNum = VIOC_SCALER3;
+	} else if (Output == TCC_OUTPUT_HDMI
+		|| Output == TCC_OUTPUT_COMPOSITE
+		|| Output == TCC_OUTPUT_DP
+		|| Output == TCC_OUTPUT_COMPONENT) {
+
+		if (Layer == RDMA_FB) {
+			// FB layer
+			iSCNum = VIOC_SCALER2;
+		} else if (Layer == RDMA_VIDEO) {
+			iSCNum = VIOC_SCALER1;
+		} else {
+			// RDMA_VIDEO_SUB
+			#if defined(CONFIG_ARCH_TCC899X) || defined(CONFIG_ARCH_TCC901X)
+			iSCNum = VIOC_SCALER4;
+			#else
+			iSCNum = VIOC_SCALER3;
+			#endif
+		}
+	}
+#else
+	#ifdef CONFIG_PLATFORM_STB
+	if (Layer == RDMA_VIDEO) {
+		// video
+		iSCNum = VIOC_SCALER1;
+	} else {
+		#if defined(CONFIG_VIOC_DOLBY_VISION_EDR)
+		iSCNum = VIOC_SCALER3;
+		#else
+		iSCNum = VIOC_SCALER0;
+		#endif
+	}
+	#else
+	iSCNum = VIOC_SCALER1;
+	#endif
+#endif
+
+	return iSCNum;
+}
+EXPORT_SYMBOL(tca_get_scaler_num);
+
+static int tcc_vioc_display_dt_parse(struct device_node *np, struct tcc_dp_device *dp_data)
+{
+	int ret = 0;
+	unsigned int index = 0, i = 0;
+	struct device_node *wmixer_node, *ddc_node, *rdma_node, *wdma_node;
+
+	/*
+	 * VIOC DISP component
+	 */
+	ddc_node = of_parse_phandle(np, "telechips,disp", 0);
+	if (!ddc_node) {
+		pr_err("[WAR][VSYNC] could not find telechips,disp node\n");
+		ret = -ENODEV;
+	}
+	of_property_read_u32_index(np, "telechips,disp", 1, &index);
+	dp_data->ddc_info.virt_addr = VIOC_DISP_GetAddress(index);
+	dp_data->ddc_info.blk_num = index;
+	dp_data->DispNum = get_vioc_index(dp_data->ddc_info.blk_num);
+	dp_data->ddc_info.irq_num = irq_of_parse_and_map(ddc_node, get_vioc_index(index));
+	dp_data->vioc_clock = of_clk_get_by_name(ddc_node, "ddi-clk");
+
+	if (dp_data->vioc_clock == NULL) {
+		pr_err("[WAR][VSYNC] vioc_clock is null\n");
+		ret = -ENODEV;
+	}
+
+	if (dp_data->DispNum == get_vioc_index(VIOC_DISP0)) {
+		dp_data->ddc_clock = of_clk_get_by_name(ddc_node, "disp0-clk");
+	} else if (dp_data->DispNum == get_vioc_index(VIOC_DISP1)) {
+		dp_data->ddc_clock = of_clk_get_by_name(ddc_node, "disp1-clk");
+	} else {
+		pr_err("[WAR][VSYNC] could not find ddc clock. invalid display number:%d\n", dp_data->DispNum);
+	}
+
+	if (dp_data->ddc_clock == NULL) {
+		pr_err("[WAR][VSYNC] ddc_clock is null\n");
+		ret = -ENODEV;
+	}
+
+	/*
+	 * VIOC WMIX component
+	 */
+	wmixer_node = of_parse_phandle(np, "telechips,wmixer", 0);
+	of_property_read_u32_index(np, "telechips,wmixer", 1, &index);
+	if (!wmixer_node) {
+		pr_err("[WAR][VSYNC] could not find wmixer node\n");
+		ret = -ENODEV;
+	} else {
+		dp_data->wmixer_info.virt_addr = VIOC_WMIX_GetAddress(index);
+		dp_data->wmixer_info.irq_num = irq_of_parse_and_map(wmixer_node, get_vioc_index(index));
+		dp_data->wmixer_info.blk_num = index;
+		pr_info("[INF][VSYNC] wmixer %d 0x%px irq:%d\n", get_vioc_index(index), dp_data->wmixer_info.virt_addr, dp_data->wmixer_info.irq_num);
+	}
+
+	/*
+	 * VIOC RDMA component
+	 */
+	rdma_node = of_parse_phandle(np, "telechips,rdma", 0);
+	if (!rdma_node) {
+		pr_err("[WAR][VSYNC] could not find telechips,rdma node\n");
+		ret = -ENODEV;
+	} else {
+		for (i = 0; i < RDMA_MAX_NUM; i++) {
+			of_property_read_u32_index(np, "telechips,rdma", i + 1, &index);
+			dp_data->rdma_info[i].virt_addr = VIOC_RDMA_GetAddress(index);
+			dp_data->rdma_info[i].irq_num = irq_of_parse_and_map(rdma_node, get_vioc_index(index));
+			dp_data->rdma_info[i].blk_num = index;
+		}
+	}
+
+	/*
+	 * VIOC WDMA component
+	 */
+	wdma_node = of_parse_phandle(np, "telechips,wdma", 0);
+	of_property_read_u32_index(np, "telechips,wdma", 1, &index);
+	if (!wdma_node) {
+		pr_err("[WAR][VSYNC] could not find wdma node\n");
+		ret = -ENODEV;
+	} else {
+		dp_data->wdma_info.virt_addr = VIOC_WDMA_GetAddress(index);
+		dp_data->wdma_info.irq_num = irq_of_parse_and_map(wdma_node, get_vioc_index(index));
+		dp_data->wdma_info.blk_num = index;
+		pr_info("[INF][VSYNC] wdma %d 0x%px irq:%d\n", get_vioc_index(index), dp_data->wdma_info.virt_addr, dp_data->wdma_info.irq_num);
+	}
+
+	pr_info("[INF][VSYNC] ddc:%d %d, wmixer:%d rdma:%d wdma:%d\n",
+		get_vioc_index(dp_data->ddc_info.blk_num), dp_data->DispNum,
+		get_vioc_index(dp_data->wmixer_info.blk_num),
+		get_vioc_index(dp_data->rdma_info[RDMA_FB].blk_num),
+		get_vioc_index(dp_data->wdma_info.blk_num));
+	pr_info("[INF][VSYNC] ddc:0x%px, wmixer:0x%px rdma:0x%px wdma:0x%px\n",
+		dp_data->ddc_info.virt_addr, dp_data->wmixer_info.virt_addr,
+		dp_data->rdma_info[RDMA_FB].virt_addr,
+		dp_data->wdma_info.virt_addr);
+
+	return ret;
+}
+
+static int tcc_dp_dt_parse_data(void)
+{
+	int ret = 0;
+	struct device_node *vioc_fb_np, *main_np, *extend_np;
+
+	vioc_fb_np = of_find_compatible_node(NULL, NULL, "telechips,vioc-fb");
+	if (vioc_fb_np == NULL) {
+		//pr_err("[ERR][VSYNC] could not find telechips,vioc-fb dt\n");
+		ret = -1;
+		goto exit;
+	}
+
+	if (of_property_read_u32(vioc_fb_np, "telechips,fbdisplay_num", &tccfb_pdata.lcdc_number)) {
+		//pr_err("[ERR][VSYNC] could not find telechips,fbdisplay_nubmer\n");
+		ret = -2;
+		goto exit;
+	}
+
+	if (tccfb_pdata.lcdc_number) {
+		main_np = of_find_node_by_name(vioc_fb_np, "fbdisplay1");
+		extend_np = of_find_node_by_name(vioc_fb_np, "fbdisplay0");
+	} else {
+		main_np = of_find_node_by_name(vioc_fb_np, "fbdisplay0");
+		extend_np = of_find_node_by_name(vioc_fb_np, "fbdisplay1");
+	}
+
+	if (main_np == NULL) {
+		//pr_err("[ERR][VSYNC] could not find fbdisplay node of lcdc_number(%d)\n", tccfb_pdata.lcdc_number);
+		ret = -3;
+		goto exit;
+	}
+
+	/* Default main display block */
+	ret = tcc_vioc_display_dt_parse(main_np, &tccfb_pdata.Mdp_data);
+	if (ret) {
+		//pr_err("%s: parsing main display\n", __func__);
+		ret = -4;
+	}
+
+	tccfb_pdata.Mdp_data.FbPowerState = 1;	//TODO:AlanK
+	tccfb_pdata.Mdp_data.DispDeviceType = TCC_OUTPUT_LCD;	//TODO:AlanK
+
+	pr_info("%s: lcdc_number(%d) DispNum(%d)\n", __func__, tccfb_pdata.lcdc_number, tccfb_pdata.Mdp_data.DispNum);
+	tccfb_pdata.lcdc_number = tccfb_pdata.Mdp_data.DispNum;
+
+	/* Sub displayblock */
+	ret = tcc_vioc_display_dt_parse(extend_np, &tccfb_pdata.Sdp_data);
+	if (ret) {
+		//pr_err("%s: parsing sub display\n", __func__);
+		ret = -5;
+	}
+
+	tccfb_pdata.Sdp_data.FbPowerState = 0;	//TODO:AlanK
+	tccfb_pdata.Sdp_data.DispDeviceType = TCC_OUTPUT_NONE;	//TODO:AlanK
+
+exit:
+	return ret;
+}
+
+//<<<------------New interface functions----------------------------------------
+
+void set_hdmi_drm(enum HDMI_DRM_MODE mode, struct tcc_lcdc_image_update *pImage, unsigned int layer);
+
+#if defined(CONFIG_TCC_HDMI_DRIVER_V1_4) || defined(CONFIG_TCC_HDMI_DRIVER_V2_0)
+extern uint32_t hdmi_get_VBlank(void);
+#endif
+
+#define RDMA_UVI_MAX_WIDTH 3072
+
+static void tca_mvc_display_update(char hdmi_lcdc, struct tcc_lcdc_image_update *ImageInfo)
+{
+	void __iomem *pDISPBase;
+	void __iomem *pWMIXBase;
+	void __iomem *pRDMABase0;
+	void __iomem *pRDMABase1;
+
+	unsigned int lcd_width = 0, lcd_height = 0, iVBlank = 0;
+
+	dbg("%s en:%d layer:%d fmt:%d Fw:%d Fh:%d Iw:%d Ih:%d otf:%d\n",
+		__func__, ImageInfo->enable, ImageInfo->Lcdc_layer,
+		ImageInfo->fmt, ImageInfo->Frame_width, ImageInfo->Frame_height,
+		ImageInfo->Image_width, ImageInfo->Image_height,
+		ImageInfo->on_the_fly);
+
+	if (hdmi_lcdc) {
+		pDISPBase = VIOC_DISP_GetAddress(1);
+		pWMIXBase = VIOC_WMIX_GetAddress(1);
+		pRDMABase0 = VIOC_RDMA_GetAddress(6);
+		pRDMABase1 = VIOC_RDMA_GetAddress(7);
+	} else {
+		pDISPBase = VIOC_DISP_GetAddress(0);
+		pWMIXBase = VIOC_WMIX_GetAddress(0);
+		pRDMABase0 = VIOC_RDMA_GetAddress(2);
+		pRDMABase1 = VIOC_RDMA_GetAddress(3);
+	}
+
+	VIOC_DISP_GetSize(pDISPBase, &lcd_width, &lcd_height);
+
+	if ((!lcd_width) || (!lcd_height)) {
+		pr_info("[INF][VIOC_I] %s - lcd width and hight is not normal!!!!\n", __func__);
+		return;
+	}
+
+	#if defined(CONFIG_TCC_HDMI_DRIVER_V2_0)
+	iVBlank = hdmi_get_VBlank();
+	#endif
+
+	if (!ImageInfo->enable)	{
+		VIOC_RDMA_SetImageDisable(pRDMABase0);
+		VIOC_RDMA_SetImageDisable(pRDMABase1);
+		pr_info("[INF][VIOC_I] %s - Image Info is not enable, so RDAMA is disable.\n", __func__);
+		return;
+	}
+
+	#if defined(CONFIG_TCC_HDMI_DRIVER_V2_0) && (defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT) || defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT_MODULE))
+	set_hdmi_drm(DRM_ON, ImageInfo, ImageInfo->Lcdc_layer);
+	#endif
+
+	//dbg("%s lcdc:%d,pRDMA0:0x%08x pRDMA1:0x%08x, pWMIX:0x%08x,
+	//pDISP:0x%08x, addr0:0x%08x\n",
+	//	__func__, hdmi_lcdc, pRDMABase0, pRDMABase1,
+	//	pWMIXBase, pDISPBase, ImageInfo->addr0);
+	//dbg("%s enable:%d, layer:%d, fmt:%d, Fw:%d, Fh:%d,
+	//Iw:%d, Ih:%d, fmt:%d onthefly:%d\n",
+	//	__func__, ImageInfo->enable, ImageInfo->Lcdc_layer,
+	//	ImageInfo->fmt,ImageInfo->Frame_width, ImageInfo->Frame_height,
+	//	ImageInfo->Image_width, ImageInfo->Image_height,
+	//	ImageInfo->fmt, ImageInfo->on_the_fly);
+
+	if (ImageInfo->fmt >= TCC_LCDC_IMG_FMT_444SEP && ImageInfo->fmt <= TCC_LCDC_IMG_FMT_YUV422ITL1) {
+
+		/* Y2RMode Default 0 (Studio Color) */
+		VIOC_RDMA_SetImageY2REnable(pRDMABase0, true);
+		VIOC_RDMA_SetImageY2RMode(pRDMABase0, 0x2);
+
+		if (ImageInfo->Frame_width <= RDMA_UVI_MAX_WIDTH) {
+			VIOC_RDMA_SetImageUVIEnable(pRDMABase0, true);
+			/* prevent KCS warning */
+		} else {
+			VIOC_RDMA_SetImageUVIEnable(pRDMABase0, false);
+		}
+	}
+
+	VIOC_RDMA_SetImageOffset(pRDMABase0, ImageInfo->fmt, ImageInfo->Frame_width);
+	VIOC_RDMA_SetImageFormat(pRDMABase0, ImageInfo->fmt);
+
+	VIOC_WMIX_SetPosition(pWMIXBase, 2, 0, 0);
+	VIOC_WMIX_SetPosition(pWMIXBase, 3, 0, 0);
+
+	VIOC_RDMA_SetImageSize(pRDMABase0, ImageInfo->Image_width, ImageInfo->Image_height);
+	VIOC_RDMA_SetImageBase(pRDMABase0, ImageInfo->addr0, ImageInfo->addr1, ImageInfo->addr2);
+
+	VIOC_RDMA_SetImageIntl(pRDMABase0, false);
+
+	if (ImageInfo->fmt >= TCC_LCDC_IMG_FMT_444SEP && ImageInfo->fmt <= TCC_LCDC_IMG_FMT_YUV422ITL1) {
+
+		/* Y2RMode Default 0 (Studio Color) */
+		VIOC_RDMA_SetImageY2REnable(pRDMABase1, true);
+		VIOC_RDMA_SetImageY2RMode(pRDMABase1, 0x2);
+
+		if (ImageInfo->Frame_width <= RDMA_UVI_MAX_WIDTH) {
+			VIOC_RDMA_SetImageUVIEnable(pRDMABase1, true);
+			/* prevent KCS warning */
+		} else {
+			VIOC_RDMA_SetImageUVIEnable(pRDMABase1, false);
+		}
+	}
+
+	VIOC_RDMA_SetImageOffset(pRDMABase1, ImageInfo->fmt, ImageInfo->Frame_width);
+	VIOC_RDMA_SetImageFormat(pRDMABase1, ImageInfo->fmt);
+
+	// position
+	VIOC_WMIX_SetPosition(pWMIXBase, ImageInfo->Lcdc_layer, 0, ImageInfo->Frame_height + iVBlank);
+
+	VIOC_RDMA_SetImageSize(pRDMABase1, ImageInfo->Image_width, ImageInfo->Image_height);
+	VIOC_RDMA_SetImageBase(pRDMABase1, ImageInfo->MVC_Base_addr0, ImageInfo->MVC_Base_addr1, ImageInfo->MVC_Base_addr2);
+
+	VIOC_RDMA_SetImageIntl(pRDMABase1, false);
+
+	VIOC_WMIX_SetBGColor(pWMIXBase, 0x00, 0x00, 0x00, 0x00);
+
+	VIOC_RDMA_SetImageEnable(pRDMABase0);
+	VIOC_RDMA_SetImageEnable(pRDMABase1);
+
+	VIOC_WMIX_SetUpdate(pWMIXBase);
+}
+
+static void tca_lcdc_set_onthefly(struct tcc_dp_device *pdp_data, struct tcc_lcdc_image_update *ImageInfo)
+{
+	unsigned int iSCType = 0;
+
+	#ifdef CONFIG_FB_VIOC
+	if (Output_SelectMode == TCC_OUTPUT_NONE) {
+		return;
+		/* prevent KCS warning */
+	}
+	#endif
+
+	if ((pdp_data == NULL) || (ImageInfo == NULL)) {
+		pr_err("[ERR][VIOC_I] %s pdp_data:%px ImageInfo:%px\n", __func__, pdp_data, ImageInfo);
+		return;
+	}
+
+	if (ImageInfo->MVCframeView == 1) {
+		dbg("%s is returned because of mvc frame view\n", __func__);
+		return;
+	}
+
+#ifdef CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST
+	if (ImageInfo->private_data.optional_info[VID_OPT_HAVE_DOLBYVISION_INFO] != 0) {
+		return;
+	}
+#endif
+
+	if (ImageInfo->on_the_fly) {
+		iSCType = tca_get_scaler_num(pdp_data->DispDeviceType, ImageInfo->Lcdc_layer);
+
+		if (VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) == -1) {
+			#ifdef TEST_SC_NO_PLUGIN_IN_BYPASS_CASE
+			if (((ImageInfo->crop_right - ImageInfo->crop_left) != ImageInfo->Image_width)
+				|| ((ImageInfo->crop_bottom - ImageInfo->crop_top) != ImageInfo->Image_height))
+			#endif
+			{
+				pr_info("[INF][VIOC_I] %s Scaler-%d is plug in RDMA-%d\n",
+					__func__, get_vioc_index(iSCType),
+					get_vioc_index(pdp_data->rdma_info[
+					ImageInfo->Lcdc_layer].blk_num));
+
+				VIOC_RDMA_SetImageDisable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr);
+				VIOC_CONFIG_PlugIn(iSCType, pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+			}
+
+		#ifdef CONFIG_VIOC_MAP_DECOMP
+			// HEVC MAP CONVERTER compressed data
+			if (ImageInfo->private_data.optional_info[VID_OPT_HAVE_MC_INFO] != 0) {
+					(void)VIOC_CONFIG_MCPath(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, VIOC_MC0);
+			} else
+		#endif
+			{
+				#ifndef TEST_SC_NO_PLUGIN_IN_BYPASS_CASE
+				pr_info("[INF][VIOC_I] %s RDMA-%d\n", __func__, get_vioc_index(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num));
+				#endif
+
+				#if defined(CONFIG_VIOC_MAP_DECOMP)
+				(void)VIOC_CONFIG_MCPath(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+				#endif
+
+				#ifndef TEST_SC_NO_PLUGIN_IN_BYPASS_CASE
+				pr_info("[INF][VIOC_I] %s RDMA-%d Plugged-In\n", __func__, get_vioc_index(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num));
+				#endif
+			}
+		}
+	} else {
+		if (VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) != -1) {
+
+			iSCType = (unsigned int)VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+			
+			#if defined(CONFIG_VIOC_MAP_DECOMP)
+			VIOC_CONFIG_MCPath(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+			#endif
+
+			VIOC_RDMA_SetImageDisable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr);
+
+			//VIOC_CONFIG_SWReset(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, VIOC_CONFIG_RESET);
+			//VIOC_CONFIG_SWReset(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, VIOC_CONFIG_CLEAR);
+
+			if (iSCType <= VIOC_SCALER3) {
+				VIOC_CONFIG_PlugOut(iSCType);
+				VIOC_CONFIG_SWReset(iSCType, VIOC_CONFIG_RESET);
+				VIOC_CONFIG_SWReset(iSCType, VIOC_CONFIG_CLEAR);
+			}
+		}
+	}
+}
+
+static void tca_scale_display_update_internal(struct tcc_dp_device *pdp_data, struct tcc_lcdc_image_update *ImageInfo, int process_lut_plugin)
+{
+	void __iomem *pSC;
+	int iSCType;
+	unsigned int lcd_width = 0, lcd_height = 0;
+
+	//pr_info("[INF][VIOC_I] %s enable:%d, layer:%d, addr:0x%x, ts:%d,
+	//fmt:%d, Fw:%d, Fh:%d, Iw:%d, Ih:%d, fmt:%d onthefly:%d  map :%d\n",
+	//	__func__, ImageInfo->enable, ImageInfo->Lcdc_layer,
+	//	ImageInfo->addr0, ImageInfo->time_stamp, ImageInfo->fmt,
+	//	ImageInfo->Frame_width, ImageInfo->Frame_height,
+	//	ImageInfo->Image_width, ImageInfo->Image_height,
+	//	ImageInfo->fmt, ImageInfo->on_the_fly,
+	//	ImageInfo->private_data.optional_info[16]);
+
+	if ((!pdp_data) || (!ImageInfo)) {
+		return;
+		/* prevent KCS warning */
+	}
+
+	if ((ImageInfo->Lcdc_layer >= RDMA_MAX_NUM) || (ImageInfo->fmt > TCC_LCDC_IMG_FMT_MAX)) {
+		pr_err("[ERR][VIOC_I] LCD :: lcdc:%d, enable:%d, layer:%d, addr:0x%x, fmt:%d, Fw:%d, Fh:%d, Iw:%d, Ih:%d, fmt:%d onthefly:%d\n",
+		       get_vioc_index(pdp_data->ddc_info.blk_num),
+		       ImageInfo->enable, ImageInfo->Lcdc_layer,
+		       ImageInfo->addr0, ImageInfo->fmt,
+		       ImageInfo->Frame_width, ImageInfo->Frame_height,
+		       ImageInfo->Image_width, ImageInfo->Image_height,
+		       ImageInfo->fmt, ImageInfo->on_the_fly);
+
+		return;
+	}
+
+#ifdef CONFIG_VIOC_DOLBY_VISION_EDR
+	if (!ImageInfo->enable) {
+		bStep_Check = DEF_DV_CHECK_NUM;
+		#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+		if (VIOC_CONFIG_DV_GET_EDR_PATH()) {
+			// No UI-Blending
+			#ifdef CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST_UI
+			VIOC_RDMA_PreventEnable_for_UI(0, 0);
+			#endif
+			tca_edr_display_update(pdp_data, ImageInfo);
+			vioc_v_dv_prog(dv_md_phyaddr, dv_reg_phyaddr, ATTR_SDR, 1);
+			return;
+		}
+		#endif
+	} else {
+		#if 0//defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+		// MC off
+		ImageInfo->private_data.optional_info[VID_OPT_HAVE_MC_INFO] = 0;
+		#endif
+
+		if (ImageInfo->private_data.optional_info[VID_OPT_HAVE_DOLBYVISION_INFO] != 0) {
+
+			if (!bStep_Check) {
+				nFrame++;
+				#if 0//defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+				// To display 1st frame only.
+				return;
+				#endif
+			} else {
+				if (bStep_Check == DEF_DV_CHECK_NUM) {
+					nFrame = 1;//0;
+					bStep_Check--;
+				} else {
+					bStep_Check--;
+					return;
+				}
+			}
+
+		#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+			tca_edr_inc_check_count(0, 0, 1, 0, 0);
+			tca_edr_display_update(pdp_data, ImageInfo);
+
+			#ifdef CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST_UI
+			// No UI-Blending
+			if (ImageInfo->private_data.dolbyVision_info.osd_addr[0] != USE_OWN_FB) {
+				VIOC_RDMA_PreventEnable_for_UI(1, ImageInfo->private_data.dolbyVision_info.osd_addr[0] == 0x00 ? 1 : 0);
+			}
+			#endif
+
+			return;
+		#endif
+		}
+	}
+
+	#if !defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+	tca_edr_el_display_update(pdp_data, ImageInfo);
+	#endif
+#endif
+
+	//pr_info("%s: [%d] Start frame_count(%d) :: reg(0x%x), md(0x%x)\n",
+	//	__func__,
+	//	ImageInfo->private_data.optional_info[VID_OPT_DISP_OUT_IDX],
+	//	nFrame,
+	//	ImageInfo->private_data.dolbyVision_info.reg_addr,
+	//	ImageInfo->private_data.dolbyVision_info.md_hdmi_addr);
+
+	if (!ImageInfo->enable)	{
+		#if !defined(CONFIG_VIOC_DOLBY_VISION_EDR) && defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST_UI)
+		VIOC_RDMA_PreventEnable_for_UI(0, 0);
+		#endif
+
+		//map converter
+		#if defined(CONFIG_VIOC_MAP_DECOMP)
+		VIOC_CONFIG_MCPath(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+		#endif
+
+		VIOC_RDMA_SetImageDisable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr);
+
+		#ifdef CONFIG_PLATFORM_AVN
+		/* TODO: Will be deprecated.
+		 * If CLS Platform disable below code is normal,
+		 * But problem occurs in ALS
+		 */
+		VIOC_CONFIG_SWReset(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, VIOC_CONFIG_RESET);
+		VIOC_CONFIG_SWReset(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, VIOC_CONFIG_CLEAR);
+		#endif
+
+		if (ImageInfo->MVCframeView != 1) {
+			// scaler plug in status check
+			if (VIOC_CONFIG_GetScaler_PluginToRDMA(
+			pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) != -1) {
+				iSCType = VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+				VIOC_CONFIG_PlugOut(iSCType);
+				VIOC_CONFIG_SWReset(iSCType, VIOC_CONFIG_RESET);
+				VIOC_CONFIG_SWReset(iSCType, VIOC_CONFIG_CLEAR);
+				pr_info("[INF][VIOC_I] scaler %d plug out for %d layer\n", get_vioc_index(iSCType), ImageInfo->Lcdc_layer);
+			}
+		}
+		return;
+	}
+
+	#if defined(CONFIG_TCC_HDMI_DRIVER_V2_0) && (defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT) || defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT_MODULE))
+	set_hdmi_drm(DRM_ON, ImageInfo, ImageInfo->Lcdc_layer);
+	#endif
+
+	iSCType = tca_get_scaler_num(pdp_data->DispDeviceType, ImageInfo->Lcdc_layer);
+
+	pSC = VIOC_SC_GetAddress(iSCType);
+
+	VIOC_DISP_GetSize(pdp_data->ddc_info.virt_addr, &lcd_width, &lcd_height);
+
+	if ((!lcd_width) || (!lcd_height)) {
+		pr_err("[ERR][VIOC_I] %s: lcd_width %d, lcd_height %d\n", __func__, lcd_width, lcd_height);
+		return;
+	}
+
+	if ((ImageInfo->MVCframeView != 1) && ImageInfo->on_the_fly) {
+		void __iomem *pDISP = pdp_data->ddc_info.virt_addr;
+		unsigned int bSCBypass = 0;
+
+		//VIOC_SC_SetSrcSize(pSC, ImageInfo->Frame_width, ImageInfo->Frame_height); // TODO: Will be deprecated.
+
+		#if defined(CONFIG_MC_WORKAROUND)
+		if (!system_rev && ImageInfo->private_data.optional_info[VID_OPT_HAVE_MC_INFO] != 0) {
+			unsigned int plus_height = VIOC_SC_GetPlusSize((ImageInfo->crop_bottom - ImageInfo->crop_top), ImageInfo->Image_height);
+
+			// set destination size in scaler
+			VIOC_SC_SetDstSize(pSC, ImageInfo->Image_width, ImageInfo->Image_height+plus_height);
+		} else
+		#endif
+		{
+			// set destination size in scaler
+			VIOC_SC_SetDstSize(pSC, ImageInfo->Image_width, ImageInfo->Image_height);
+		}
+
+		// set output size in scaler
+		VIOC_SC_SetOutSize(pSC, ImageInfo->Image_width, ImageInfo->Image_height);
+
+		if (!(__raw_readl(pDISP+DCTRL) & DCTRL_NI_MASK)) {
+			// interlace output
+			VIOC_SC_SetBypass(pSC, OFF);
+			dbg(" %s  scaler %d is plug in SetBypass OFF\n", __func__, get_vioc_index(iSCType));
+		} else {
+			if ((!ImageInfo->one_field_only_interlace && (((ImageInfo->crop_right - ImageInfo->crop_left) == ImageInfo->Image_width) && ((ImageInfo->crop_bottom - ImageInfo->crop_top) == ImageInfo->Image_height)))
+				|| (ImageInfo->one_field_only_interlace && (((ImageInfo->crop_right - ImageInfo->crop_left) == ImageInfo->Image_width) && (((ImageInfo->crop_bottom - ImageInfo->crop_top) / 2) == ImageInfo->Image_height)))) {
+				#if defined(CONFIG_MC_WORKAROUND)
+				if (!system_rev && ImageInfo->private_data.optional_info[VID_OPT_HAVE_MC_INFO] != 0) {
+					VIOC_SC_SetBypass(pSC, OFF);
+				} else
+				#endif
+				{
+					VIOC_SC_SetBypass(pSC, ON);
+				}
+
+				bSCBypass = 1;
+				dbg("%s: sc%d is plug in SetBypass ON\n", __func__, get_vioc_index(iSCType));
+			} else {
+				VIOC_SC_SetBypass(pSC, OFF);
+				dbg("%s: sc%d is plug in SetBypass OFF\n", __func__, get_vioc_index(iSCType));
+			}
+		}
+
+		#ifdef TEST_SC_NO_PLUGIN_IN_BYPASS_CASE
+		if (!bSCBypass)
+		#endif
+		{
+			//scaler plug in status check
+			if (VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) == -1) {
+
+				VIOC_RDMA_SetImageDisable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr);
+
+				dbg("%s: scaler 1 is plug in RDMA %d\n", __func__, get_vioc_index(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num));
+
+				VIOC_CONFIG_PlugIn(iSCType, pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+			}
+		}
+		#ifdef TEST_SC_NO_PLUGIN_IN_BYPASS_CASE
+		else {
+			//scaler plug in status check
+			if (VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) != -1) {
+				VIOC_CONFIG_PlugOut(iSCType);
+			}
+		}
+		#endif
+	} else {
+		if (VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) != -1) {
+			dbg("%s: scaler 1 is plug out\n", __func__);
+			VIOC_RDMA_SetImageDisable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr);
+			VIOC_CONFIG_PlugOut(iSCType);
+		}
+	}
+
+	if (VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) != -1) {
+		VIOC_SC_SetUpdate(pSC);
+	}
+
+	/*----------------------------------------------------------------------
+	 * POSITION
+	 */
+	VIOC_WMIX_SetPosition(pdp_data->wmixer_info.virt_addr, ImageInfo->Lcdc_layer, ImageInfo->offset_x, ImageInfo->offset_y);
+	VIOC_WMIX_SetUpdate(pdp_data->wmixer_info.virt_addr);
+
+	/*
+	 * MapConverter
+	 */
+	#ifdef CONFIG_VIOC_MAP_DECOMP
+	if (ImageInfo->private_data.optional_info[VID_OPT_HAVE_MC_INFO] != 0) {
+
+		void __iomem *HwVIOC_MC = VIOC_MC_GetAddress(VIOC_MC0);
+		size_t vsync_type;
+
+		#if defined(CONFIG_ARCH_TCC803X) || defined(CONFIG_ARCH_TCC805X)
+		VIOC_CONFIG_MCPath(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, VIOC_MC0);
+		#endif
+
+		#if defined(CONFIG_TCC_VIOC_DISP_PATH_INTERNAL_CS_YUV)
+		tca_map_convter_set(VIOC_MC0, ImageInfo, 0);
+		#else
+		tca_map_convter_set(VIOC_MC0, ImageInfo, 1);
+		#endif
+
+		#if !defined(CONFIG_VIOC_DOLBY_VISION_EDR) && defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST_UI)
+		VIOC_RDMA_PreventEnable_for_UI(1, 1);
+		#endif
+
+		if (ImageInfo->Lcdc_layer == RDMA_VIDEO) {
+			vsync_type = VSYNC_MAIN;
+			/* prevent KCS warning */
+		} else {
+			// [FIXME] should consider CONFIG_USE_SUB_MULTI_FRAME
+			vsync_type = VSYNC_SUB0;
+		}
+
+		VIOC_MC_Start_OnOff(HwVIOC_MC, !vsync_rdma_off[vsync_type]);
+
+		goto next;
+	}
+	#endif
+
+	/*
+	 * RDMA
+	 */
+	#if defined(CONFIG_VIOC_MAP_DECOMP)
+	VIOC_CONFIG_MCPath(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num, pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+	#endif
+
+	#if 0	/* TODO */
+	//if (ImageInfo->fmt == TCC_LCDC_IMG_FMT_COMP) {
+	//	VIOC_CONFIG_PlugIn(VIOC_FCDEC0,
+	//	pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num);
+	//} else
+	#endif
+	if (ImageInfo->fmt >= TCC_LCDC_IMG_FMT_444SEP && ImageInfo->fmt <= TCC_LCDC_IMG_FMT_YUV422ITL1) {
+
+		#if defined(CONFIG_TCC_VIOC_DISP_PATH_INTERNAL_CS_YUV)
+		VIOC_RDMA_SetImageY2REnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, false);
+		#else
+		VIOC_RDMA_SetImageY2REnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, true);
+		#endif
+
+		/* Y2RMode Default 0 (Studio Color) */
+		VIOC_RDMA_SetImageY2RMode(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0x2);
+
+		if (ImageInfo->Frame_width <= RDMA_UVI_MAX_WIDTH) {
+			VIOC_RDMA_SetImageUVIEnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, true);
+		} else {
+			VIOC_RDMA_SetImageUVIEnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, false);
+		}
+	} else {
+		#if defined(CONFIG_TCC_VIOC_DISP_PATH_INTERNAL_CS_YUV)
+		VIOC_RDMA_SetImageR2YEnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, true);
+		VIOC_RDMA_SetImageR2YMode(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 1); /* Y2RMode Default 0 (Studio Color) */
+		#endif
+	}
+
+	if (ImageInfo->one_field_only_interlace
+	#ifdef CONFIG_VIOC_10BIT
+	|| (ImageInfo->private_data.optional_info[VID_OPT_BIT_DEPTH] == 10)
+	#endif
+	) {
+		VIOC_RDMA_SetImageOffset( pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, ImageInfo->fmt, ImageInfo->Frame_width * 2);
+	}
+	#ifdef CONFIG_VIOC_10BIT
+	else if (ImageInfo->private_data.optional_info[VID_OPT_BIT_DEPTH] == 11) {
+		VIOC_RDMA_SetImageOffset(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, ImageInfo->fmt, ImageInfo->Frame_width * 125 / 100);
+	}
+	#endif
+	else {
+		VIOC_RDMA_SetImageOffset(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, ImageInfo->fmt, ImageInfo->Frame_width);
+	}
+
+	#ifdef CONFIG_VIOC_10BIT
+	if (ImageInfo->private_data.optional_info[VID_OPT_BIT_DEPTH] == 10) {
+		/* YUV 10bit(16bit) support */
+		VIOC_RDMA_SetDataFormat(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0x1, 0x1);
+	} else if (ImageInfo->private_data.optional_info[VID_OPT_BIT_DEPTH]
+		== 11) {
+		/* YUV real 10bit support */
+		VIOC_RDMA_SetDataFormat(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0x3, 0x0);
+	} else {
+		/* YUV 8bit support */
+		VIOC_RDMA_SetDataFormat(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0x0, 0x0);
+	}
+	#endif
+
+	VIOC_RDMA_SetImageFormat(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, ImageInfo->fmt);
+
+	VIOC_RDMA_SetImageSize(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr,
+		ImageInfo->crop_right - ImageInfo->crop_left,
+		ImageInfo->crop_bottom - ImageInfo->crop_top);
+
+	if (!(((ImageInfo->crop_left == 0) && (ImageInfo->crop_right == ImageInfo->Frame_width))
+		&& ((ImageInfo->crop_top == 0) && (ImageInfo->crop_bottom == ImageInfo->Frame_height)))) {
+		int addr_Y = (unsigned int)ImageInfo->addr0;
+		int addr_U = (unsigned int)ImageInfo->addr1;
+		int addr_V = (unsigned int)ImageInfo->addr2;
+
+		dbg("Crop left:%d right:%d top:%d bot:%d\n", ImageInfo->crop_left, ImageInfo->crop_right, ImageInfo->crop_top, ImageInfo->crop_bottom);
+
+		tcc_get_addr_yuv(ImageInfo->fmt, (unsigned int)ImageInfo->addr0,
+			ImageInfo->Frame_width, ImageInfo->Frame_height,
+			ImageInfo->crop_left, ImageInfo->crop_top,
+			&addr_Y, &addr_U, &addr_V);
+
+		if (ImageInfo->one_field_only_interlace) {
+			VIOC_RDMA_SetImageSize(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr,
+				ImageInfo->crop_right - ImageInfo->crop_left,
+				(ImageInfo->crop_bottom - ImageInfo->crop_top) / 2);
+		} else {
+			VIOC_RDMA_SetImageSize(pdp_data->rdma_info[ ImageInfo->Lcdc_layer].virt_addr,
+				ImageInfo->crop_right - ImageInfo->crop_left,
+				ImageInfo->crop_bottom - ImageInfo->crop_top);
+		}
+
+		VIOC_RDMA_SetImageBase(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, addr_Y, addr_U, addr_V);
+	} else {
+		dbg("Don't crop left:%d right:%d top:%d bot:%d\n", ImageInfo->crop_left, ImageInfo->crop_right, ImageInfo->crop_top, ImageInfo->crop_bottom);
+
+		if (ImageInfo->one_field_only_interlace) {
+			VIOC_RDMA_SetImageSize(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr,
+				ImageInfo->Frame_width,
+				ImageInfo->Frame_height / 2);
+		} else {
+			VIOC_RDMA_SetImageSize(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr,
+				ImageInfo->Frame_width,
+				ImageInfo->Frame_height);
+		}
+
+		VIOC_RDMA_SetImageBase(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr,
+			ImageInfo->addr0, ImageInfo->addr1, ImageInfo->addr2);
+	}
+
+	VIOC_RDMA_SetImageIntl(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0);
+
+	{
+		size_t vsync_type;
+
+		if (ImageInfo->Lcdc_layer == RDMA_VIDEO) {
+			vsync_type = VSYNC_MAIN;
+			/* prevent KCS warning */
+		} else {
+			// [FIXME] should consider CONFIG_USE_SUB_MULTI_FRAME
+			vsync_type = VSYNC_SUB0;
+		}
+
+		if (vsync_rdma_off[vsync_type] == 0) {
+			VIOC_RDMA_SetImageEnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr);
+		} else {
+			VIOC_RDMA_SetImageDisable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr);
+		}
+	}
+
+	#if defined(CONFIG_VIOC_DOLBY_VISION_EDR)
+	if (VIOC_CONFIG_DV_GET_EDR_PATH()) {
+		VIOC_RDMA_SetImageUVIEnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0);
+		VIOC_RDMA_SetImageY2REnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0);
+		VIOC_RDMA_SetImageR2YEnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0);
+		VIOC_RDMA_SetImageIntl(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0);
+
+		if (ImageInfo->Lcdc_layer == RDMA_VIDEO || ImageInfo->Lcdc_layer == RDMA_LASTFRM) {
+
+			if (ImageInfo->Lcdc_layer == RDMA_LASTFRM && (ImageInfo->fmt >= TCC_LCDC_IMG_FMT_444SEP && ImageInfo->fmt <= TCC_LCDC_IMG_FMT_YUV422ITL1)) {
+				VIOC_RDMA_SetImageY2REnable(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, true);
+				VIOC_RDMA_SetImageY2RMode(pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, 0x2);
+			}
+
+			if (vioc_get_out_type() == ImageInfo->private_data.dolbyVision_info.reg_out_type) {
+				VIOC_V_DV_SetSize(NULL, pdp_data->rdma_info[ImageInfo->Lcdc_layer].virt_addr, ImageInfo->offset_x, ImageInfo->offset_y, Hactive, Vactive);
+				vioc_v_dv_prog(ImageInfo->private_data.dolbyVision_info.md_hdmi_addr, ImageInfo->private_data.dolbyVision_info.reg_addr, ImageInfo->private_data.optional_info[VID_OPT_CONTENT_TYPE], 1);
+			}
+
+		} else {
+			pr_err("[ERR][VIOC_I] @@@@@@@@@@ 1 @@@@@@@@@ Should be implement other layer configuration.\n");
+			return;
+		}
+	}
+	#endif
+
+next:
+	//Fix DTRC Underrun issue when playback start with scaler bypass mode.
+	if (VIOC_CONFIG_GetScaler_PluginToRDMA(pdp_data->rdma_info[ImageInfo->Lcdc_layer].blk_num) != -1) {
+		VIOC_SC_SetUpdate(pSC);
+	}
+
+	tcc_video_post_process(ImageInfo);
+}
+
+void tca_scale_display_update(struct tcc_dp_device *pdp_data,	struct tcc_lcdc_image_update *ImageInfo)
+{
+	tca_scale_display_update_internal(pdp_data, ImageInfo, 0);
+}
+EXPORT_SYMBOL(tca_scale_display_update);
+
+#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+static void tca_scale_display_update_with_sync(struct tcc_dp_device *pdp_data,	struct tcc_lcdc_image_update *ImageInfo)
+{
+	tca_scale_display_update_internal(pdp_data, ImageInfo, 1);
+}
+#endif
+
+void tcc_video_post_process(struct tcc_lcdc_image_update *ImageInfo)
+{
+	if (ImageInfo == NULL) {
+		pr_err("[ERR][VIOC_I] %s: ImageInfo is null\n", __func__);
+		return;
+	}
+
+#if defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT) || defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT_MODULE)
+	#ifdef CONFIG_HDMI_DISPLAY_LASTFRAME
+	tcc_video_clear_last_frame(ImageInfo->Lcdc_layer, false);
+	#endif
+	#ifdef CONFIG_VIDEO_DISPLAY_SWAP_VPU_FRAME
+	if (ImageInfo)
+		tcc_video_frame_backup(ImageInfo);
+	#endif
+	#ifdef CONFIG_DISPLAY_EXT_FRAME
+	#if defined(CONFIG_LINUX) || defined(CONFIG_LINUX_ANDROID)
+	if (!restricted_ExtFrame)
+	#endif
+		tcc_ctrl_ext_frame(0);
+	#endif
+#endif
+}
+EXPORT_SYMBOL(tcc_video_post_process);
+
+//<<<---New interface functions-------------------------------------------------
+
+
+#ifdef CONFIG_TCC_HDMI_DRIVER_V2_0
+#include "../../../../char/hdmi_v2_0/include/hdmi_includes.h"
+#include "../../../../char/hdmi_v2_0/include/hdmi_ioctls.h"
+#include "../../../../char/hdmi_v2_0/include/hdmi_misc.h"
+#include "../../../../char/hdmi_v2_0/include/hdmi_drm.h"
+#include "../../../../char/hdmi_v2_0/include/hdmi_api.h"
+
+#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+/* To prevent frame dropping or duplicating */
+#define DV_PREVENT_FRAME_DROP_AND_DUPLICATION
+
+//static long long nPrevTS;
+//static long long nBaseTS;
+//#define GAP_TS_MS (33)
+static int bStart_DV_Display;
+static int b1st_frame_id;
+static int b1st_frame_display_count;
+
+#define DV_TRANSITION_SKIP_CNT (4)
+static int nDolbyTransition_Skipped_Count;
+static int nDolbyTransition_VSIF;
+#endif
+
+static DRM_Packet_t gDRM_packet;
+
+void set_hdmi_drm(
+	enum HDMI_DRM_MODE mode,
+	struct tcc_lcdc_image_update *pImage,
+	unsigned int layer)
+{
+#if defined(CONFIG_SUPPORT_TCC_WAVE410_HEVC) || defined(CONFIG_SUPPORT_TCC_WAVE512_4K_D2)
+
+	DRM_Packet_t drmparm;
+	hevc_userdata_output_t *uData = NULL;
+
+	dbg("%s(%d), layer(%d), Output_SelectMode(%d)\n",
+		__func__, mode, layer, Output_SelectMode);
+
+	if (layer != RDMA_VIDEO) {
+		return;
+		/* prevent KCS warning */
+	}
+
+	if (Output_SelectMode != TCC_OUTPUT_HDMI) {
+		return;
+		/* prevent KCS warning */
+	}
+
+	if (pImage) {
+		uData = &pImage->private_data.userData_Info;
+		/* prevent KCS warning */
+	}
+
+	#if defined(CONFIG_VIOC_DOLBY_VISION_EDR)
+	if (VIOC_CONFIG_DV_GET_EDR_PATH() && (vioc_get_out_type() != HDR10)) {
+		memset(&gDRM_packet, 0x0, sizeof(DRM_Packet_t));
+		return;
+	}
+	#endif
+
+	if (mode == DRM_ON) {
+		if (!uData) {
+			return;
+			/* prevent KCS warning */
+		}
+
+		/* HDR support */
+		if (pImage->private_data.optional_info[VID_OPT_HAVE_USERDATA]
+			== 1) {
+
+			dbg(" HDR setting for HDMI-Drm\n");
+			memset(&drmparm, 0x0, sizeof(DRM_Packet_t));
+
+			drmparm.mInfoFrame.version = uData->version;
+			drmparm.mInfoFrame.length = uData->struct_size;
+			drmparm.mDescriptor_type1.EOTF = uData->eotf;//2;
+			drmparm.mDescriptor_type1.Descriptor_ID = 0;
+			drmparm.mDescriptor_type1.disp_primaries_x[0]
+				= uData->display_primaries_x[0];
+			drmparm.mDescriptor_type1.disp_primaries_x[1]
+				= uData->display_primaries_x[1];
+			drmparm.mDescriptor_type1.disp_primaries_x[2]
+				= uData->display_primaries_x[2];
+			drmparm.mDescriptor_type1.disp_primaries_y[0]
+				= uData->display_primaries_y[0];
+			drmparm.mDescriptor_type1.disp_primaries_y[1]
+				= uData->display_primaries_y[1];
+			drmparm.mDescriptor_type1.disp_primaries_y[2]
+				= uData->display_primaries_y[2];
+			drmparm.mDescriptor_type1.white_point_x
+				= uData->white_point_x;
+			drmparm.mDescriptor_type1.white_point_y
+				= uData->white_point_y;
+			drmparm.mDescriptor_type1.max_disp_mastering_luminance
+				= uData->max_display_mastering_luminance;
+			drmparm.mDescriptor_type1.min_disp_mastering_luminance
+				= uData->min_display_mastering_luminance;
+			drmparm.mDescriptor_type1.max_content_light_level
+				= uData->max_content_light_level;
+			drmparm.mDescriptor_type1.max_frame_avr_light_level
+				= uData->max_pic_average_light_level;
+
+			if (memcmp(&gDRM_packet, &drmparm,
+				sizeof(DRM_Packet_t))) {
+				dbg("HEVC userData\n");
+				dbg("ver %d size %d eotf(%d)\n",
+					uData->version, uData->struct_size,
+					uData->eotf);
+				dbg("colour_primaries %d transfer %d\n",
+					uData->colour_primaries,
+					uData->transfer_characteristics);
+				dbg("matrix_coefficients %d\n",
+					uData->matrix_coefficients);
+				dbg("primaries_x[0] %d [1] %d [2] %d\n",
+					uData->display_primaries_x[0],
+					uData->display_primaries_x[1],
+					uData->display_primaries_x[2]);
+				dbg("primaries_y[0] %d [1] %d [2] %d\n",
+					uData->display_primaries_y[0],
+					uData->display_primaries_y[1],
+					uData->display_primaries_y[2]);
+				dbg("white point %dx%d, luminance %d~%d\n",
+					uData->white_point_x,
+					uData->white_point_y,
+					uData->max_display_mastering_luminance,
+					uData->min_display_mastering_luminance);
+				dbg("light level max %d average %d\n",
+					uData->max_content_light_level,
+					uData->max_pic_average_light_level);
+
+				hdmi_set_drm(&drmparm);
+				memcpy(&gDRM_packet, &drmparm,
+					sizeof(DRM_Packet_t));
+			}
+		}
+	} else if (mode == DRM_OFF) {
+		dbg("===========> %s(DRM_OFF)\n", __func__);
+		memset(&drmparm, 0x0, sizeof(DRM_Packet_t));
+		//hdmi_set_drm(&drmparm);
+	} else {
+		dbg("===========> %s(DRM_INIT)\n", __func__);
+		memset(&gDRM_packet, 0x0, sizeof(DRM_Packet_t));
+	}
+#endif	//defined(CONFIG_SUPPORT_TCC_WAVE410_HEVC) || defined(CONFIG_SUPPORT_TCC_WAVE512_4K_D2)
+}
+#endif	//CONFIG_TCC_HDMI_DRIVER_V2_0
+
+//#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+enum VSYNC_CH_TYPE tcc_vsync_get_video_ch_type(unsigned int lcdc_layer)
+{
+	enum VSYNC_CH_TYPE type;
+
+	if (lcdc_layer == RDMA_VIDEO)
+		type = VSYNC_MAIN;
+	else if (lcdc_layer == RDMA_VIDEO_SUB)
+		type = VSYNC_SUB0;
+	else {
+		dbg("error :: strange lcdc_layer(%d)\n", lcdc_layer);
+		type = VSYNC_MAX;
+	}
+	return type;
+}
+//#endif
+
+static int tcc_vsync_set_max_buffer(struct tcc_vsync_buffer_t *buffer_t,
+	int buffer_count)
+{
+	if (buffer_count > VSYNC_BUFFER_COUNT) {
+		pr_info("[INF][VSYNC] max_buffer(%d) is bigger than VSYNC_BUFFER_COUNT(%d)\n",
+			buffer_count, VSYNC_BUFFER_COUNT);
+		buffer_count = VSYNC_BUFFER_COUNT;
+	}
+
+	buffer_t->max_buff_num = buffer_count;
+	return buffer_count;
+}
+
+static void _tcc_vsync_print_all_buffers(
+	struct tcc_vsync_buffer_t *buffer_t)
+{
+	int i = 0;
+
+	for (i = 0; i < VPU_BUFFER_MANAGE_COUNT; i++) {
+		pr_info("[INF][VSYNC] stImage[%d] %s, ID(%d), TS(%d), Sync(%d)\n",
+			i, (i == buffer_t->readIdx) ? "r" : "n",
+			buffer_t->stImage[i].buffer_unique_id,
+			buffer_t->stImage[i].time_stamp,
+			buffer_t->stImage[i].sync_time);
+	}
+}
+
+static int tcc_vsync_push_buffer(struct tcc_video_disp *p,
+	struct tcc_vsync_buffer_t *buffer_t,
+	struct tcc_lcdc_image_update *inputData)
+{
+	if (atomic_read(&buffer_t->valid_buff_count) >= buffer_t->max_buff_num
+		|| atomic_read(&buffer_t->readable_buff_count)
+		>= buffer_t->max_buff_num) {
+		pr_warn("[WAN][VSYNC] buf full %d, max %d %d ts %d sync %d (%d)\n",
+			atomic_read(&buffer_t->valid_buff_count),
+			buffer_t->max_buff_num,
+			atomic_read(&buffer_t->readable_buff_count),
+			inputData->time_stamp,
+			inputData->sync_time,
+			tcc_vsync_get_time(p));
+
+		_tcc_vsync_print_all_buffers(buffer_t);
+
+		return -1;
+	}
+
+	memcpy(&(buffer_t->stImage[buffer_t->writeIdx]), (void *)inputData,
+		sizeof(struct tcc_lcdc_image_update));
+
+	if (++buffer_t->writeIdx >= buffer_t->max_buff_num) {
+		buffer_t->writeIdx = 0;
+		/* prevent KCS warning */
+	}
+
+	atomic_inc(&buffer_t->valid_buff_count);
+	atomic_inc(&buffer_t->readable_buff_count);
+
+	return 0;
+}
+
+static inline int tcc_vsync_pop_buffer(struct tcc_vsync_buffer_t *buffer_t)
+{
+	if (atomic_read(&buffer_t->readable_buff_count) == 0) {
+		pr_warn("[WAN][VSYNC]  buffer empty\n");
+		return -1;
+	} else if (atomic_read(&buffer_t->readable_buff_count) < 0) {
+		pr_info("[INF][VSYNC] %s: readable_buff_count<0\n", __func__);
+		atomic_set(&buffer_t->readable_buff_count, 0);
+		return -1;
+	}
+
+	if (++buffer_t->readIdx >= buffer_t->max_buff_num)
+		buffer_t->readIdx = 0;
+
+	atomic_dec(&buffer_t->readable_buff_count);
+
+	return atomic_read(&buffer_t->readable_buff_count);
+}
+
+static inline void *tcc_vsync_get_buffer(
+	struct tcc_vsync_buffer_t *buffer_t, int offset)
+{
+	int readIdx;
+
+	if ((atomic_read(&buffer_t->readable_buff_count)-offset) > 0) {
+		readIdx = buffer_t->readIdx;
+
+		while (offset) {
+			if (++readIdx >= buffer_t->max_buff_num)
+				readIdx = 0;
+
+			offset--;
+		}
+
+		return (void *)&(buffer_t->stImage[readIdx]);
+	} else {
+		return 0;
+	}
+}
+
+static unsigned int vsync_intr_count;
+static unsigned int vsync_intr_proc[VSYNC_MAX] = {0,};
+
+static inline int tcc_vsync_buffer_check(
+	struct tcc_video_disp *p,
+	unsigned int ref_buffer_id)
+{
+	struct tcc_vsync_buffer_t *buffer_t = NULL;
+	int readable_count = 0;
+	int valid_count = 0;
+	int readIdx = 0;
+
+	if (p->isVsyncRunning != EM_VSYNC_RUNNING) {
+		dbg_v("vsync is not started!! return\n");
+		return -1;
+	}
+
+	buffer_t = &p->vsync_buffer;
+	readable_count = atomic_read(&buffer_t->readable_buff_count);
+	readIdx = buffer_t->readIdx;
+	valid_count = atomic_read(&buffer_t->valid_buff_count);
+
+	pr_info("[INF][VSYNC] [%d] intr[%d/%d] last[%d] m2m[%d/%d] buffer check .. k_syncTS: %d, read(%d)/valid(%d) ref_buffer_id: %dn",
+		p->type, vsync_intr_proc[p->type], vsync_intr_count,
+		tccvid_lastframe[p->type].enabled, p->output_toMemory,
+		p->m2m_mode, tcc_vsync_get_time(p), readable_count,
+		valid_count, ref_buffer_id);
+
+	while (readable_count > 0) {
+		pr_info("[INF][VSYNC] [%d] : Buffer_ID[%d] - TS[%d] SyncTS[%d]\n",
+			p->type,
+			buffer_t->stImage[readIdx].buffer_unique_id,
+			buffer_t->stImage[readIdx].time_stamp,
+			buffer_t->stImage[readIdx].sync_time);
+
+		if (++readIdx >= buffer_t->max_buff_num) {
+			readIdx = 0;
+			/* prevent KCS warning */
+		}
+
+		readable_count--;
+	}
+
+	return 0;
+}
+
+static inline int tcc_vsync_clean_buffer(
+	struct tcc_vsync_buffer_t *buffer_t)
+{
+	if (buffer_t->readIdx == buffer_t->clearIdx
+		|| atomic_read(&buffer_t->valid_buff_count) == 0) {
+		dbg_v("no clean buffer clearIdx(%d) valid_buff_count(%d)\n",
+			buffer_t->clearIdx,
+			atomic_read(&buffer_t->valid_buff_count));
+		return -1;
+	}
+
+	dbg_v("%s: clearIdx:%d readIdx:%d writeIdx:%d valid_buff_count:%d\n",
+		__func__, buffer_t->clearIdx, buffer_t->readIdx,
+		buffer_t->writeIdx, atomic_read(&buffer_t->valid_buff_count));
+
+	do {
+		if (++buffer_t->clearIdx >= buffer_t->max_buff_num) {
+			buffer_t->clearIdx = 0;
+			/* prevent KCS warning */
+		}
+
+		if (buffer_t->stImage[buffer_t->clearIdx].buffer_unique_id
+			> buffer_t->last_cleared_buff_id) {
+			buffer_t->last_cleared_buff_id =
+			buffer_t->stImage[buffer_t->clearIdx].buffer_unique_id;
+		}
+
+		atomic_dec(&buffer_t->valid_buff_count);
+		if (atomic_read(&buffer_t->valid_buff_count) < 0) {
+			pr_info("[INF][VSYNC] %s: valid_buff_count<0\n",
+				__func__);
+			atomic_set(&buffer_t->valid_buff_count, 0);
+		}
+
+
+	} while (buffer_t->readIdx != buffer_t->clearIdx);
+	wake_up_interruptible(&wq_consume);
+	dbg_v("%s: valid_buff_count %d\n", __func__,
+		atomic_read(&buffer_t->valid_buff_count));
+
+	return atomic_read(&buffer_t->valid_buff_count);
+}
+
+static int tcc_vsync_pop_all_buffer(
+	struct tcc_video_disp *p,
+	int caller_line)
+{
+	struct tcc_vsync_buffer_t *buffer_t = &p->vsync_buffer;
+
+	if (atomic_read(&buffer_t->valid_buff_count) == 0) {
+		dbg_v("error: buffer empty\n");
+		return -1;
+	} else if (atomic_read(&buffer_t->valid_buff_count) < 0) {
+		pr_info("[INF][VSYNC] %s: valid_buff_count<0\n", __func__);
+		atomic_set(&buffer_t->valid_buff_count, 0);
+	}
+
+	while (atomic_read(&buffer_t->valid_buff_count) > 0) {
+		if (buffer_t->last_cleared_buff_id <
+			buffer_t->stImage[buffer_t->clearIdx].buffer_unique_id
+		) {
+			buffer_t->last_cleared_buff_id =
+			buffer_t->stImage[buffer_t->clearIdx].buffer_unique_id;
+		}
+
+		if (++buffer_t->clearIdx >= buffer_t->max_buff_num) {
+			buffer_t->clearIdx = 0;
+			/* prevent KCS warning */
+		}
+
+		atomic_dec(&buffer_t->valid_buff_count);
+	}
+
+	buffer_t->writeIdx = buffer_t->readIdx = buffer_t->clearIdx;
+	atomic_set(&buffer_t->readable_buff_count, 0);
+
+	dbg("[%d] who:%d pop_all_buffer r-idx:%d w-idx:%d c-idx:%d v:%d r:%d\n",
+		p->type, caller_line,
+		buffer_t->readIdx, buffer_t->writeIdx, buffer_t->clearIdx,
+		atomic_read(&buffer_t->valid_buff_count),
+		atomic_read(&buffer_t->readable_buff_count));
+
+	return 0;
+}
+
+static int tcc_vsync_is_full_buffer(
+	struct tcc_vsync_buffer_t *buffer_t)
+{
+	if (atomic_read(&buffer_t->valid_buff_count)
+		>= buffer_t->max_buff_num) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+static inline int tcc_vsync_is_empty_buffer(
+	struct tcc_vsync_buffer_t *buffer_t)
+{
+	if (atomic_read(&buffer_t->valid_buff_count) > 0) {
+		return 0;
+		/* prevent KCS warning */
+	} else {
+		return 1;
+	}
+}
+
+static void
+tcc_vsync_push_render_frame_for_duplicated_interlace(
+	struct tcc_video_disp *p)
+{
+	int readCount = 0;
+	int readIdx = p->vsync_buffer.readIdx;
+	struct tcc_lcdc_image_update *input_image_info = NULL;
+	int readable_count = atomic_read(&p->vsync_buffer.readable_buff_count);
+
+	if (readable_count == 0) {
+		return;
+		/* prevent KCS warning */
+	}
+
+	if (!(p->duplicateUseFlag
+		&& (p->deinterlace_mode && !p->interlace_bypass_lcdc)
+		&& (!p->output_toMemory || p->m2m_mode))) {
+
+		return;
+	}
+
+	while (readCount < readable_count) {
+		input_image_info = &(p->vsync_buffer.stImage[readIdx]);
+
+		if (input_image_info->viqe_queued == 0) {
+			int curTime = tcc_vsync_get_time(p);
+			int reset_frmCnt = VIQE_RESET_NONE;
+
+			// resolution change support
+			if ((p->prevImageWidth != 0)
+				&& (p->prevImageHeight != 0)) {
+				int image_width = input_image_info->crop_right
+					- ((input_image_info->crop_left >> 3)
+					<< 3);
+				int image_height = input_image_info->crop_bottom
+					- input_image_info->crop_top;
+
+				if ((p->prevImageWidth != image_width)
+					|| (p->prevImageHeight != image_height)
+				) {
+					dbg_v("intl_res_changed: %dx%d->%dx%d\n"
+						, p->prevImageWidth,
+						p->prevImageHeight,
+						image_width, image_height);
+
+					p->prevImageWidth = image_width;
+					p->prevImageHeight = image_height;
+
+					// SoC guide info.
+					reset_frmCnt = VIQE_RESET_CROP_CHANGED;
+				} else {
+					reset_frmCnt = VIQE_RESET_NONE;
+				}
+			} else {
+				p->prevImageWidth =
+					input_image_info->crop_right
+					- ((input_image_info->crop_left >> 3)
+					<< 3);
+				p->prevImageHeight =
+					input_image_info->crop_bottom
+					- input_image_info->crop_top;
+
+				reset_frmCnt = VIQE_RESET_NONE;
+			}
+
+			if (Output_SelectMode != TCC_OUTPUT_NONE) {
+				if ((p->duplicateUseFlag) &&
+					(input_image_info->Lcdc_layer
+					== RDMA_VIDEO)) {
+
+					dbg_v("%s: viqe-queued: id(%d)\n",
+					input_image_info->Lcdc_layer
+						== RDMA_VIDEO ? "M" : "S",
+					input_image_info->buffer_unique_id);
+
+					viqe_render_frame(input_image_info,
+						p->vsync_interval,
+						curTime,
+						reset_frmCnt);
+				}
+			}
+
+			input_image_info->viqe_queued = 1;
+		}
+
+		if (++readIdx >= p->vsync_buffer.max_buff_num) {
+			readIdx = 0;
+			/* prevent KCS warning */
+		}
+
+		readCount++;
+	}
+}
+
+static void tcc_vsync_check_interlace_output(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data)
+{
+	if ((__raw_readl(pdp_data->ddc_info.virt_addr+DCTRL)
+		& DCTRL_NI_MASK)) {
+		p->interlace_output = 0;
+	} else {
+		p->interlace_output = 1;
+	}
+}
+
+static int tcc_vsync_bypass_frame(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *pImage)
+{
+	unsigned int lstatus = 0;
+	int ret = 0;
+
+	if (pdp_data->ddc_info.virt_addr == NULL) {
+		pr_err("[ERR][VSYNC] %s: pdp_data->ddc_info.virt_addr is null\n",
+			__func__);
+		return PTR_ERR((void *)pdp_data->ddc_info.virt_addr);
+	}
+
+	lstatus = __raw_readl(pdp_data->ddc_info.virt_addr+DSTATUS);
+	if (pImage->odd_first_flag == 0) {
+		if (p->nDeinterProcCount == 0) {
+			if (lstatus & VIOC_DISP_IREQ_TFIELD_MASK) {
+				ret = 1;
+				/* prevent KCS warning */
+			}
+		} else {
+			if (!(lstatus & VIOC_DISP_IREQ_TFIELD_MASK)) {
+				ret = 1;
+				/* prevent KCS warning */
+			}
+		}
+	} else {
+
+		if (p->nDeinterProcCount == 1) {
+			if (lstatus & VIOC_DISP_IREQ_TFIELD_MASK) {
+				ret = 1;
+				/* prevent KCS warning */
+			}
+		} else {
+			if (!(lstatus & VIOC_DISP_IREQ_TFIELD_MASK)) {
+				ret = 1;
+				/* prevent KCS warning */
+			}
+		}
+	}
+
+	if (ret == 1) {
+		//pr_warn("%s: nDeinterProcCount(%d), odd_first_flag(%d)\n",
+		//	__func__,
+		//	tccvid_vsync.nDeinterProcCount,
+		//	pImage->odd_first_flag);
+
+		return ret;
+	}
+
+	switch (Output_SelectMode) {
+	case TCC_OUTPUT_NONE:
+		break;
+#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	case TCC_OUTPUT_LCD:
+		tca_scale_display_update(pdp_data, pImage);
+		break;
+#endif
+	case TCC_OUTPUT_HDMI:
+	case TCC_OUTPUT_COMPONENT:
+	case TCC_OUTPUT_COMPOSITE:
+		tca_scale_display_update(pdp_data, pImage);
+		break;
+
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+static int tcc_vsync_calc_early_margin(struct tcc_video_disp *p)
+{
+#ifdef CONFIG_ANDROID
+	return VIDEO_SYNC_MARGIN_EARLY;
+#else
+	int alpha_value = 10;
+
+	if (p->video_frame_rate > 0) {
+		return -(1000/p->video_frame_rate - alpha_value);
+		/* prevent KCS warning */
+	}
+
+	return 32 - alpha_value;
+#endif
+}
+
+#ifdef CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST
+static void tcc_video_change_dolby_out_wq_isr(
+	struct work_struct *work)
+{
+	//struct tcc_vsync_display_info_t *vsync = container_of(work,
+	//	struct tcc_vsync_display_info_t, dolby_out_change_work_q);
+
+	//dbg_dv("%s-%d :: irq(%d), lcdc(%d) :: ref_count(%d) !!!\n",
+	//	__func__, __LINE__,
+	//	vsync->irq_num, vsync->lcdc_num,
+	//	nDolbyTransition_Skipped_Count);
+
+	if (nDolbyTransition_Skipped_Count >= 0) {
+		if (nDolbyTransition_Skipped_Count
+			== (DV_TRANSITION_SKIP_CNT - 2)) {
+
+			enum OUT_TYPE dv_out_type = vioc_get_out_type();
+			int rgb_tunneling = vioc_v_dv_is_rgb_tunneling();
+			int out_colorimetry = 0, out_ext_colorimetry = 0;
+			int out_quan_val = 0;
+
+			switch (dv_out_type) {
+			case 2: // SDR
+				out_colorimetry = ITU709;
+				out_quan_val = 1; // limited
+				break;
+
+			case 1: // HDR10
+				out_colorimetry = EXTENDED_COLORIMETRY;
+				if (rgb_tunneling) {
+					out_ext_colorimetry = BT2020YCBCR;
+					/* prevent KCS warning */
+				} else {
+					out_ext_colorimetry = BT2020YCCBCR;
+				}
+				out_quan_val = 1;
+				break;
+
+			case 0: // DV
+				out_colorimetry = EXTENDED_COLORIMETRY;
+				if (rgb_tunneling) {
+					out_ext_colorimetry = BT2020YCBCR;
+					/* prevent KCS warning */
+				} else {
+					out_ext_colorimetry = BT2020YCCBCR;
+				}
+				out_quan_val = 2; // full
+				break;
+
+			default:
+			case 3: // DV_LL
+				out_colorimetry = EXTENDED_COLORIMETRY;
+				if (rgb_tunneling) {
+					out_ext_colorimetry = BT2020YCBCR;
+					/* prevent KCS warning */
+				} else {
+					out_ext_colorimetry = BT2020YCCBCR;
+				}
+				out_quan_val = 1;
+				break;
+			}
+
+			hdmi_api_update_colorimetry(out_colorimetry,
+				out_ext_colorimetry);
+
+			/*
+			 * RGB:YUV = 2: full/full,
+			 * 1: limited/limited, 0:default/limited ?
+			 */
+			hdmi_api_update_quantization(out_quan_val);
+
+			pr_warn("[WAN][VSYNC]  Out Format: %d, RGB_Tunneling: %d => color(%d/%d), quan(%d)",
+				dv_out_type, rgb_tunneling, out_colorimetry,
+				out_ext_colorimetry, out_quan_val);
+
+			hdmi_api_vsif_update_by_index(nDolbyTransition_VSIF);
+
+			dbg_dv("%s-%d :: ref_count(%d) vsif (%d) !!!\n",
+				__func__, __LINE__,
+				nDolbyTransition_Skipped_Count,
+				nDolbyTransition_VSIF);
+		} else {
+			hdmi_api_AvMute(1);
+			dbg_dv("%s-%d :: ref_count(%d) AV-mute !!!\n",
+				__func__, __LINE__,
+				nDolbyTransition_Skipped_Count);
+		}
+	} else {
+		hdmi_api_AvMute(0);
+	}
+}
+#endif
+
+static void tcc_vsync_display_update(struct tcc_video_disp *p)
+{
+	int current_time;
+	int time_gap;
+	int readable_buff_cnt;
+	int i;
+	int popped_count = 0;
+	struct tcc_lcdc_image_update *pPrevImage;
+	struct tcc_lcdc_image_update *pNextImage;
+
+	current_time = tcc_vsync_get_time(p);
+	tcc_vsync_clean_buffer(&p->vsync_buffer);
+
+	readable_buff_cnt = tcc_video_get_readable_count(p);
+
+	#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST) && defined(DV_PREVENT_FRAME_DROP_AND_DUPLICATION)
+	if (readable_buff_cnt < 2 && !bStart_DV_Display) {
+		return;
+		/* prevent KCS warning */
+	}
+
+	if (bStart_DV_Display && b1st_frame_display_count++ < 3
+		&& p->vsync_buffer.curr_displaying_imgInfo.buffer_unique_id
+			== b1st_frame_id) {
+		tca_scale_display_update(
+			tca_fb_get_displayType(Output_SelectMode),
+			&p->vsync_buffer.curr_displaying_imgInfo);
+
+		return;
+	}
+	#endif
+
+	readable_buff_cnt--;
+	if (readable_buff_cnt < 0) {
+		dbg("readable: %d, valid: %d\n",
+			readable_buff_cnt, tcc_video_get_valid_count(p));
+	}
+
+	for (i = 0; i < readable_buff_cnt; i++) {
+		pNextImage = tcc_vsync_get_buffer(&p->vsync_buffer, 0);
+
+		if (pNextImage == NULL) {
+			pr_info("[INF][VSYNC] %s: %d,%d,%d\n", __func__, i,
+				readable_buff_cnt,
+				atomic_read(
+					&p->vsync_buffer.readable_buff_count));
+
+			return;
+		}
+
+		dbg_v("[%d/%d] ID[%d] pNextImage->time_stamp : %d / %d, %d\n",
+			i, readable_buff_cnt, pNextImage->buffer_unique_id,
+			pNextImage->time_stamp, pNextImage->sync_time,
+			current_time);
+
+		time_gap = (current_time+tcc_vsync_calc_early_margin(p))
+				- pNextImage->time_stamp;
+
+		#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST) && defined(DV_PREVENT_FRAME_DROP_AND_DUPLICATION)
+		if (!bStart_DV_Display) {
+			break;
+			/* prevent KCS warning */
+		}
+		#endif
+
+		if (time_gap >= 0) {
+			if (tcc_vsync_pop_buffer(&p->vsync_buffer) < 0) {
+				if (popped_count > 0) {
+					/*
+					 * sb (skipped buffers) and no display
+					 */
+					dbg_d("[%d] layer:%s sb:%d\n",
+						p->type,
+						p->pIntlNextImage->Lcdc_layer
+						== RDMA_VIDEO ? "M" : "S",
+						popped_count);
+				}
+
+				return;
+			}
+
+			popped_count++;
+
+		#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST) && defined(DV_PREVENT_FRAME_DROP_AND_DUPLICATION)
+			if (bStart_DV_Display) {
+				break;
+				/* prevent KCS warning */
+			}
+		#endif
+
+			if (p->perfect_vsync_flag == 1 && time_gap < 4) {
+				tcc_vsync_set_time(p, tcc_vsync_get_time(p)
+					+ ((p->vsync_interval >> 1)
+					* p->time_gap_sign));
+
+				if (p->time_gap_sign > 0) {
+					p->time_gap_sign = -1;
+					/* prevent KCS warning */
+				} else {
+					p->time_gap_sign = 1;
+				}
+			}
+		} else {
+			break;
+		}
+	}
+
+	if (popped_count > 1) {
+		dbg_d("[%d] %s:1 sk(p:[%d]) r:[%d -> %d])\n",
+			p->type,
+			pNextImage->Lcdc_layer == RDMA_VIDEO ? "M" : "S",
+			popped_count, readable_buff_cnt + 1,
+			tcc_video_get_readable_count(p));
+	}
+
+	pPrevImage = &p->vsync_buffer.curr_displaying_imgInfo;
+	pNextImage = &p->vsync_buffer.stImage[p->vsync_buffer.readIdx];
+
+	#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+	if (pPrevImage->private_data.optional_info[
+		VID_OPT_HAVE_DOLBYVISION_INFO]) {
+
+		if (nDolbyTransition_Skipped_Count >= 0) {
+			nDolbyTransition_Skipped_Count--;
+
+			if (nDolbyTransition_Skipped_Count
+				== (DV_TRANSITION_SKIP_CNT - 2)) {
+
+				// 2.1 send command so that HDMI can change VSIF
+				if (schedule_work(&dolby_out_change_work_q)
+					== 0) {
+					pr_err("[ERR][VSYNC] dolby_out :cannot schedule work\n");
+				}
+			}
+
+			if (nDolbyTransition_Skipped_Count >= 2) {
+				// 2.2 skip frames during several (more than 2)
+				//	vsync event
+				dbg_dv("[%d] FrameSkip for DV Transition!!\n",
+					nDolbyTransition_Skipped_Count);
+				return;
+			} else if (nDolbyTransition_Skipped_Count >= 0) {
+				// 3. on 3rd vsync event, restart displaying
+				dbg_dv("[%d] Display for DV Transition!!\n",
+					nDolbyTransition_Skipped_Count);
+			} else if (nDolbyTransition_Skipped_Count < 0) {
+				// 4. AV Mute OFF
+				if (schedule_work(&dolby_out_change_work_q)
+					== 0) {
+					pr_err("[ERR][VSYNC] dolby_out :cannot schedule work !!!\n");
+				}
+			}
+		}
+
+		if (nDolbyTransition_Skipped_Count < 0 &&
+			(pPrevImage->private_data.dolbyVision_info.reg_out_type
+			!=
+			pNextImage->private_data.dolbyVision_info.reg_out_type)
+		) {
+			dbg_dv("[%d]-%d DOLBY Output mode change: %d -> %d\n",
+			vioc_get_out_type(),
+			pNextImage->private_data.optional_info[
+					VID_OPT_RESERVED_3],
+			pPrevImage->private_data.dolbyVision_info.reg_out_type,
+			pNextImage->private_data.dolbyVision_info.reg_out_type);
+
+			// 1. send command for AV mute on HDMI
+			nDolbyTransition_Skipped_Count = DV_TRANSITION_SKIP_CNT;
+			nDolbyTransition_VSIF =
+				pNextImage->private_data.optional_info[
+				VID_OPT_RESERVED_3];
+
+			if (schedule_work(&dolby_out_change_work_q) == 0) {
+				pr_err("[ERR][VSYNC] dolby_out :cannot schedule work\n");
+				/* prevent KCS warning */
+			}
+
+			return;
+		}
+	}
+	#endif
+
+	#ifdef DEBUG_VSYNC_FRAME
+	if ((pNextImage->buffer_unique_id % GAP_CNT) == 0) {
+		pr_info("[INF][VSYNC] @-%d :: ID[%d] pNextImage->time_stamp : %d %d, Count(%d/%d), Out(%d/%d)\n",
+			#if defined(USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT)
+			g_is_unplugged_int_enabled,
+			#else
+			0,
+			#endif
+			pNextImage->buffer_unique_id,
+			pNextImage->time_stamp, current_time,
+			tcc_video_get_readable_count(p),
+			tcc_video_get_valid_count(p),
+			Output_SelectMode, p->outputMode);
+	}
+	#endif
+
+	if (p->outputMode == Output_SelectMode) {
+		struct tcc_dp_device *dp_device
+			= tca_fb_get_displayType(Output_SelectMode);
+
+		//pr_info("%s: nt:%d rb:%d ri:%d wi:%d ra:%x ci:%d ui:%d\n",
+		//	__func__,
+		//	pNextImage->time_stamp,
+		//	p->vsync_buffer.readable_buff_count,
+		//	p->vsync_buffer.readIdx,
+		//	p->vsync_buffer.writeIdx,
+		//	pNextImage->addr0,
+		//	p->vsync_buffer.last_cleared_buff_id,
+		//	p->vsync_buffer.stImage[
+		//		p->vsync_buffer.readIdx].buffer_unique_id);
+
+		pNextImage->bSize_Changed = 0;
+		if (pPrevImage->buffer_unique_id
+			== pNextImage->buffer_unique_id) {
+
+			if (pPrevImage->offset_x == pNextImage->offset_x
+				&& pPrevImage->offset_y
+					== pNextImage->offset_y
+				&& pPrevImage->Image_width
+					== pNextImage->Image_width
+				&& pPrevImage->Image_height
+					== pNextImage->Image_height
+				&& pPrevImage->Frame_width
+					== pNextImage->Frame_width
+				&& pPrevImage->Frame_height
+					== pNextImage->Frame_height
+				&& pPrevImage->crop_left
+					== pNextImage->crop_left
+				&& pPrevImage->crop_top
+					== pNextImage->crop_top
+				&& pPrevImage->crop_right
+					== pNextImage->crop_right
+				&& pPrevImage->crop_bottom
+					== pNextImage->crop_bottom
+			) {
+				//#if defined(CONFIG_VIOC_DOLBY_VISION_EDR)
+				//if (!VIOC_CONFIG_DV_GET_EDR_PATH())
+				//	return;
+				//#endif
+
+				#ifdef CONFIG_USE_SUB_MULTI_FRAME
+				switch (p->type) {
+				case VSYNC_MAIN:
+					/* TODO */
+					break;
+				case VSYNC_SUB0:
+					TCC_VIQE_DI_Sub_Run60Hz_M2M(pNextImage,
+						VIQE_RESET_NONE);
+					break;
+				case VSYNC_SUB1:
+				case VSYNC_SUB2:
+				case VSYNC_SUB3:
+					if (pNextImage->mosaic_mode) {
+						TCC_VIQE_DI_Push60Hz_M2M(
+							pNextImage, p->type);
+					}
+					break;
+				default:
+					pr_info("[INF][VSYNC] Invalie driver type(%d)\n",
+						p->type);
+				}
+				#endif
+
+				return;
+			}
+
+			pNextImage->bSize_Changed = 1;
+		} else {
+			dbg(" pop(%d) [%d/%d] id[%d] ts:%d / %d, gap:%d\n",
+				popped_count, i, readable_buff_cnt,
+				pNextImage->buffer_unique_id,
+				pNextImage->time_stamp,
+				current_time,
+				pNextImage->time_stamp - current_time);
+		}
+
+		#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST) && defined(DV_PREVENT_FRAME_DROP_AND_DUPLICATION)
+		if (!bStart_DV_Display) {
+			bStart_DV_Display = b1st_frame_display_count = 1;
+			b1st_frame_id = pNextImage->buffer_unique_id;
+		}
+
+		pNextImage->private_data.optional_info[VID_OPT_RESERVED_2]
+			= (readable_buff_cnt << 16)
+			| tcc_video_get_valid_count(p);
+
+		tca_edr_inc_check_count(0, 1, 0, 0, 0);
+		#endif
+
+		memcpy(pPrevImage, pNextImage,
+			sizeof(struct tcc_lcdc_image_update));
+
+		if (p->skipFrameStatus) {
+			dbg("skip status(%d) %d/0x%x => %d/0x%x, %d, %d, %d\n",
+				p->skipFrameStatus,
+				pPrevImage->buffer_unique_id,
+				pPrevImage->addr0,
+				pNextImage->buffer_unique_id,
+				pNextImage->addr0,
+				pNextImage->enable,
+				pNextImage->Lcdc_layer,
+				Output_SelectMode);
+		}
+
+		if (pNextImage->Lcdc_layer == RDMA_FB) {
+			return;
+			/* prevent KCS warning */
+		}
+
+		if (p->output_toMemory && p->m2m_mode) {
+			#ifdef CONFIG_USE_SUB_MULTI_FRAME
+
+			switch (p->type) {
+			case VSYNC_MAIN:
+				TCC_VIQE_DI_Run60Hz_M2M(pNextImage,
+					VIQE_RESET_NONE);
+				break;
+			case VSYNC_SUB0:
+				TCC_VIQE_DI_Sub_Run60Hz_M2M(pNextImage,
+					VIQE_RESET_NONE);
+				break;
+			case VSYNC_SUB1:
+			case VSYNC_SUB2:
+			case VSYNC_SUB3:
+				if (pNextImage->mosaic_mode) {
+					TCC_VIQE_DI_Push60Hz_M2M(
+						pNextImage, p->type);
+				}
+				break;
+			default:
+				pr_info("[INF][VSYNC] Invalid driver type(%d)\n",
+					p->type);
+			}
+
+			#else
+			TCC_VIQE_DI_Run60Hz_M2M(pNextImage, VIQE_RESET_NONE);
+			#endif
+		} else {
+			switch (Output_SelectMode) {
+			case TCC_OUTPUT_NONE:
+				break;
+
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			case TCC_OUTPUT_LCD:
+				tca_scale_display_update(dp_device, pNextImage);
+				break;
+			#endif
+
+			case TCC_OUTPUT_HDMI:
+				//if (tcc_vsync_mvc_status)
+				if (tcc_vsync_mvc_status && pNextImage->MVCframeView == 1 && pNextImage->MVC_Base_addr0) {
+					//pr_info("[INF][VSYNC] %d,%d,0x%08x\n", tcc_vsync_mvc_status, pNextImage->MVCframeView, pNextImage->MVC_Base_addr0);
+					tca_mvc_display_update(EX_OUT_LCDC, pNextImage);
+				} else {
+					tca_scale_display_update(dp_device, pNextImage);
+				}
+				break;
+
+			case TCC_OUTPUT_COMPONENT:
+			case TCC_OUTPUT_COMPOSITE:
+				tca_scale_display_update(dp_device, pNextImage);
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+}
+
+static void tcc_vsync_display_update_forDeinterlaced(
+	struct tcc_video_disp *p)
+{
+	enum VIQE_RESET_REASON reset_frmCnt = VIQE_RESET_NONE;
+	int current_time;
+	int time_gap, time_diff;
+	int readable_buff_cnt;
+	int i;
+	int popped_count = 0;
+	struct tcc_lcdc_image_update *pPrevImage;
+
+	current_time = tcc_vsync_get_time(p);
+	tcc_vsync_push_render_frame_for_duplicated_interlace(p);
+
+	if (p->nDeinterProcCount == 0) {
+		tcc_vsync_clean_buffer(&p->vsync_buffer);
+
+		readable_buff_cnt = tcc_video_get_readable_count(p);
+		readable_buff_cnt--;
+		if (readable_buff_cnt < 0) {
+			dbg_d("[%d] %s: no available buffer(%d)\n",
+				p->type,
+				p->pIntlNextImage->Lcdc_layer == RDMA_VIDEO
+				? "M" : "S",
+				readable_buff_cnt);
+		}
+
+		for (i = 0; i < readable_buff_cnt; i++) {
+			p->pIntlNextImage
+				= tcc_vsync_get_buffer(&p->vsync_buffer, 0);
+			if (p->pIntlNextImage == NULL) {
+				pr_info("[INF][VSYNC] %s: %d, %d, %d\n",
+					__func__, i, readable_buff_cnt,
+					atomic_read(
+					&p->vsync_buffer.readable_buff_count));
+				return;
+			}
+			dbg_v("[%d/%d] id[%d] ts:%d st:%d ct:%d\n",
+				i, readable_buff_cnt,
+				p->pIntlNextImage->buffer_unique_id,
+				p->pIntlNextImage->time_stamp,
+				p->pIntlNextImage->sync_time, current_time);
+
+			time_gap =
+				(current_time + tcc_vsync_calc_early_margin(p))
+				- p->pIntlNextImage->time_stamp;
+			if (time_gap >= 0) {
+				if (tcc_vsync_pop_buffer(&p->vsync_buffer)
+					< 0) {
+					if (popped_count > 0) {
+						/* sb (skipped buffers)
+						 * and no display
+						 */
+						dbg_d("[%d] l:%s sb:%d\n",
+						p->type,
+						p->pIntlNextImage->Lcdc_layer
+						== RDMA_VIDEO ? "M" : "S",
+						popped_count);
+					}
+					return;
+				}
+				popped_count++;
+
+				if (p->perfect_vsync_flag == 1
+					&& time_gap < 4) {
+					tcc_vsync_set_time(p,
+						tcc_vsync_get_time(p)
+						+ (p->vsync_interval >> 1)
+						* p->time_gap_sign);
+
+					if (p->time_gap_sign > 0) {
+						p->time_gap_sign = -1;
+						/* prevent KCS warning */
+					} else {
+						p->time_gap_sign = 1;
+					}
+				}
+			} else {
+				break;
+			}
+		}
+
+		if (popped_count > 1) {
+			dbg_d("[%d] l:%s sb(p:%d) r[%d -> %d])\n",
+				p->type,
+				p->pIntlNextImage->Lcdc_layer == RDMA_VIDEO
+				? "M" : "S",
+				popped_count, readable_buff_cnt + 1,
+				tcc_video_get_readable_count(p));
+		}
+
+		pPrevImage = &p->vsync_buffer.curr_displaying_imgInfo;
+		p->pIntlNextImage =
+			&p->vsync_buffer.stImage[p->vsync_buffer.readIdx];
+
+		if (p->skipFrameStatus) {
+			dbg("skip status %d/0x%x => %d/0x%x en: %d layer: %d\n",
+				pPrevImage->buffer_unique_id,
+				pPrevImage->addr0,
+				p->pIntlNextImage->buffer_unique_id,
+				p->pIntlNextImage->addr0,
+				p->pIntlNextImage->enable,
+				p->pIntlNextImage->Lcdc_layer);
+		}
+
+		if (p->pIntlNextImage->Lcdc_layer == RDMA_FB)
+			return;
+
+		if (p->vsync_buffer.last_cleared_buff_id
+			> p->pIntlNextImage->buffer_unique_id) {
+			dbg_d("[%d] %s:error wierd buffer id[%d >= %d]\n",
+				p->type,
+				p->pIntlNextImage->Lcdc_layer == RDMA_VIDEO
+				? "M" : "S",
+				p->pIntlNextImage->buffer_unique_id,
+				p->vsync_buffer.last_cleared_buff_id);
+		}
+
+		//pr_info("[INF][VSYNC] mt(%d), st(%d)\n",
+		//	p->pIntlNextImage->time_stamp, current_time);
+
+		if (p->pIntlNextImage->first_frame_after_seek) {
+			time_diff =  p->pIntlNextImage->time_stamp
+				- (current_time
+				+ tcc_vsync_calc_early_margin(p));
+			if (time_diff > 0
+				&& abs(time_diff)
+				> (p->nTimeGapToNextField * 2)) {
+				pr_info("[INF][VSYNC] frame need to wait (%d) (%d)\n",
+					time_diff, p->nTimeGapToNextField * 2);
+				return;
+			}
+
+			p->pIntlNextImage->first_frame_after_seek = 0;
+		}
+
+		// resolution change support
+		if ((p->prevImageWidth != 0) && (p->prevImageHeight != 0)) {
+			int image_width = p->pIntlNextImage->crop_right
+				- ((p->pIntlNextImage->crop_left >> 3) << 3);
+			int image_height = p->pIntlNextImage->crop_bottom
+				- p->pIntlNextImage->crop_top;
+
+			if ((p->prevImageWidth != image_width)
+				|| (p->prevImageHeight != image_height)) {
+				dbg("Interlaced_Res_Changed: %dx%d -> %dx%d\n",
+					p->prevImageWidth, p->prevImageHeight,
+					image_width, image_height);
+				p->prevImageWidth = image_width;
+				p->prevImageHeight = image_height;
+
+				// SoC guide info.
+				reset_frmCnt = VIQE_RESET_CROP_CHANGED;
+			} else {
+				reset_frmCnt = VIQE_RESET_NONE;
+			}
+		} else {
+			p->prevImageWidth = p->pIntlNextImage->crop_right
+				- ((p->pIntlNextImage->crop_left >> 3) << 3);
+			p->prevImageHeight = p->pIntlNextImage->crop_bottom
+				- p->pIntlNextImage->crop_top;
+			reset_frmCnt = VIQE_RESET_NONE;
+		}
+
+		//if ((pPrevImage->addr0 != p->pIntlNextImage->addr0)
+		//	|| (pPrevImage->addr0 == p->pIntlNextImage->addr0
+		//	&& pPrevImage->offset_x != p->pIntlNextImage->offset_x
+		//	&& pPrevImage->offset_y != p->pIntlNextImage->offset_y
+		//	&& pPrevImage->Image_width
+		//		!= p->pIntlNextImage->Image_width
+		//	&& pPrevImage->Image_height
+		//		!= p->pIntlNextImage->Image_height
+		//	&& pPrevImage->Frame_width
+		//		!= p->pIntlNextImage->Frame_width
+		//	&& pPrevImage->Frame_height
+		//		!= p->pIntlNextImage->Frame_height
+		//	&& pPrevImage->crop_left
+		//		!= p->pIntlNextImage->crop_left
+		//	&& pPrevImage->crop_top
+		//		!= p->pIntlNextImage->crop_top
+		//	&& pPrevImage->crop_right
+		//		!= p->pIntlNextImage->crop_right
+		//	&& pPrevImage->crop_bottom
+		//		!= p->pIntlNextImage->crop_bottom
+		//	)
+		if ((pPrevImage->addr0 != p->pIntlNextImage->addr0)
+			|| ((pPrevImage->addr0 == p->pIntlNextImage->addr0)
+			&& (pPrevImage->offset_x
+				!= p->pIntlNextImage->offset_x
+			|| pPrevImage->offset_y
+				!= p->pIntlNextImage->offset_y
+			|| pPrevImage->Image_width
+				!= p->pIntlNextImage->Image_width
+			|| pPrevImage->Image_height
+				!= p->pIntlNextImage->Image_height
+			|| pPrevImage->Frame_width
+				!= p->pIntlNextImage->Frame_width
+			|| pPrevImage->Frame_height
+				!= p->pIntlNextImage->Frame_height
+			|| pPrevImage->crop_left
+				!= p->pIntlNextImage->crop_left
+			|| pPrevImage->crop_top
+				!= p->pIntlNextImage->crop_top
+			|| pPrevImage->crop_right
+				!= p->pIntlNextImage->crop_right
+			|| pPrevImage->crop_bottom
+				!= p->pIntlNextImage->crop_bottom))
+		) {
+			if (pPrevImage->frameInfo_interlace
+				!= p->pIntlNextImage->frameInfo_interlace) {
+				dbg("Buffer_Type_Changed :: %s -> %s\n",
+					pPrevImage->frameInfo_interlace
+						? "Interlace" : "Progressive",
+					p->pIntlNextImage->frameInfo_interlace
+						? "Interlace" : "Progressive");
+				reset_frmCnt = VIQE_RESET_RECOVERY;
+			}
+
+			dbg("r:%d id:%d ts:%d ct:%d g:%d\n",
+				readable_buff_cnt,
+				p->pIntlNextImage->buffer_unique_id,
+				p->pIntlNextImage->time_stamp,
+				current_time,
+				p->pIntlNextImage->time_stamp - current_time);
+
+			if (pPrevImage->addr0 == p->pIntlNextImage->addr0) {
+				p->pIntlNextImage->bSize_Changed = 1;
+				/* prevent KCS warning */
+			} else {
+				p->pIntlNextImage->bSize_Changed = 0;
+			}
+
+			memcpy(pPrevImage, p->pIntlNextImage,
+				sizeof(struct tcc_lcdc_image_update));
+
+			if ((Output_SelectMode != TCC_OUTPUT_NONE)
+				&& (p->outputMode == Output_SelectMode)
+			) {
+				if (!p->interlace_bypass_lcdc) {
+					if (p->output_toMemory && p->m2m_mode) {
+
+					#ifdef CONFIG_USE_SUB_MULTI_FRAME
+
+						switch (p->type) {
+						case VSYNC_MAIN:
+						TCC_VIQE_DI_Run60Hz_M2M(
+							p->pIntlNextImage,
+							reset_frmCnt);
+
+							break;
+
+						case VSYNC_SUB0:
+						TCC_VIQE_DI_Sub_Run60Hz_M2M(
+							p->pIntlNextImage,
+							reset_frmCnt);
+
+							break;
+
+						case VSYNC_SUB1:
+						case VSYNC_SUB2:
+						case VSYNC_SUB3:
+						if (
+						p->pIntlNextImage->mosaic_mode
+						) {
+							TCC_VIQE_DI_Push60Hz_M2M
+							(p->pIntlNextImage,
+							p->type);
+						}
+
+							break;
+
+						default:
+							pr_info("[INF][VSYNC] Invalid driver type(%d)\n",
+								p->type);
+						}
+
+					#else
+						TCC_VIQE_DI_Run60Hz_M2M(
+							p->pIntlNextImage,
+							reset_frmCnt);
+					#endif
+
+					} else {
+						if (p->duplicateUseFlag) {
+							viqe_render_field(
+								current_time);
+						} else {
+							TCC_VIQE_DI_Run60Hz(
+							p->pIntlNextImage,
+							reset_frmCnt);
+						}
+					}
+				} else {
+					struct tcc_dp_device *dp_device
+						= tca_fb_get_displayType(
+						Output_SelectMode);
+
+					if (tcc_vsync_bypass_frame(p,
+						dp_device, p->pIntlNextImage)
+						== 1) {
+						p->nDeinterProcCount = 0;
+						return;
+					}
+				}
+			}
+
+			if (p->output_toMemory && p->m2m_mode) {
+				if (p->deinterlace_mode
+					&& p->frameInfo_interlace) {
+					// To prevent progressive contents from
+					// working twice on dual-vsync mode
+					// for PIP.
+					p->nDeinterProcCount++;
+				}
+			} else {
+				if (p->frameInfo_interlace) {
+					// To prevent 60fps progressive
+					// contents from no fixing A/V Sync.
+					p->nDeinterProcCount++;
+				}
+			}
+		} else {
+			dbg("Same buf(0x%x - id:%d) --- available count:%d)\n",
+				p->pIntlNextImage->addr0,
+				p->pIntlNextImage->buffer_unique_id,
+				tcc_video_get_readable_count(p));
+
+			if ((Output_SelectMode != TCC_OUTPUT_NONE)
+				&& (p->outputMode == Output_SelectMode)) {
+
+				if (!p->output_toMemory && !p->m2m_mode) {
+
+					if (!p->interlace_bypass_lcdc) {
+
+						if (p->duplicateUseFlag) {
+							viqe_render_field(
+								current_time);
+						}
+					} else {
+						struct tcc_dp_device *dp_device
+						= tca_fb_get_displayType(
+							Output_SelectMode);
+
+						if (tcc_vsync_bypass_frame(p,
+							dp_device,
+							p->pIntlNextImage) == 1
+						) {
+							p->nDeinterProcCount
+								= 0;
+							return;
+						}
+					}
+				}
+				#ifdef CONFIG_USE_SUB_MULTI_FRAME
+				else {
+					switch (p->type) {
+					case VSYNC_MAIN:
+						/* TODO */
+						break;
+
+					case VSYNC_SUB0:
+						TCC_VIQE_DI_Sub_Run60Hz_M2M(
+							p->pIntlNextImage,
+							reset_frmCnt);
+						break;
+
+					case VSYNC_SUB1:
+					case VSYNC_SUB2:
+					case VSYNC_SUB3:
+					if (p->pIntlNextImage->mosaic_mode) {
+						TCC_VIQE_DI_Push60Hz_M2M(
+							p->pIntlNextImage,
+							p->type);
+					}
+						break;
+
+					default:
+						pr_info("[INF][VSYNC] Invalid driver type(%d)\n",
+							p->type);
+					}
+				}
+				#endif
+			}
+		}
+	} else {
+		dbg("Intl(1) Process(0x%x) --- available count:%d\n",
+			p->pIntlNextImage->addr0,
+			tcc_video_get_readable_count(p));
+
+		if ((Output_SelectMode != TCC_OUTPUT_NONE)
+			&& (p->outputMode == Output_SelectMode)) {
+
+			if (!p->interlace_bypass_lcdc) {
+
+				if (p->output_toMemory && p->m2m_mode) {
+					p->pIntlNextImage->odd_first_flag
+					= !p->pIntlNextImage->odd_first_flag;
+
+					//p->pIntlNextImage->dst_addr0
+					//= p->pIntlNextImage->dst_addr1;
+
+					#ifdef CONFIG_USE_SUB_MULTI_FRAME
+					switch (p->type) {
+					case VSYNC_MAIN:
+						TCC_VIQE_DI_Run60Hz_M2M(
+							p->pIntlNextImage,
+							VIQE_RESET_NONE);
+					break;
+
+					case VSYNC_SUB0:
+						TCC_VIQE_DI_Sub_Run60Hz_M2M(
+							p->pIntlNextImage,
+							VIQE_RESET_NONE);
+					break;
+
+					case VSYNC_SUB1:
+					case VSYNC_SUB2:
+					case VSYNC_SUB3:
+					if (p->pIntlNextImage->mosaic_mode) {
+						TCC_VIQE_DI_Push60Hz_M2M(
+							p->pIntlNextImage,
+							p->type);
+					}
+					break;
+
+					default:
+						pr_info("[INF][VSYNC] Invalid driver type(%d)\n",
+							p->type);
+					}
+
+					#else
+					TCC_VIQE_DI_Run60Hz_M2M(
+						p->pIntlNextImage,
+						VIQE_RESET_NONE);
+					#endif
+				} else {
+					if (p->duplicateUseFlag) {
+						viqe_render_field(current_time);
+						/* prevent KCS warning */
+					} else {
+						p->pIntlNextImage
+							->odd_first_flag
+						= !p->pIntlNextImage
+							->odd_first_flag;
+						TCC_VIQE_DI_Run60Hz(
+							p->pIntlNextImage,
+							VIQE_RESET_NONE);
+					}
+				}
+			}
+		}
+
+		p->nDeinterProcCount = 0;
+	}
+}
+
+int display_vsync(struct tcc_video_disp *p)
+{
+	#ifndef USE_VSYNC_TIMER
+	if ((++p->unVsyncCnt) & 0x01) {
+		p->baseTime += 16;
+		/* prevent KCS warning */
+	} else {
+		p->baseTime += 17;
+	}
+
+	if (!(p->unVsyncCnt % 6)) {
+		p->baseTime++;
+		/* prevent KCS warning */
+	}
+	#endif
+
+	if (tcc_vsync_is_empty_buffer(&p->vsync_buffer) == 0) {
+
+		#ifdef CONFIG_VIDEO_DISPLAY_DEINTERLACE_MODE
+		if (p->deinterlace_mode && !p->output_toMemory) {
+			tcc_vsync_display_update_forDeinterlaced(p);
+		//} else if (p->deinterlace_mode && p->output_toMemory
+		//	&& p->m2m_mode) {
+		} else if (p->output_toMemory && p->m2m_mode) {
+			tcc_vsync_display_update_forDeinterlaced(p);
+		} else
+		#endif
+		{
+			tcc_vsync_display_update(p);
+		}
+
+		#if defined(CONFIG_TCC_DISPLAY_MODE_USE) && !defined(CONFIG_TCC_DISPLAY_MODE_AUTO_DETECT)
+		tca_fb_attach_update_flag();
+		#endif
+	} else {
+		if ((p->isVsyncRunning == EM_VSYNC_RUNNING)
+			&& (tcc_video_get_readable_count(p) <= 0)) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+#define USE_DOLBY_VISION_SUB_INTERRUPT
+
+#if defined(CONFIG_VIOC_DOLBY_VISION_EDR) && defined(USE_DOLBY_VISION_SUB_INTERRUPT)
+static unsigned int dv_video_int_he_count;
+#endif
+
+static irqreturn_t tcc_vsync_handler_for_video(
+	int irq,
+	void *dev_id)
+{
+	unsigned int type = VSYNC_MAIN;
+	struct tcc_vsync_display_info_t *vsync
+		= (struct tcc_vsync_display_info_t *)dev_id;
+
+	#if defined(CONFIG_VIOC_DOLBY_VISION_EDR)
+	if (VIOC_CONFIG_DV_GET_EDR_PATH()) {
+		void __iomem *pDV_Cfg = VIOC_DV_VEDR_GetAddress(VDV_CFG);
+		unsigned int status = 0;
+
+		VIOC_V_DV_GetInterruptPending(pDV_Cfg, &status);
+
+		if (status & DV_VIDEO_INT) {
+			VIOC_V_DV_ClearInterrupt(pDV_Cfg, DV_VIDEO_INT);
+
+			#ifdef CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST
+			tca_edr_inc_check_count(1, 0, 0, 0, 0);
+			#endif
+
+			#ifdef USE_DOLBY_VISION_SUB_INTERRUPT
+			vioc_intr_enable(vsync_vioc0_disp.irq_num,
+				VIOC_INTR_V_DV, DV_VIDEO_INT_SUB);
+			dv_video_int_he_count = 0;
+			return IRQ_HANDLED;
+			#endif
+		}
+		#ifdef USE_DOLBY_VISION_SUB_INTERRUPT
+		else if (status & DV_VIDEO_INT_SUB) {
+			VIOC_V_DV_ClearInterrupt(pDV_Cfg, DV_VIDEO_INT_SUB);
+			if (dv_video_int_he_count++ > 2) {
+				dv_video_int_he_count = 0;
+				vioc_intr_disable(vsync_vioc0_disp.irq_num,
+					VIOC_INTR_V_DV, DV_VIDEO_INT_SUB);
+			} else {
+				return IRQ_HANDLED;
+			}
+		}
+		#endif
+		else {
+			return IRQ_NONE;
+			/* prevent KCS warning */
+		}
+	} else
+	#endif
+	{
+		if (!is_vioc_intr_activatied(vsync->vioc_intr->id,
+			vsync->vioc_intr->bits)) {
+			return IRQ_NONE;
+		}
+
+		vioc_intr_clear(vsync->vioc_intr->id, vsync->vioc_intr->bits);
+	}
+
+	vsync_intr_count++;
+
+	#if !defined(USE_ALWAYS_UNPLUGGED_INT)
+	for (type = VSYNC_MAIN; type < VSYNC_MAX; type++) {
+
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		if (tccvid_lastframe[type].enabled) {
+			continue;
+			/* prevent KCS warning */
+		}
+		#endif
+
+		if (tcc_vsync_isVsyncRunning(type)) {
+			vsync_intr_proc[type] += 1;
+			display_vsync(&tccvid_vsync[type]);
+		}
+	}
+	#endif
+
+	return IRQ_HANDLED;
+}
+
+#ifdef USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT
+static irqreturn_t tcc_vsync_unplugged_output_for_video(
+	int irq,
+	void *dev_id)
+{
+	unsigned int type = VSYNC_MAIN;
+
+	for (type = VSYNC_MAIN; type < VSYNC_MAX; type++) {
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		if (LastFrame[VSYNC_MAIN]) {
+			return IRQ_HANDLED;
+			/* prevent KCS warning */
+		}
+		#endif
+
+		display_vsync(&tccvid_vsync[type]);
+	}
+
+	return IRQ_HANDLED;
+}
+
+static void tcc_vsync_unplugged_int_start(irq_handler_t handler)
+{
+	if (!vsync_unpluged_int_timer) {
+		vsync_unpluged_int_timer = tcc_register_timer(NULL, 16000,
+			handler); // 16.667ms
+
+		if (IS_ERR(vsync_unpluged_int_timer)) {
+			pr_err("[ERR][VSYNC] %s: cannot register tcc timer for unplugged output\n",
+				__func__;
+			vsync_unpluged_int_timer = NULL;
+			BUG();
+		}
+	}
+
+	if (vsync_unpluged_int_timer && !g_is_unplugged_int_enabled) {
+		tcc_timer_enable(vsync_unpluged_int_timer);
+		g_is_unplugged_int_enabled = 1;
+		//msleep(0);
+	}
+
+	pr_info("[INF][VSYNC] %s\n", __func__);
+}
+
+static void tcc_vsync_unplugged_int_stop(void)
+{
+	#if defined(USE_ALWAYS_UNPLUGGED_INT)
+	tcc_vsync_unplugged_int_start(tcc_vsync_unplugged_output_for_video);
+	return;
+	#endif
+
+	if (vsync_unpluged_int_timer && g_is_unplugged_int_enabled) {
+		tcc_timer_disable(vsync_unpluged_int_timer);
+		g_is_unplugged_int_enabled = 0;
+	}
+
+	if (!g_is_unplugged_int_enabled && vsync_unpluged_int_timer) {
+		tcc_unregister_timer(vsync_unpluged_int_timer);
+		vsync_unpluged_int_timer = NULL;
+	}
+
+	pr_info("[INF][VSYNC] %s\n", __func__);
+}
+
+static int tcc_vsync_check_unplugged_int(void)
+{
+	if (vsync_unpluged_int_timer && g_is_unplugged_int_enabled)
+		return 1;
+	return 0;
+}
+#endif
+
+static inline void tcc_vsync_set_time(struct tcc_video_disp *p, int time)
+{
+	#ifdef USE_VSYNC_TIMER
+	p->baseTime = tcc_get_timer_count(vsync_timer) - time;
+	#else
+	p->baseTime = time;
+	#endif
+}
+
+static inline int tcc_vsync_get_time(struct tcc_video_disp *p)
+{
+	#ifdef USE_VSYNC_TIMER
+	return tcc_get_timer_count(vsync_timer) - p->baseTime;
+	#else
+	return p->baseTime;
+	#endif
+
+}
+
+static void tcc_vsync_reset_syncTime(
+	struct tcc_video_disp *p,
+	int currentTime,
+	enum VSYNC_CH_TYPE type)
+{
+	memset(p->timeGap, 0x00, sizeof(p->timeGap));
+	p->timeGapBufferFullFlag = 0;
+	p->timeGapIdx = 0;
+	p->timeGapTotal = 0;
+
+	spin_lock_irq(&vsync_lock);
+	tcc_vsync_set_time(p, currentTime);
+	p->unVsyncCnt = 0;
+	spin_unlock_irq(&vsync_lock);
+
+	if (!p->firstFrameFlag) {
+		pr_info("[INF][VSYNC] [%d] reset base time : %d\n",
+			type, currentTime);
+	}
+}
+
+static int tcc_vsync_calculate_syncTime(
+	struct tcc_video_disp *p,
+	int currentTime,
+	enum VSYNC_CH_TYPE type)
+{
+	int diffTime;
+	int avgTime;
+	int base_time;
+
+	if (p->lastUdateTime == currentTime)
+		return 0;
+
+	p->lastUdateTime = currentTime;
+
+	spin_lock_irq(&vsync_lock);
+	base_time = tcc_vsync_get_time(p);
+	spin_unlock_irq(&vsync_lock);
+
+	diffTime =	currentTime - base_time;
+
+	p->timeGapTotal -= p->timeGap[p->timeGapIdx];
+	p->timeGapTotal += diffTime;
+	p->timeGap[p->timeGapIdx++] = diffTime;
+
+	if (p->timeGapIdx >= TIME_BUFFER_COUNT)
+		p->timeGapIdx = 0;
+
+	if (p->timeGapIdx == 0)
+		p->timeGapBufferFullFlag = 1;
+
+	if (p->timeGapBufferFullFlag)
+		avgTime = p->timeGapTotal / TIME_BUFFER_COUNT;
+	else
+		avgTime = p->timeGapTotal / (int)(p->timeGapIdx);
+
+
+	dbg_v("[%d] diffTime %d, avgTime %d, base : %d\n",
+		type, diffTime, avgTime, base_time);
+
+	#if 0//def USE_VSYNC_TIMER
+	if (p->timeGapBufferFullFlag && (avgTime > p->updateGapTime
+		|| avgTime < -(p->updateGapTime)))
+	#else
+	if ((p->timeGapBufferFullFlag || p->unVsyncCnt < 100)
+		&& (avgTime > p->updateGapTime
+		|| avgTime < -(p->updateGapTime)))
+	#endif
+	{
+		memset(p->timeGap, 0x00, sizeof(p->timeGap));
+		p->timeGapBufferFullFlag = 0;
+		p->timeGapIdx = 0;
+		p->timeGapTotal = 0;
+
+		//pr_info("[INF][VSYNC] changed time: bt:%d kt:%d t:%d\n",
+		//	p->baseTime, tcc_get_timer_count(vsync_timer),
+		//	currentTime);
+
+		spin_lock_irq(&vsync_lock);
+		tcc_vsync_set_time(p, tcc_vsync_get_time(p)+avgTime);
+		spin_unlock_irq(&vsync_lock);
+
+		#if !defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST)
+		if (!p->firstFrameFlag)
+			pr_info("[INF][VSYNC] [%d] changed base time : %d, add time: %d diffTime %d fps(%d)\n",
+				type, base_time+avgTime, avgTime, diffTime,
+				p->video_frame_rate);
+		#endif
+	}
+
+	return 0;
+}
+
+
+static int tcc_vsync_push_preprocess(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *input_image_info,
+	enum VSYNC_CH_TYPE type)
+{
+	unsigned int lcd_width, lcd_height;
+	void __iomem *pDISPBase;
+	int check_time = 0;
+	int display_hz = 0;
+	int ret = 0;
+
+	if (pdp_data == NULL) {
+		dbg_v("[%d] %s :: pdp_data is null\n", type, __func__);
+		ret = -10;
+		goto Error_Proc;
+	}
+
+	#if !defined(USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT)
+	pDISPBase = pdp_data->ddc_info.virt_addr;
+	VIOC_DISP_GetSize(pDISPBase, &lcd_width, &lcd_height);
+
+	if (!pdp_data->FbPowerState || !lcd_width || !lcd_height
+		|| !VIOC_DISP_Get_TurnOnOff(pDISPBase)
+		|| (p->isVsyncRunning != EM_VSYNC_RUNNING)) {
+		dbg("[%d] FbPower(%d) Disp(%dx%d, %d) VSync(%d) outmode(%d)\n",
+			type, pdp_data->FbPowerState,
+			lcd_width, lcd_height,
+			VIOC_DISP_Get_TurnOnOff(pDISPBase),
+			p->isVsyncRunning, Output_SelectMode);
+		ret = -11;
+		goto Error_Proc;
+	}
+	#endif
+
+	if (tcc_video_check_framerate(p,
+		input_image_info->private_data.optional_info[VID_OPT_FPS])) {
+		if (Output_SelectMode == TCC_OUTPUT_HDMI && HDMI_video_hz != 0) {
+			display_hz = HDMI_video_hz;
+		} else {
+			display_hz = 60;
+		}
+
+		p->vsync_interval = (1000/display_hz);
+
+		if ((p->video_frame_rate > 0)
+			&& (display_hz >= p->video_frame_rate)
+			&& ((display_hz % p->video_frame_rate) == 0)) {
+			p->perfect_vsync_flag = 1;
+		} else {
+			p->perfect_vsync_flag = 0;
+		}
+
+		if ((p->video_frame_rate > 0)
+			&& (p->video_frame_rate <= display_hz/2)) {
+			p->duplicateUseFlag = 1;
+		} else {
+			p->duplicateUseFlag = 0;
+		}
+
+		pr_info("[INF][VSYNC] [%d]### Change_Frame_Rate with ex_out(%d) ,interval(%d), perfect_flag(%d) duplicate(%d)\n",
+			type, input_image_info->ex_output,
+			p->vsync_interval, p->perfect_vsync_flag,
+			p->duplicateUseFlag);
+	}
+
+	#ifdef CONFIG_VIOC_DOLBY_VISION_EDR
+	if (!VIOC_CONFIG_DV_GET_EDR_PATH())
+	#endif
+	{
+	#if defined(CONFIG_TCC_M2M_USE_INTERLACE_OUTPUT)
+		if (!(pDISPBase->uCTRL.nREG & HwDISP_NI)) { //interlace mode
+			input_image_info->on_the_fly = 0;
+		}
+	#endif
+	}
+
+	#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+	if (tcc_video_check_last_frame(input_image_info) <= 0) {
+		pr_info("[INF][VSYNC] [%d]----> skip this frame for last-frame\n",
+			type);
+		ret = -12;
+		goto Error_Proc;
+	}
+	#endif
+
+	spin_lock_irq(&vsync_lock);
+
+	if (p->player_no_sync_time) {
+		input_image_info->sync_time = tcc_vsync_get_time(p);
+	} else {
+		check_time = abs(tcc_vsync_get_time(p)
+				- input_image_info->sync_time);
+	}
+
+	spin_unlock_irq(&vsync_lock);
+
+	if (p->player_no_sync_time) {
+		int check_index = 0;
+
+		input_image_info->output_path = 0;
+		p->skipFrameStatus = 0;
+		check_index = input_image_info->buffer_unique_id
+			- p->prev_buffer_unique_id;
+
+		//pr_info("[INF][VSYNC] id:%d/%d vts:%d/%d t:%d valid:%d\n",
+		//	input_image_info->buffer_unique_id,
+		//	p->prev_buffer_unique_id,
+		//	input_image_info->time_stamp,
+		//	p->prev_time_stamp,
+		//	input_image_info->sync_time,
+		//	tcc_video_get_valid_count(p));
+
+		// this is for seek, fast play(except x2)
+		// and inline <-> full screen
+		if ((p->firstFrameFlag == 1) || (p->player_seek == 1)
+			|| (check_index > 1 && abs(p->prev_time_stamp
+			- input_image_info->time_stamp)
+			> (p->nTimeGapToNextField+2)*check_index)) {
+
+			pr_info("[INF][VSYNC] [%d] Check the time gap %d, %d/%d\n",
+				type, check_index,
+				input_image_info->time_stamp,
+				p->prev_time_stamp);
+
+			if (p->firstFrameFlag != 1) {
+				p->skipFrameStatus = 1;
+				input_image_info->output_path = 1;
+			}
+
+			//set sync time from vts
+			check_time = GAP_FOR_RESET_SYNC_TIME + 1;
+			input_image_info->sync_time =
+				input_image_info->time_stamp
+				- (tcc_vsync_calc_early_margin(p) + 20);
+
+		} else if (p->wait_too_long_indicate == 1) {
+			input_image_info->output_path = 1;
+		}
+		// for x2
+		//else if (check_index < 3 && abs(p->prev_time_stamp
+		//	- input_image_info->time_stamp) * 2
+		//	< (p->nTimeGapToNextField+2)*check_index) {
+		//	//p->skipFrameStatus = 1;
+		//	input_image_info->output_path = 1;
+		//}
+
+		p->prev_time_stamp = input_image_info->time_stamp;
+		p->prev_buffer_unique_id = input_image_info->buffer_unique_id;
+
+		p->player_seek = 0;
+	}
+
+	if (check_time > GAP_FOR_RESET_SYNC_TIME) {
+		#ifdef USE_VSYNC_TIMER
+		pr_info("[INF][VSYNC] [%d] reset time base time %d kernel_time %d sync_time %d :: TS %d\n",
+			type, p->baseTime, tcc_get_timer_count(vsync_timer),
+			input_image_info->sync_time,
+			input_image_info->time_stamp);
+		#endif
+
+		tcc_vsync_reset_syncTime(p, 0, type);
+	}
+
+	tcc_vsync_calculate_syncTime(p, input_image_info->sync_time, type);
+
+	return ret;
+
+Error_Proc:
+	spin_lock_irq(&vsync_lockDisp);
+	tcc_vsync_pop_all_buffer(p, __LINE__);
+	p->vsync_buffer.last_cleared_buff_id
+		= input_image_info->buffer_unique_id;
+
+	dbg_v("[%d] %s : cleared buffer (%d -> %d)\n", type, __func__,
+		input_image_info->buffer_unique_id,
+		p->vsync_buffer.last_cleared_buff_id);
+
+	spin_unlock_irq(&vsync_lockDisp);
+
+	return ret;
+}
+
+static void tcc_vsync_push_set_outputMode(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *input_image_info)
+{
+	switch (input_image_info->outputMode) {
+	case OUTPUT_NONE:
+		#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+		p->outputMode = TCC_OUTPUT_LCD;
+		#else
+		p->outputMode = TCC_OUTPUT_NONE;
+		#endif
+		break;
+	case OUTPUT_HDMI:
+		p->outputMode = TCC_OUTPUT_HDMI;
+		tcc_vsync_check_interlace_output(p, pdp_data);
+		break;
+	case OUTPUT_COMPOSITE:
+		p->outputMode = TCC_OUTPUT_COMPOSITE;
+		tcc_vsync_check_interlace_output(p, pdp_data);
+		break;
+	case OUTPUT_COMPONENT:
+		p->outputMode = TCC_OUTPUT_COMPONENT;
+		tcc_vsync_check_interlace_output(p, pdp_data);
+		break;
+	default:
+		p->outputMode = TCC_OUTPUT_NONE;
+	}
+
+	pr_info("[INF][VSYNC] set_outputMode input->outputMode:%d SelectMode:%d\n",
+		input_image_info->outputMode, Output_SelectMode);
+}
+
+static int tcc_vsync_push_preprocess_deinterlacing(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *input_image_info)
+{
+	unsigned int lcdCtrlNum, lcd_width, lcd_height;
+	void __iomem *pDISPBase;
+	unsigned int layer = input_image_info->Lcdc_layer;
+
+	if (p->deinterlace_mode < 0) {
+
+		pDISPBase = pdp_data->ddc_info.virt_addr;
+
+		VIOC_DISP_GetSize(pDISPBase, &lcd_width, &lcd_height);
+
+		p->deinterlace_mode = input_image_info->deinterlace_mode;
+		p->frameInfo_interlace = input_image_info->frameInfo_interlace;
+		p->output_toMemory = input_image_info->output_toMemory;
+		pr_info("[INF][VSYNC] ### deinterlace_mode(%d), output_toMemory(%d)\n",
+			p->deinterlace_mode, p->output_toMemory);
+
+		p->interlace_bypass_lcdc = 0;
+		p->mvcMode = input_image_info->MVCframeView;
+
+		p->m2m_mode =  input_image_info->m2m_mode;
+
+		if ((p->deinterlace_mode == 1)
+			&& (p->interlace_output == 1)
+			&& (p->output_toMemory == 0)
+			&& (input_image_info->Frame_width
+				== input_image_info->Image_width)
+			&& (input_image_info->Frame_height
+				== input_image_info->Image_height)) {
+			pr_info("[INF][VSYNC] ### interlace_bypass_lcdc set !!\n");
+			p->interlace_bypass_lcdc = 1;
+		}
+
+		#if defined(CONFIG_TCC_OUTPUT_COLOR_SPACE_YUV) || defined(CONFIG_TCC_COMPOSITE_COLOR_SPACE_YUV)
+		if ((p->outputMode == TCC_OUTPUT_COMPOSITE)
+			&& (p->deinterlace_mode == 1)
+			&& (p->interlace_output == 1)
+			&& (p->output_toMemory == 0)
+			&& (input_image_info->Frame_width
+				== input_image_info->Image_width)) {
+			if (p->interlace_bypass_lcdc == 0) {
+				pr_info("[INF][VSYNC] interlace_bypass_lcdc set for testing composite signal\n");
+				p->interlace_bypass_lcdc = 1;
+			}
+		}
+
+		#if defined(CONFIG_FB_TCC_COMPOSITE)
+		tcc_composite_set_bypass(p->interlace_bypass_lcdc);
+		#endif
+		#endif
+	}
+
+	#if defined(CONFIG_TCC_OUTPUT_COLOR_SPACE_YUV) || defined(CONFIG_TCC_COMPOSITE_COLOR_SPACE_YUV)
+	if ((p->outputMode == TCC_OUTPUT_COMPOSITE)
+		&& (p->interlace_bypass_lcdc)) {
+		if (input_image_info->Frame_width
+			<= input_image_info->Image_width) {
+			input_image_info->Image_width
+				= input_image_info->Frame_width;
+		}
+	}
+	#endif
+
+	if (p->deinterlace_mode && p->firstFrameFlag
+		&& !p->interlace_bypass_lcdc) {
+
+		if (p->outputMode == TCC_OUTPUT_LCD
+			|| p->outputMode == TCC_OUTPUT_NONE) {
+			lcdCtrlNum = LCD_LCDC_NUM;
+		} else {
+			lcdCtrlNum = EX_OUT_LCDC;
+		}
+
+		p->nDeinterProcCount = 0;
+
+		if (!p->output_toMemory) {
+			dbg("first on-the-fly TCC_VIQE_DI_Init60Hz Layer(%d)\n",
+				layer);
+
+			if (layer == RDMA_VIDEO) {
+				#if defined(CONFIG_VIOC_MAP_DECOMP)
+				VIOC_CONFIG_MCPath(pdp_data->rdma_info[layer].blk_num, pdp_data->rdma_info[layer].blk_num);
+				#endif
+			}
+			TCC_VIQE_DI_Init60Hz(Output_SelectMode, lcdCtrlNum,
+				input_image_info);
+		}
+	}
+
+	if (p->firstFrameFlag && !p->interlace_bypass_lcdc) {
+		if (p->output_toMemory && p->m2m_mode) {
+			dbg("first m2m TCC_excuteVIQE_60Hz\n");
+			if (layer == RDMA_VIDEO) {
+				TCC_VIQE_DI_Init60Hz_M2M(Output_SelectMode,
+					input_image_info);
+			} else {
+				#ifdef CONFIG_TCC_VIQE_FOR_SUB_M2M
+				TCC_VIQE_DI_Init60Hz_M2M(Output_SelectMode,
+					input_image_info);
+				#else
+				TCC_VIQE_DI_Sub_Init60Hz_M2M(Output_SelectMode,
+					input_image_info);
+				#endif
+			}
+		}
+	}
+
+	p->firstFrameFlag = 0;
+
+	return 0;
+}
+
+static int tcc_vsync_push_bypass_frame(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *input_image_info,
+	enum VSYNC_CH_TYPE type)
+{
+	if (input_image_info->output_path) {
+		if (p->vsync_buffer.available_buffer_id_on_vpu
+			> input_image_info->buffer_unique_id) {
+			return 0;
+		}
+
+		dbg("output_path[%d] buffer_unique_id %d\n", type,
+			input_image_info->buffer_unique_id);
+
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		if (tccvid_lastframe[type].enabled) {
+			return 0;
+			/* prevent KCS warning */
+		}
+		#endif
+
+		input_image_info->bSize_Changed = 1;
+
+		memcpy(&p->vsync_buffer.curr_displaying_imgInfo,
+			input_image_info, sizeof(struct tcc_lcdc_image_update));
+
+		spin_lock_irq(&vsync_lockDisp);
+		tcc_vsync_pop_all_buffer(p, __LINE__);
+		p->vsync_buffer.last_cleared_buff_id
+			= input_image_info->buffer_unique_id;
+		spin_unlock_irq(&vsync_lockDisp);
+
+		if (p->deinterlace_mode && !p->interlace_bypass_lcdc) {
+			p->nDeinterProcCount = 0;
+
+			if (Output_SelectMode != TCC_OUTPUT_NONE
+				&& !p->duplicateUseFlag) {
+
+				if (!p->output_toMemory) {
+					if (input_image_info->Lcdc_layer
+						== RDMA_VIDEO)
+						TCC_VIQE_DI_Run60Hz(
+							input_image_info,
+							VIQE_RESET_NONE);
+				} else if (p->output_toMemory && p->m2m_mode) {
+					TCC_VIQE_DI_Run60Hz_M2M(
+						input_image_info,
+						VIQE_RESET_NONE);
+				}
+			}
+		} else if (p->interlace_bypass_lcdc) {
+			p->nDeinterProcCount = 0;
+			if (tcc_vsync_bypass_frame(p, pdp_data,
+				input_image_info) == 1) {
+				//p->nDeinterProcCount = 0;
+				//return;
+			}
+		} else if (p->output_toMemory && p->m2m_mode) {
+			TCC_VIQE_DI_Run60Hz_M2M(input_image_info,
+				VIQE_RESET_NONE);
+		} else {
+			switch (Output_SelectMode) {
+			case TCC_OUTPUT_NONE:
+				break;
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			case TCC_OUTPUT_LCD:
+				tca_scale_display_update(pdp_data,
+					input_image_info);
+				break;
+			#endif
+			case TCC_OUTPUT_HDMI:
+				//if (tcc_vsync_mvc_status) {
+				//	pr_info("[INF][VSYNC] %d, %d, 0x%08x\n",
+				//	tcc_vsync_mvc_status,
+				//	input_image_info->MVCframeView,
+				//	input_image_info->MVC_Base_addr0);
+				//}
+
+				if (tcc_vsync_mvc_status
+					&& input_image_info->MVCframeView == 1
+					&& input_image_info->MVC_Base_addr0) {
+					tca_mvc_display_update(EX_OUT_LCDC,
+						input_image_info);
+				} else {
+					tca_scale_display_update(pdp_data,
+						input_image_info);
+				}
+
+				break;
+
+			case TCC_OUTPUT_COMPONENT:
+			case TCC_OUTPUT_COMPOSITE:
+				tca_scale_display_update(pdp_data,
+					input_image_info);
+				break;
+			default:
+				break;
+			}
+		}
+
+		input_image_info->time_stamp = 0;
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static int tcc_vsync_push_check_error(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *input_image_info)
+{
+	int error_type = 0;
+
+	if (p->skipFrameStatus) {
+		error_type = -21;
+	} else if (p->outputMode != Output_SelectMode) {
+		#ifdef USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT
+		if (tcc_vsync_check_unplugged_int() == 0)
+		#endif
+		{
+			dbg_v("err: output mode different %d %d\n",
+				p->outputMode, Output_SelectMode);
+			error_type = -22;
+		}
+	} else if (p->vsync_buffer.available_buffer_id_on_vpu
+		> input_image_info->buffer_unique_id) {
+		dbg_v("err: buf id sync fail omx_buf_id: %d, cur_buff_id: %d\n",
+			p->vsync_buffer.available_buffer_id_on_vpu,
+			input_image_info->buffer_unique_id);
+		error_type = -23;
+	}
+
+	if (error_type < 0) {
+		dbg_v("err: %d buffer_unique_id %d\n", error_type,
+			input_image_info->buffer_unique_id);
+		spin_lock_irq(&vsync_lockDisp);
+		p->vsync_buffer.last_cleared_buff_id
+			= input_image_info->buffer_unique_id;
+		spin_unlock_irq(&vsync_lockDisp);
+		return error_type;
+	}
+
+	return 0;
+}
+
+static int tcc_vsync_push_process(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *input_image_info,
+	enum VSYNC_CH_TYPE type)
+{
+	int timeout;
+
+	dbg_v("%s: %d, %d, %d\n", __func__, input_image_info->buffer_unique_id,
+		input_image_info->time_stamp, input_image_info->sync_time);
+
+	if (input_image_info->time_stamp < input_image_info->sync_time) {
+		input_image_info->time_stamp = TIME_MARK_SKIP;
+		/* prevent KCS warning */
+	}
+
+	if (tcc_vsync_is_full_buffer(&p->vsync_buffer)) {
+		timeout = wait_event_interruptible_timeout(wq_consume,
+			tcc_vsync_is_full_buffer(&p->vsync_buffer) == 0,
+			msecs_to_jiffies(500));
+
+		dbg_v("mio push wait(%d ms) due to buffer-full\n",
+			500 - jiffies_to_msecs(timeout));
+	}
+
+	spin_lock_irq(&vsync_lock);
+
+	input_image_info->viqe_queued = 0;
+	if (tcc_vsync_push_buffer(p, &p->vsync_buffer, input_image_info) < 0) {
+		pr_err("[ERR][VSYNC] critical error: vsync buffer full by fault buffer controll\n");
+		tcc_vsync_buffer_check(p, 0);
+	}
+
+	spin_unlock_irq(&vsync_lock);
+
+	//pr_info("[INF][VSYNC]  OddFirst = %d, interlaced %d\n",
+	//	input_image_info->odd_first_flag,
+	//	input_image_info->deinterlace_mode);
+	dbg_v("vtime : %d, curtime : %d\n", input_image_info->time_stamp,
+		input_image_info->sync_time);
+	dbg("%s: PUSH_%d buffer ID(%d) - TS(v[%d ms] / s[%d ms]) HDR(%d/%d)\n",
+		input_image_info->Lcdc_layer == RDMA_VIDEO ? "M" : "S", type,
+		input_image_info->buffer_unique_id,
+		input_image_info->time_stamp,
+		input_image_info->sync_time,
+		input_image_info->private_data.optional_info[
+			VID_OPT_HAVE_USERDATA],
+		input_image_info->private_data.optional_info[
+			VID_OPT_HAVE_DOLBYVISION_INFO]);
+
+	return 0;
+}
+
+static int tcc_vsync_start(
+	struct tcc_video_disp *p,
+	struct tcc_lcdc_image_update *input_image_info,
+	enum VSYNC_CH_TYPE type)
+{
+	int backup_time, backup_frame_rate;
+	int display_hz = 0, ret = 0;
+	struct tcc_dp_device *dp_device = NULL;
+
+#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	if (!input_image_info->ex_output) {
+		vsync_started_device = LCD_START_VSYNC;
+		Output_SelectMode = TCC_OUTPUT_LCD;
+	} else {
+		Output_SelectMode = TCC_OUTPUT_HDMI;
+		vsync_started_device = HDMI_START_VSYNC;
+	}
+#else
+	switch (input_image_info->outputMode) {
+	case OUTPUT_NONE:
+		Output_SelectMode = TCC_OUTPUT_LCD;
+		break;
+	case OUTPUT_HDMI:
+		Output_SelectMode = TCC_OUTPUT_HDMI;
+		break;
+	case OUTPUT_COMPOSITE:
+		Output_SelectMode = TCC_OUTPUT_COMPOSITE;
+		break;
+	case OUTPUT_COMPONENT:
+		Output_SelectMode = TCC_OUTPUT_COMPONENT;
+		break;
+	case OUTPUT_MAX:
+	default:
+		pr_err("[ERR][VSYNC] %s[%d]: wrong argument(%d)\n", __func__,
+			__LINE__, input_image_info->outputMode);
+		break;
+	}
+#endif
+
+#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+	spin_lock_irq(&LastFrame_lockDisp);
+	if (tccvid_lastframe[type].enabled
+		&& tccvid_lastframe[type].reason.Resolution == 0
+		&& tccvid_lastframe[type].reason.Codec == 0) {
+		tccvid_lastframe[type].enabled = 0;
+		dbg("LastFrame[%d] = 0 in TCC_LCDC_VIDEO_START_VSYNC\n",
+			type);
+	}
+	spin_unlock_irq(&LastFrame_lockDisp);
+#endif
+
+	switch (p->isVsyncRunning) {
+	default: /* EM_VSYNC_DISABLED or EM_VSYNC_PREPARE */
+		dp_device = tca_fb_get_displayType(Output_SelectMode);
+
+		if (dp_device == NULL) {
+			#if defined(CONFIG_VSYNC_DRV_ALWAYS_ACCEPT_START_VSYNC)
+			if (prepare_input_image_info[type] != NULL) {
+				memcpy(prepare_input_image_info[type],
+					input_image_info,
+					sizeof(struct tcc_lcdc_image_update));
+				p->isVsyncRunning = EM_VSYNC_PREPARE;
+				pr_err("%s Output device is turned off - backup\n",
+					__func__);
+			}
+			// Save info
+			#else
+			pr_err("[ERR][VSYNC] %s[%d]: device is NULL (%d)\n",
+				__func__, __LINE__, Output_SelectMode);
+			ret = -1;
+			#endif
+
+			break;
+		}
+
+		if (!dp_device->FbPowerState) {
+			#if defined(CONFIG_VSYNC_DRV_ALWAYS_ACCEPT_START_VSYNC)
+			if (prepare_input_image_info[type] != NULL) {
+				memcpy(prepare_input_image_info[type],
+					input_image_info,
+					sizeof(struct tcc_lcdc_image_update));
+				p->isVsyncRunning = EM_VSYNC_PREPARE;
+				pr_err("%s Output device is turned off - backup\n",
+					__func__);
+			}
+			// Save info
+			#else
+			pr_err("[ERR][VSYNC] %s[%d]: Output Device is turned off(%d)\n",
+				__func__, __LINE__, Output_SelectMode);
+			ret = -1;
+			#endif
+
+			break;
+		}
+
+		#ifdef CONFIG_TCC_HDMI_DRIVER_V2_0
+		if (input_image_info->Lcdc_layer == RDMA_FB
+			|| input_image_info->Lcdc_layer >= RDMA_MAX_NUM) {
+			if (type == VSYNC_MAIN) {
+				input_image_info->Lcdc_layer = RDMA_VIDEO;
+				/* prevent KCS warning */
+			} else {
+				input_image_info->Lcdc_layer = RDMA_VIDEO_SUB;
+			}
+		}
+
+		set_hdmi_drm(DRM_INIT, input_image_info,
+			input_image_info->Lcdc_layer);
+		#endif
+
+		tcc_video_set_framerate(p, input_image_info->fps);
+
+		backup_time = p->nTimeGapToNextField;
+		backup_frame_rate = p->video_frame_rate;
+		memset(p, 0, sizeof(struct tcc_video_disp));
+		p->overlayUsedFlag = -1;
+		p->outputMode = -1;
+		p->firstFrameFlag = 1;
+		p->deinterlace_mode = -1;
+		p->m2m_mode = -1;
+		p->output_toMemory = -1;
+		p->mvcMode = 0;
+		p->duplicateUseFlag = 0;
+		p->nTimeGapToNextField = backup_time;
+		p->video_frame_rate = backup_frame_rate;
+		p->time_gap_sign = 1;
+
+		// (input_image_info->first_frame_after_seek == -99) means
+		// vsync is started from other player
+		// which not give sync time info. ex mediacodec player.
+		if (input_image_info->first_frame_after_seek == -99) {
+			p->player_no_sync_time = 1;
+			/* prevent KCS warning */
+		} else {
+			p->player_no_sync_time = 0;
+		}
+
+		p->prev_time_stamp = 0;
+		p->prev_buffer_unique_id = 0;
+		p->wait_too_long_indicate = 0;
+
+		if (type == VSYNC_MAIN) {
+			viqe_render_init();
+			/* prevent KCS warning */
+		}
+
+		if (backup_time) {
+			p->updateGapTime = backup_time;
+			/* prevent KCS warning */
+		} else {
+			p->updateGapTime = 32;
+		}
+
+		if (Output_SelectMode == TCC_OUTPUT_HDMI && HDMI_video_hz != 0) {
+			display_hz = HDMI_video_hz;
+		} else {
+			display_hz = 60;
+		}
+
+		p->vsync_interval = (1000/display_hz);
+
+		if ((p->video_frame_rate > 0)
+			&& (display_hz >= p->video_frame_rate)
+			&& ((display_hz % p->video_frame_rate) == 0)) {
+			p->perfect_vsync_flag = 1;
+		} else {
+			p->perfect_vsync_flag = 0;
+		}
+
+		if (type == 0 && (p->video_frame_rate > 0) && (p->video_frame_rate <= display_hz / 2)) {
+			p->duplicateUseFlag = 1;
+		}
+
+		//spin_lock_init(&vsync_lock);
+		//spin_lock_init(&vsync_lockDisp);
+
+		#if 0 //def USE_VSYNC_TIMER
+		if (vsync_timer) {
+			tcc_timer_enable(vsync_timer);
+			//msleep(0);
+		}
+		#endif
+
+		spin_lock_irq(&vsync_lock);
+		tcc_vsync_set_time(p, 0);
+		spin_unlock_irq(&vsync_lock);
+		pr_info("[INF][VSYNC] ### START_VSYNC_%d with ex_out(%d) ,interval(%d), perfect_flag(%d) duplicate(%d) player_no_sync_time(%d) fps(%d)\n",
+			type, input_image_info->ex_output, p->vsync_interval,
+			p->perfect_vsync_flag, p->duplicateUseFlag,
+			p->player_no_sync_time, p->video_frame_rate);
+
+		tca_vsync_video_display_enable();
+		tcc_vsync_set_max_buffer(&p->vsync_buffer,
+			input_image_info->max_buffer);
+
+		tccvid_lastframe[type].CurrImage.enable = 0;
+		tccvid_lastframe[type].CurrImage.buffer_unique_id = 0xFFFFFFFF;
+
+		tcc_vsync_set_output_mode(p, Output_SelectMode);
+
+		#if defined(CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST) && defined(DV_PREVENT_FRAME_DROP_AND_DUPLICATION)
+		/*nPrevTS = nBaseTS = */bStart_DV_Display = 0;
+		b1st_frame_display_count = 0;
+		tca_edr_inc_check_count(0, 0, 0, 0, 1);
+		#endif
+		p->isVsyncRunning = EM_VSYNC_RUNNING;
+
+		break;
+
+	case EM_VSYNC_RUNNING:
+		p->firstFrameFlag = 1;
+		pr_debug("[DEBUG][VSYNC][%s] %s reset firstFrameFlag!!\n",
+			(type == 0) ? "MAIN" : "SUB ", __func__);
+
+		break;
+	}
+
+	return ret;
+}
+
+static void tcc_vsync_end(struct tcc_video_disp *p, unsigned int keep_display)
+{
+	#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+	pr_info("[INF][VSYNC] ### END_VSYNC_%d started:%d SelectMode:%d LastFrame[%d]\n",
+		p->type, p->isVsyncRunning, Output_SelectMode,
+		tccvid_lastframe[p->type].LastImage.enable);
+	#else
+	pr_info("[INF][VSYNC] ### END_VSYNC_%d started:%d SelectMode:%d\n",
+		p->type, p->isVsyncRunning, Output_SelectMode);
+	#endif
+
+	#if defined(CONFIG_TCC_VTA)
+	vta_cmd_notify_change_status(__func__);
+	#endif
+
+	if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+		struct tcc_lcdc_image_update ImageInfo;
+
+		#if 0 //def USE_VSYNC_TIMER
+		if (vsync_timer) {
+			tcc_timer_disable(vsync_timer);
+			/* prevent KCS warning */
+		}
+		#endif
+
+		if (tcc_vsync_get_isVsyncRunning(p->type)
+			&& !video_display_disable_check) {
+			tca_vsync_video_display_disable();
+			video_display_disable_check = 1;
+		}
+
+		spin_lock_irq(&vsync_lock);
+		tcc_vsync_pop_all_buffer(p, __LINE__);
+		spin_unlock_irq(&vsync_lock);
+
+		p->skipFrameStatus = 1;
+		p->nTimeGapToNextField = 0;
+
+		#ifdef CONFIG_VIDEO_DISPLAY_DEINTERLACE_MODE
+		if (p->deinterlace_mode && !p->interlace_bypass_lcdc) {
+			if (!p->output_toMemory) {
+				TCC_VIQE_DI_DeInit60Hz();
+			} else if (p->output_toMemory && p->m2m_mode) {
+				if (p->type == VSYNC_MAIN) {
+					TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO);
+					/* prevent KCS warning */
+				} else {
+					#if defined(CONFIG_TCC_VIQE_FOR_SUB_M2M)
+					TCC_VIQE_DI_DeInit60Hz_M2M(
+						RDMA_VIDEO_SUB);
+					#else
+					TCC_VIQE_DI_Sub_DeInit60Hz_M2M(
+						RDMA_VIDEO_SUB);
+					#endif
+				}
+			}
+		} else if (p->output_toMemory && p->m2m_mode) {
+			if (p->type == VSYNC_MAIN) {
+				TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO);
+				/* prevent KCS warning */
+			} else {
+				#if defined(CONFIG_TCC_VIQE_FOR_SUB_M2M)
+				TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO_SUB);
+				#else
+				TCC_VIQE_DI_Sub_DeInit60Hz_M2M(RDMA_VIDEO_SUB);
+				#endif
+			}
+		}
+		#endif
+
+		memset(&ImageInfo, 0x00, sizeof(struct tcc_lcdc_image_update));
+		ImageInfo.enable = (keep_display
+			&& (p->output_toMemory && p->m2m_mode)) ? 1 : 0;
+
+		if (p->type == VSYNC_MAIN) {
+			ImageInfo.enable = 0;
+			ImageInfo.Lcdc_layer = RDMA_VIDEO;
+		} else {
+			ImageInfo.Lcdc_layer = RDMA_VIDEO_SUB;
+		}
+
+		pr_info("[INF][VSYNC] [%d] Channel enable(%d)\n", p->type,
+			ImageInfo.enable);
+
+		if ((Output_SelectMode != TCC_OUTPUT_NONE)
+			&& (ImageInfo.enable == 0)) {
+			struct tcc_dp_device *dp_device
+				= tca_fb_get_displayType(Output_SelectMode);
+
+			if (dp_device) {
+				if (Output_SelectMode == TCC_OUTPUT_HDMI) {
+					if (tcc_vsync_mvc_status
+						&& p->mvcMode == 1) {
+						tca_mvc_display_update(
+							EX_OUT_LCDC,
+							&ImageInfo);
+					} else {
+						tca_scale_display_update(
+							dp_device,
+							&ImageInfo);
+					}
+
+					if (tcc_vsync_mvc_overlay_priority) {
+						pr_info("[INF][VSYNC] %s: tcc_vsync_mvc_overlay_priority %d\n",
+							__func__,
+						tcc_vsync_mvc_overlay_priority);
+
+						//restore
+					VIOC_WMIX_SetOverlayPriority(
+					dp_device->wmixer_info.virt_addr,
+					tcc_vsync_mvc_overlay_priority);
+
+					VIOC_WMIX_SetUpdate(
+					dp_device->wmixer_info.virt_addr);
+					tcc_vsync_mvc_overlay_priority = 0;
+					}
+				} else if ((Output_SelectMode
+						== TCC_OUTPUT_COMPOSITE)
+					|| (Output_SelectMode
+						== TCC_OUTPUT_COMPONENT)) {
+					tca_scale_display_update(dp_device,
+						&ImageInfo);
+				}
+				#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+				else if (Output_SelectMode == TCC_OUTPUT_LCD) {
+					tca_scale_display_update(dp_device,
+						&ImageInfo);
+				}
+				#endif
+
+				#ifdef CONFIG_TCC_HDMI_DRIVER_V2_0
+				set_hdmi_drm(DRM_OFF, &ImageInfo,
+					ImageInfo.Lcdc_layer);
+				#endif
+			}
+		}
+		p->deinterlace_mode = 0;
+		p->player_no_sync_time = 0;
+
+		#ifdef USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT
+		if ((tcc_vsync_isVsyncRunning(VSYNC_MAIN) == 0)
+			&& (tcc_vsync_isVsyncRunning(VSYNC_SUB0) == 0)) {
+			tcc_vsync_unplugged_int_stop();
+		}
+		#endif
+	}
+	p->isVsyncRunning = EM_VSYNC_DISABLED;
+
+	#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+	if (!tccvid_lastframe[p->type].support)
+		tccvid_lastframe[p->type].LastImage.enable = 0;
+
+	tccvid_lastframe[p->type].CurrImage.enable = 0;
+	tccvid_lastframe[p->type].CurrImage.buffer_unique_id = 0xFFFFFFFF;
+
+	#ifdef CONFIG_DISPLAY_EXT_FRAME
+	if (!restricted_ExtFrame)
+	#endif
+	{
+		//if ((p->type == VSYNC_MAIN)
+		//	|| ((p->type == VSYNC_SUB0) && (!keep_display))) {
+			tcc_ctrl_ext_frame(0);
+		//}
+	}
+	#endif
+}
+
+static void print_vsync_input(char *str, struct tcc_lcdc_image_update *pIn)
+{
+#if 0
+	pr_info("\n %s :: %d\n", str,
+		pIn->private_data.optional_info[VID_OPT_BUFFER_ID]);
+	pr_info("Layer(%d), Enable(%d), Frame(%d x %d), Image(%d x %d), Offset(%d x %d)\n",
+		pIn->Lcdc_layer, pIn->enable, pIn->Frame_width,
+		pIn->Frame_height, pIn->Image_width, pIn->Image_height,
+		pIn->offset_x, pIn->offset_y);
+	pr_info("Addr(0x%x / 0x%x / 0x%x), Fmt(%d), on_the_fly(%d) Crop(%d-%d-%d-%d)\n",
+		pIn->addr0, pIn->addr1, pIn->addr2, pIn->fmt, pIn->on_the_fly,
+		pIn->crop_top, pIn->crop_bottom,
+		pIn->crop_left, pIn->crop_right);
+	pr_info("Time(%d-%d), First(%d), Buffer_id(%d), overlay_used(%d), outMode(%d), outPath(%d)\n",
+		pIn->time_stamp, pIn->sync_time, pIn->first_frame_after_seek,
+		pIn->buffer_unique_id, pIn->overlay_used_flag,
+		pIn->outputMode, pIn->output_path);
+	pr_info("DeIntl(%d), Odd_First(%d), m2m(%d), output_toM(%d), frm_intl(%d), one_field_only(%d)\n",
+		pIn->deinterlace_mode, pIn->odd_first_flag, pIn->m2m_mode,
+		pIn->output_toMemory, pIn->frameInfo_interlace,
+		pIn->one_field_only_interlace);
+	pr_info("MVC(%d), base_Addr(0x%x / 0x%x / 0x%x), dest_Addr(0x%x / 0x%x / 0x%x)\n",
+		pIn->MVCframeView, pIn->MVC_Base_addr0, pIn->MVC_Base_addr1,
+		pIn->MVC_Base_addr2, pIn->dst_addr0, pIn->dst_addr1,
+		pIn->dst_addr2);
+	pr_info("Max_buff(%d), ex_out(%d), fps(%d), bit_depth(%d), codec_id(%d), bSize_Change(%d)\n",
+		pIn->max_buffer, pIn->ex_output, pIn->fps, pIn->bit_depth,
+		pIn->codec_id, pIn->bSize_Changed);
+
+	pr_info("Priv[ %d x %d, fmt %d, offset(0x%x / 0x%x / 0x%x), name(%s), unique_addr(%d), copied(%d)\n",
+		pIn->private_data.width, pIn->private_data.height,
+		pIn->private_data.format, pIn->private_data.offset[0],
+		pIn->private_data.offset[1], pIn->private_data.offset[2],
+		pIn->private_data.name, pIn->private_data.unique_addr,
+		pIn->private_data.copied);
+	pr_info("optional_info[%d/%d/%d/%d/%d - %d/%d/%d/%d/%d - %d/%d/%d/%d/%d - %d/%d/%d/%d/%d - %d/%d/%d/%d/%d - %d/%d/%d/%d/%d\n",
+		pIn->private_data.optional_info[VID_OPT_BUFFER_WIDTH],
+		pIn->private_data.optional_info[VID_OPT_BUFFER_HEIGHT],
+		pIn->private_data.optional_info[VID_OPT_FRAME_WIDTH],
+		pIn->private_data.optional_info[VID_OPT_FRAME_HEIGHT],
+		pIn->private_data.optional_info[VID_OPT_BUFFER_ID],
+		pIn->private_data.optional_info[VID_OPT_TIMESTAMP],
+		pIn->private_data.optional_info[VID_OPT_SYNC_TIME],
+		pIn->private_data.optional_info[VID_OPT_FLAGS],
+		pIn->private_data.optional_info[VID_OPT_FPS],
+		pIn->private_data.optional_info[VID_OPT_MVC_DISP_IDX],
+		pIn->private_data.optional_info[VID_OPT_MVC_ADDR_0],
+		pIn->private_data.optional_info[VID_OPT_MVC_ADDR_1],
+		pIn->private_data.optional_info[VID_OPT_MVC_ADDR_2],
+		pIn->private_data.optional_info[VID_OPT_MVC_ADDR_0],
+		pIn->private_data.optional_info[VID_OPT_DISP_OUT_IDX],
+		pIn->private_data.optional_info[VID_OPT_VPU_INST_IDX],
+		pIn->private_data.optional_info[VID_OPT_HAVE_MC_INFO],
+		pIn->private_data.optional_info[VID_OPT_LOCAL_PLAYBACK],
+		pIn->private_data.optional_info[VID_OPT_PLAYER_IDX],
+		pIn->private_data.optional_info[VID_OPT_WIDTH_STRIDE],
+		pIn->private_data.optional_info[VID_OPT_HEIGHT_STRIDE],
+		pIn->private_data.optional_info[VID_OPT_BIT_DEPTH],
+		pIn->private_data.optional_info[VID_OPT_HAVE_USERDATA],
+		pIn->private_data.optional_info[VID_OPT_HAVE_DTRC_INFO],
+		pIn->private_data.optional_info[VID_OPT_HAVE_DOLBYVISION_INFO],
+		pIn->private_data.optional_info[VID_OPT_CONTENT_TYPE],
+		pIn->private_data.optional_info[26],
+		pIn->private_data.optional_info[27],
+		pIn->private_data.optional_info[28],
+		pIn->private_data.optional_info[29]);
+
+	pr_info("%d/%d, %03d :: TS: %04d / %04d  %d bpp Attr(%d), #BL(0x%x, %dx%d (%dx%d), 0x%x fmt) #EL(0x%x, %dx%d (%dx%d)) #OSD(0x%x/0x%x) #Reg(0x%x) #Meta(0x%x)\n",
+		0, 0, pIn->buffer_unique_id, pIn->time_stamp, pIn->sync_time,
+		pIn->private_data.optional_info[VID_OPT_BIT_DEPTH],
+		pIn->private_data.optional_info[VID_OPT_CONTENT_TYPE],
+		pIn->addr0,
+		//pIn->private_data.offset[0],
+		pIn->Frame_width, pIn->Frame_height,
+		//pIn->private_data.optional_info[VID_OPT_FRAME_WIDTH],
+		//pIn->private_data.optional_info[VID_OPT_FRAME_HEIGHT],
+		pIn->crop_right - pIn->crop_left,
+		//pIn->private_data.optional_info[VID_OPT_BUFFER_WIDTH],
+		pIn->crop_bottom - pIn->crop_top,
+		//pIn->private_data.optional_info[VID_OPT_BUFFER_HEIGHT],
+		pIn->fmt, //pIn->private_data.format,
+		pIn->private_data.dolbyVision_info.el_offset[0],
+		pIn->private_data.dolbyVision_info.el_frame_width,
+		pIn->private_data.dolbyVision_info.el_frame_height,
+		pIn->private_data.dolbyVision_info.el_buffer_width,
+		pIn->private_data.dolbyVision_info.el_buffer_height,
+		pIn->private_data.dolbyVision_info.osd_addr[0],
+		pIn->private_data.dolbyVision_info.osd_addr[1],
+		pIn->private_data.dolbyVision_info.reg_addr,
+		pIn->private_data.dolbyVision_info.md_hdmi_addr);
+#endif
+}
+
+#if  defined(CONFIG_HDMI_DISPLAY_LASTFRAME) || defined(CONFIG_VIDEO_DISPLAY_SWAP_VPU_FRAME)
+//TODO: use cma? - AlanK
+//static int _tcc_vsync_check_region_for_cma(
+//	unsigned int start_phyaddr,
+//	unsigned int length)
+//{
+//	unsigned int end_phyaddr = start_phyaddr + length - 1;
+//	int type = 0;
+//
+//	for (type = VSYNC_MAIN; type < VSYNC_MAX; type++) {
+//		if ((start_phyaddr >= tccvid_lastframe[type].pmapBuff.base) && (end_phyaddr <= (tccvid_lastframe[type].pmapBuff.base + tccvid_lastframe[type].pmapBuff.size - 1))) {
+//			return pmap_is_cma_alloc(&tccvid_lastframe[type].pmapBuff);
+//		}
+//	}
+//
+//	return 0;
+//}
+
+static void *_tcc_vsync_get_virtaddr(
+	unsigned int start_phyaddr,
+	unsigned int length)
+{
+	void *virt_address = NULL;
+
+	//if (_tcc_vsync_check_region_for_cma(start_phyaddr, length)) {
+	//	virt_address = pmap_cma_remap((phys_addr_t)start_phyaddr,
+	//		PAGE_ALIGN(length));
+	//} else {
+		virt_address =
+			(void *)ioremap((phys_addr_t)start_phyaddr,
+			PAGE_ALIGN(length));
+	//}
+
+	if (virt_address == NULL) {
+		pr_err("[ERR][VSYNC] %s: error ioremap for 0x%x / 0x%x\n",
+			__func__, start_phyaddr, length);
+		return NULL;
+	}
+
+	return virt_address;
+}
+
+static void _tcc_vsync_release_virtaddr(
+	void *target_virtaddr,
+	unsigned int start_phyaddr,
+	unsigned int length)
+{
+	//if (_tcc_vsync_check_region_for_cma(start_phyaddr, length)) {
+	//	pmap_cma_unmap(target_virtaddr, PAGE_ALIGN(length));
+	//	/* prevent KCS warning */
+	//} else {
+		iounmap((void *)target_virtaddr);
+	//}
+}
+
+/* will be copyed original decoded data itself. */
+int tcc_move_video_frame_simple(
+	struct file *file,
+	struct tcc_lcdc_image_update *inFframeInfo,
+	WMIXER_INFO_TYPE *WmixerInfo,
+	unsigned int target_addr,
+	unsigned int target_size,
+	unsigned int target_format)
+{
+	int Frame_height = 0,  ret = 0;
+	unsigned int type;
+	unsigned int szStream = 0x00;
+	unsigned int compressed_type;
+
+	type = tcc_vsync_get_video_ch_type(inFframeInfo->Lcdc_layer);
+	if (type >= VSYNC_MAX) {
+		return -1;
+		/* prevent KCS warning */
+	}
+
+	memset(WmixerInfo, 0x00, sizeof(WMIXER_INFO_TYPE));
+
+	/*
+	 * compressed_type
+	 * ---------------
+	 *  0 is non-compressed frame (priority 3)
+	 *  VID_OPT_HAVE_DTRC_INFO is DRTC (priority 2)
+	 *  VID_OPT_HAVE_MC_INFO is MapConv (priority 1)
+	 */
+	compressed_type = 0;
+	Frame_height = inFframeInfo->Frame_height;
+
+	if (inFframeInfo->private_data.optional_info[VID_OPT_HAVE_MC_INFO]
+		!= 0) {
+		#ifdef CONFIG_VIOC_MAP_DECOMP
+		if (inFframeInfo->private_data.mapConv_info.m_uiLumaBitDepth
+			!= 8) {
+			Frame_height = Frame_height * 250 / 100;
+		}
+		compressed_type = VID_OPT_HAVE_MC_INFO;
+		#endif
+	} else if (inFframeInfo->private_data.optional_info[VID_OPT_BIT_DEPTH]
+		== 10) {
+		#ifdef CONFIG_VIOC_10BIT
+		Frame_height = Frame_height * 2;
+		#endif
+	} else if (inFframeInfo->private_data.optional_info[VID_OPT_BIT_DEPTH]
+		== 11) {
+		#ifdef CONFIG_VIOC_10BIT
+		Frame_height = Frame_height * 125 / 100;
+		#endif
+	}
+
+	WmixerInfo->rsp_type       = WMIXER_POLLING;
+
+	//source info
+	WmixerInfo->src_fmt        = inFframeInfo->fmt;
+	WmixerInfo->src_img_width  = inFframeInfo->Frame_width;
+	WmixerInfo->src_img_height = Frame_height;
+	WmixerInfo->src_win_left   = 0;
+	WmixerInfo->src_win_top    = 0;
+	WmixerInfo->src_win_right  = inFframeInfo->Frame_width;
+	WmixerInfo->src_win_bottom = Frame_height;
+	WmixerInfo->src_y_addr     = (unsigned int)inFframeInfo->addr0;
+	WmixerInfo->src_u_addr     = (unsigned int)inFframeInfo->addr1;
+	WmixerInfo->src_v_addr     = (unsigned int)inFframeInfo->addr2;
+
+	//destination info
+	WmixerInfo->dst_fmt        = target_format;
+	WmixerInfo->dst_img_width  = inFframeInfo->Frame_width;
+	WmixerInfo->dst_img_height = Frame_height;
+	WmixerInfo->dst_win_left   = 0;
+	WmixerInfo->dst_win_top    = 0;
+	WmixerInfo->dst_win_right  = inFframeInfo->Frame_width;
+	WmixerInfo->dst_win_bottom = Frame_height;
+	WmixerInfo->dst_y_addr     = target_addr;
+
+	if (compressed_type == VID_OPT_HAVE_MC_INFO
+		|| compressed_type == VID_OPT_HAVE_DTRC_INFO) {
+		WmixerInfo->dst_u_addr = (unsigned int)
+			GET_ADDR_YUV42X_spU(WmixerInfo->dst_y_addr,
+			(((WmixerInfo->dst_img_width + 31) >> 5) << 5),
+			(((WmixerInfo->dst_img_height + 31) >> 5) << 5));
+		WmixerInfo->dst_v_addr = (unsigned int)
+			GET_ADDR_YUV422_spV(WmixerInfo->dst_u_addr,
+			(((WmixerInfo->dst_img_width + 31) >> 5) << 5),
+			(((WmixerInfo->dst_img_height + 31) >> 5) << 5));
+	} else {
+		WmixerInfo->dst_u_addr = (unsigned int)
+			GET_ADDR_YUV42X_spU(WmixerInfo->dst_y_addr,
+			WmixerInfo->dst_img_width, WmixerInfo->dst_img_height);
+		WmixerInfo->dst_v_addr = (unsigned int)
+			GET_ADDR_YUV422_spV(WmixerInfo->dst_u_addr,
+			WmixerInfo->dst_img_width, WmixerInfo->dst_img_height);
+	}
+
+	#ifdef CONFIG_VIOC_MAP_DECOMP
+	if (compressed_type == VID_OPT_HAVE_MC_INFO) {
+		szStream = PAGE_ALIGN(
+			(((WmixerInfo->dst_img_width + 31) >> 5) << 5)
+			* (((WmixerInfo->dst_img_height + 31) >> 5) << 5)
+			* 162 / 100);
+	}
+	#endif
+	if (compressed_type == 0) {
+		szStream = PAGE_ALIGN(
+			(((WmixerInfo->dst_img_width + 31) >> 5) << 5)
+			* (((WmixerInfo->dst_img_height + 31) >> 5) << 5)
+			* 3 / 2);
+	}
+
+	if (szStream > target_size) {
+		pr_info("[INF][VSYNC] %s[%d] :: size error 0x%x(%dx%d*a) > 0x%x\n",
+			__func__,
+		inFframeInfo->private_data.optional_info[VID_OPT_HAVE_MC_INFO],
+			szStream, WmixerInfo->dst_img_width,
+			WmixerInfo->dst_img_height, target_size);
+		//return -2;
+	}
+
+	ret = file->f_op->unlocked_ioctl(file, TCC_WMIXER_IOCTRL_KERNEL,
+		(unsigned long)WmixerInfo);
+
+	#ifdef CONFIG_VIOC_MAP_DECOMP
+	if (ret > 0 && compressed_type == VID_OPT_HAVE_MC_INFO) {
+		unsigned int LumaTblSize = 0, ChromaTblSize = 0;
+		unsigned char *vSrc_addr, *vDst_addr;
+		unsigned int pDst_addr = target_addr + szStream;
+		hevc_MapConv_info_t *mapConv_info;
+
+		mapConv_info = &inFframeInfo->private_data.mapConv_info;
+
+		LumaTblSize = mapConv_info->m_uiCompressionTableLumaSize;
+		ChromaTblSize = mapConv_info->m_uiCompressionTableChromaSize;
+
+		if ((szStream + PAGE_ALIGN(LumaTblSize)
+			+ PAGE_ALIGN(ChromaTblSize)) > target_size) {
+			pr_err("[ERR][VSYNC]  should increase the size of 'fb_wmixer' pmap :: current(0x%x) -> need(0x%x)\n",
+				target_size,
+				szStream + PAGE_ALIGN(LumaTblSize)
+				+ PAGE_ALIGN(ChromaTblSize));
+			return -3;
+		}
+
+		pr_info("[INF][VSYNC] ### %s: pre-processing(%dx%d - BitDepth(%d) Y(0x%x-0x%llx / 0x%llx), Cb(0x%x-0x%llx / 0x%llx)\n",
+			__func__, inFframeInfo->Frame_width,
+			inFframeInfo->Frame_height,
+			mapConv_info->m_uiLumaBitDepth,
+			inFframeInfo->addr0,
+			mapConv_info->m_CompressedY[PA],
+			mapConv_info->m_FbcYOffsetAddr[PA],
+			inFframeInfo->addr1,
+			mapConv_info->m_CompressedCb[PA],
+			mapConv_info->m_FbcCOffsetAddr[PA]);
+
+		vDst_addr = (unsigned char *)_tcc_vsync_get_virtaddr(pDst_addr,
+			PAGE_ALIGN(LumaTblSize) + PAGE_ALIGN(ChromaTblSize));
+		if (vDst_addr == NULL) {
+			pr_err("[ERR][VSYNC] %s(%d): -ENOMEM\n",
+				__func__, __LINE__);
+			return -ENOMEM;
+		}
+
+		vSrc_addr = (unsigned char *)ioremap(
+			mapConv_info->m_FbcYOffsetAddr[PA],
+			PAGE_ALIGN(LumaTblSize));
+		if (vSrc_addr != NULL) {
+			memcpy(vDst_addr, vSrc_addr, LumaTblSize);
+			iounmap((void *)vSrc_addr);
+		}
+
+		vSrc_addr = (unsigned char *)ioremap(
+			mapConv_info->m_FbcCOffsetAddr[PA],
+			PAGE_ALIGN(ChromaTblSize));
+		if (vSrc_addr != NULL) {
+			memcpy(vDst_addr + PAGE_ALIGN(LumaTblSize),
+				vSrc_addr, ChromaTblSize);
+			iounmap((void *)vSrc_addr);
+		}
+
+		_tcc_vsync_release_virtaddr((void *)vDst_addr, pDst_addr,
+			PAGE_ALIGN(LumaTblSize) + PAGE_ALIGN(ChromaTblSize));
+
+		inFframeInfo->addr0 = mapConv_info->m_CompressedY[PA]
+			= WmixerInfo->dst_y_addr;
+		inFframeInfo->addr1 = mapConv_info->m_CompressedCb[PA]
+			= WmixerInfo->dst_u_addr;
+		mapConv_info->m_FbcYOffsetAddr[PA] = pDst_addr;
+		mapConv_info->m_FbcCOffsetAddr[PA] = pDst_addr
+			+ PAGE_ALIGN(LumaTblSize);
+
+		pr_info("[INF][VSYNC] ### %s: pre-processing(%dx%d - BitDepth(%d) Y(0x%x-0x%llx / 0x%llx), Cb(0x%x-0x%llx / 0x%llx) :: End(0x%x)\n",
+			__func__, inFframeInfo->Frame_width,
+			inFframeInfo->Frame_height,
+			mapConv_info->m_uiLumaBitDepth,
+			inFframeInfo->addr0,
+			mapConv_info->m_CompressedY[PA],
+			mapConv_info->m_FbcYOffsetAddr[PA],
+			inFframeInfo->addr1,
+			mapConv_info->m_CompressedCb[PA],
+			mapConv_info->m_FbcCOffsetAddr[PA],
+			pDst_addr + PAGE_ALIGN(LumaTblSize)
+			+ PAGE_ALIGN(ChromaTblSize));
+	}
+	#endif
+
+	if (compressed_type == 0) {
+		inFframeInfo->addr0 = WmixerInfo->dst_y_addr;
+		inFframeInfo->addr1 = WmixerInfo->dst_u_addr;
+		inFframeInfo->addr2 = WmixerInfo->dst_v_addr;
+
+		pr_info("[INF][VSYNC] ### %s: pre-processing(%dx%d - 0x%x)\n",
+			__func__, inFframeInfo->Frame_width,
+			inFframeInfo->Frame_height, inFframeInfo->addr0);
+	}
+
+	return ret;
+}
+#endif
+
+#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+void tcc_video_info_backup(
+	enum VSYNC_CH_TYPE type,
+	struct tcc_lcdc_image_update *input_image)
+{
+#if 1
+	if ((input_image->codec_id != tccvid_lastframe[type].LastImage.codec_id)
+		|| (input_image->time_stamp
+			< tccvid_lastframe[type].LastImage.time_stamp)
+		|| ((input_image->sync_time + 200)
+			< tccvid_lastframe[type].LastImage.sync_time)
+		|| (input_image->buffer_unique_id
+			< tccvid_lastframe[type].LastImage.buffer_unique_id)
+	) {
+		int temp_type = type;
+
+		pr_info("[%d] Input buffer is something wrong!!\n", type);
+		pr_info("[%d] Codec_id [ 0x%x : 0x%x ] TS [ %d : %d ] SyncTS [ %d : %d ] Buffer_ID [ %d : %d ] Disp [ %dx%d %dx%d ]\n",
+			type,
+			tccvid_lastframe[type].LastImage.codec_id,
+			input_image->codec_id,
+			tccvid_lastframe[type].LastImage.time_stamp,
+			input_image->time_stamp,
+			tccvid_lastframe[type].LastImage.sync_time,
+			input_image->sync_time,
+			tccvid_lastframe[type].LastImage.buffer_unique_id,
+			input_image->buffer_unique_id,
+			tccvid_lastframe[type].LastImage.Image_width,
+			tccvid_lastframe[type].LastImage.Image_height,
+			input_image->Image_width, input_image->Image_height);
+
+		temp_type = (type == VSYNC_MAIN) ? VSYNC_SUB0 : VSYNC_MAIN;
+
+		pr_info("[%d] Codec_id [ 0x%x ] TS [ %d ] SyncTS [ %d ] Buffer_ID [ %d ] Disp [ %dx%d ]\n",
+			temp_type,
+			tccvid_lastframe[temp_type].LastImage.codec_id,
+			tccvid_lastframe[temp_type].LastImage.time_stamp,
+			tccvid_lastframe[temp_type].LastImage.sync_time,
+			tccvid_lastframe[temp_type].LastImage.buffer_unique_id,
+			tccvid_lastframe[temp_type].LastImage.Image_width,
+			tccvid_lastframe[temp_type].LastImage.Image_height);
+
+		if ((input_image->sync_time + 200)
+			< tccvid_lastframe[type].LastImage.sync_time) {
+
+			struct tcc_video_disp *p = &tccvid_vsync[type];
+
+			tcc_vsync_buffer_check(p, 0);
+		}
+	}
+#endif
+
+	memcpy(&tccvid_lastframe[type].LastImage, input_image,
+		sizeof(struct tcc_lcdc_image_update));
+}
+EXPORT_SYMBOL(tcc_video_info_backup);
+
+//static int tcc_fill_black_lastframe(
+//	struct tcc_lcdc_image_update *lastUpdated,
+//	unsigned int dest_addr,
+//	unsigned int dest_size,
+//	enum VSYNC_CH_TYPE type)
+//{
+//	unsigned char *pDest_Vaddr = NULL;
+//	unsigned int nLen =
+//		lastUpdated->Image_width * lastUpdated->Image_height * 2;
+//
+//	if (dest_size <= 0) {
+//		return -1;
+//		/* prevent KCS warning */
+//	}
+//
+//	pDest_Vaddr =
+//		(unsigned char *)ioremap(dest_addr, PAGE_ALIGN(nLen));
+//
+//	if (pDest_Vaddr != NULL) {
+//		memset(pDest_Vaddr, 0x00,
+//			lastUpdated->Image_width * lastUpdated->Image_height);
+//		memset((void *)((char *)pDest_Vaddr + lastUpdated->Image_width
+//			* lastUpdated->Image_height),
+//			0x80,
+//			lastUpdated->Image_width
+//			* lastUpdated->Image_height / 2);
+//		iounmap((void *)pDest_Vaddr);
+//		return 0;
+//	}
+//
+//	return -1;
+//}
+
+int tcc_video_check_last_frame(
+	struct tcc_lcdc_image_update *ImageInfo)
+{
+	unsigned int type = tcc_vsync_get_video_ch_type(ImageInfo->Lcdc_layer);
+
+	if (type >= VSYNC_MAX) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	spin_lock_irq(&LastFrame_lockDisp);
+
+	if (tccvid_lastframe[type].enabled) {
+		if (tccvid_lastframe[type].reason.Resolution
+			&& (tccvid_lastframe[type].LastImage.Frame_width
+				== ImageInfo->Frame_width
+			&& tccvid_lastframe[type].LastImage.Frame_height
+				== ImageInfo->Frame_height)) {
+
+			spin_unlock_irq(&LastFrame_lockDisp);
+
+		dbg("skip frame due to last-frame: res change %dx%d -> %dx%d\n",
+				tccvid_lastframe[type].LastImage.Frame_width,
+				tccvid_lastframe[type].LastImage.Frame_height,
+				ImageInfo->Frame_width,
+				ImageInfo->Frame_height);
+
+			return 0;
+		}
+
+		if (tccvid_lastframe[type].reason.Codec
+			&& ((tccvid_lastframe[type].LastImage.codec_id
+				== ImageInfo->codec_id)
+			&& ImageInfo->codec_id != 0)) {
+
+			spin_unlock_irq(&LastFrame_lockDisp);
+
+		dbg("skip frame due to last-frame: codec change 0x%x -> 0x%x\n",
+				tccvid_lastframe[type].LastImage.codec_id,
+				ImageInfo->codec_id);
+
+			return 0;
+		}
+
+		dbg("%s :: last-frame[%d] will be cleared : %dx%d, 0x%x\n",
+			__func__, type,
+			ImageInfo->Frame_width, ImageInfo->Frame_height,
+			ImageInfo->addr0);
+
+		tccvid_lastframe[type].enabled
+			= tccvid_lastframe[type].reason.Resolution
+			= tccvid_lastframe[type].reason.Codec = 0;
+	}
+
+	spin_unlock_irq(&LastFrame_lockDisp);
+
+	tcc_video_info_backup(type, ImageInfo);
+
+	return 1;
+}
+
+int tcc_move_video_last_frame(
+	struct tcc_lcdc_image_update *lastUpdated,
+	char bInterlaced,
+	unsigned int dest_addr,
+	unsigned int dest_size,
+	int dest_fmt)
+{
+	struct file *file;
+	int ret = 0;
+
+#ifdef USE_SCALER2_FOR_LASTFRAME
+	struct SCALER_TYPE LFScaler;
+#else
+	struct WMIXER_ALPHASCALERING_INFO_TYPE fbmixer;
+#endif
+
+	if (dest_addr == 0 || dest_size == 0) {
+		return -2;
+		/* prevent KCS warning */
+	}
+
+#ifdef USE_SCALER2_FOR_LASTFRAME
+	memset(&LFScaler, 0x00, sizeof(struct SCALER_TYPE));
+
+	LFScaler.responsetype	= SCALER_POLLING;
+
+	LFScaler.src_ImgWidth   = lastUpdated->Frame_width;
+	LFScaler.src_ImgHeight  = lastUpdated->Frame_height;
+
+	LFScaler.src_winLeft    = lastUpdated->crop_left;
+	LFScaler.src_winTop     = lastUpdated->crop_top;
+	LFScaler.src_winRight   = lastUpdated->crop_right;
+	LFScaler.src_winBottom  = lastUpdated->crop_bottom;
+
+	//source info
+	LFScaler.src_Yaddr      = (char *)lastUpdated->addr0;
+	LFScaler.src_Uaddr      = (char *)lastUpdated->addr1;
+	LFScaler.src_Vaddr      = (char *)lastUpdated->addr2;
+	LFScaler.src_fmt        = lastUpdated->fmt;
+
+	//destination info
+	LFScaler.dest_ImgWidth   = lastUpdated->Image_width;
+	LFScaler.dest_ImgHeight  = lastUpdated->Image_height;
+	LFScaler.dest_winLeft    = 0;
+	LFScaler.dest_winTop     = 0;
+	LFScaler.dest_winRight   = lastUpdated->Image_width;
+	LFScaler.dest_winBottom  = lastUpdated->Image_height;
+
+	if (bInterlaced > 0 || lastUpdated->one_field_only_interlace) {
+		LFScaler.interlaced = true;
+		/* prevent KCS warning */
+	} else {
+		LFScaler.interlaced = false;
+	}
+
+	LFScaler.dest_Yaddr = (char *)dest_addr;
+	LFScaler.dest_fmt = dest_fmt;
+
+	file = filp_open(SCALER_PATH, O_RDWR, 0666);
+	if (file) {
+		ret = file->f_op->unlocked_ioctl(file, TCC_SCALER_IOCTRL_KERENL,
+			(unsigned long)&fbmixer);
+		filp_close(file, 0);
+	} else {
+		pr_err("[ERR][VSYNC]  %s open\n", SCALER_PATH);
+		ret = -1;
+	}
+
+	if (ret <= 0) {
+		pr_err("[ERR][VSYNC]  %s ctrl\n", SCALER_PATH);
+		return -100;
+	}
+
+	lastUpdated->addr0 = (unsigned int)LFScaler.dest_Yaddr;
+
+#else
+
+	memset(&fbmixer, 0x00, sizeof(struct WMIXER_ALPHASCALERING_INFO_TYPE));
+
+	#ifdef CONFIG_VIOC_10BIT
+	if (lastUpdated->private_data.optional_info[VID_OPT_BIT_DEPTH] == 10) {
+		fbmixer.src_fmt_ext_info = 10;
+		fbmixer.dst_fmt_ext_info = 10;
+	} else if (lastUpdated->private_data.optional_info[VID_OPT_BIT_DEPTH]
+		== 11) {
+		fbmixer.src_fmt_ext_info = 11;
+		fbmixer.dst_fmt_ext_info = 11;
+	} else {
+		fbmixer.src_fmt_ext_info = 8;
+		fbmixer.dst_fmt_ext_info = 8;
+	}
+	#endif
+
+	#if defined(CONFIG_VIOC_10BIT) && defined(CONFIG_USE_FORCE_8BIT_OUT_LASTFRAME)
+	fbmixer.dst_fmt_ext_info = 8;
+	#endif
+	fbmixer.rsp_type        = WMIXER_POLLING;
+
+	fbmixer.src_img_width   = lastUpdated->Frame_width;
+	fbmixer.src_img_height  = lastUpdated->Frame_height;
+
+	fbmixer.src_win_left    = lastUpdated->crop_left;
+	fbmixer.src_win_top     = lastUpdated->crop_top;
+	fbmixer.src_win_right   = lastUpdated->crop_right;
+	fbmixer.src_win_bottom  = lastUpdated->crop_bottom;
+
+	fbmixer.src_y_addr      = (unsigned int)lastUpdated->addr0;
+	fbmixer.src_u_addr      = (unsigned int)lastUpdated->addr1;
+	fbmixer.src_v_addr      = (unsigned int)lastUpdated->addr2;
+	fbmixer.src_fmt         = lastUpdated->fmt;
+
+	fbmixer.dst_img_width   = lastUpdated->Image_width;
+	fbmixer.dst_img_height  = lastUpdated->Image_height;
+	fbmixer.dst_win_left    = 0;
+	fbmixer.dst_win_top     = 0;
+	fbmixer.dst_win_right   = lastUpdated->Image_width;
+	fbmixer.dst_win_bottom  = lastUpdated->Image_height;
+
+	#if defined(CONFIG_VIOC_MAP_DECOMP)
+	if (lastUpdated->private_data.optional_info[VID_OPT_HAVE_MC_INFO] != 0
+	|| lastUpdated->private_data.optional_info[VID_OPT_HAVE_DTRC_INFO] != 0
+	) {
+		#if 1//def CONFIG_ANDROID
+		if (lastUpdated->output_toMemory && lastUpdated->m2m_mode) {
+			// m2m mode
+			fbmixer.mc_num = 0;
+		} else {
+			// onthelfy mode
+			fbmixer.mc_num = 1;
+		}
+		#else
+		if (lastUpdated->output_toMemory && lastUpdated->m2m_mode) {
+			// m2m mode
+			fbmixer.mc_num = 1;
+		} else {
+			// onthelfy mode
+			fbmixer.mc_num = 0;
+		}
+		#endif
+
+		#if defined(CONFIG_VIOC_MAP_DECOMP)
+		if (
+		lastUpdated->private_data.optional_info[VID_OPT_HAVE_MC_INFO]
+		!= 0) {
+			fbmixer.src_fmt_ext_info = 0x10;
+			memcpy(&fbmixer.mapConv_info,
+				&lastUpdated->private_data.mapConv_info,
+				sizeof(hevc_MapConv_info_t));
+		}
+		#endif
+	}
+	#endif
+
+	if (bInterlaced > 0 || lastUpdated->one_field_only_interlace)
+		fbmixer.interlaced = true;
+	else
+		fbmixer.interlaced = false;
+
+	fbmixer.dst_y_addr      = (unsigned int)dest_addr;
+	fbmixer.dst_fmt         = dest_fmt;
+
+	file = filp_open(WMIXER_PATH, O_RDWR, 0666);
+	if (file) {
+		ret = file->f_op->unlocked_ioctl(file,
+			TCC_WMIXER_ALPHA_SCALING_KERNEL,
+			(unsigned long)&fbmixer);
+
+		filp_close(file, 0);
+	} else {
+		pr_err("[ERR][VSYNC]  %s open\n", WMIXER_PATH);
+		ret = -1;
+	}
+
+	if (ret <= 0) {
+		pr_err("[ERR][VSYNC]  %s ctrl\n", WMIXER_PATH);
+		return -100;
+	}
+
+	lastUpdated->addr0 = (unsigned int)fbmixer.dst_y_addr;
+#endif
+
+	return 0;
+}
+
+int tcc_origin_video_off_for_last_frame(
+	struct tcc_video_disp *p,
+	struct tcc_dp_device *pdp_data,
+	struct tcc_lcdc_image_update *lastUpdated,
+	enum VSYNC_CH_TYPE type,
+	int ch_disable)
+{
+	#ifdef CONFIG_VIDEO_DISPLAY_DEINTERLACE_MODE
+	if (p->deinterlace_mode && !p->interlace_bypass_lcdc) {
+		if (!p->output_toMemory) {
+			TCC_VIQE_DI_DeInit60Hz();
+		} else if (p->output_toMemory && p->m2m_mode) {
+			if (type == VSYNC_MAIN) {
+				TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO);
+				/* prevent KCS warning */
+			} else {
+				TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO_SUB);
+			}
+		}
+	} else if (p->output_toMemory && p->m2m_mode) {
+		if (type == VSYNC_MAIN) {
+			TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO);
+			/* prevent KCS warning */
+		} else {
+			TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO_SUB);
+		}
+	}
+	#endif
+
+	if (ch_disable) {
+		lastUpdated->enable = 0;
+		if (type == VSYNC_MAIN) {
+			#ifdef CONFIG_VIOC_DOLBY_VISION_EDR
+			if ((DV_PROC_CHECK & DV_DUAL_MODE) == DV_DUAL_MODE) {
+				lastUpdated->Lcdc_layer = RDMA_VIDEO_SUB;
+				tcc_video_rdma_off(pdp_data, lastUpdated,
+					p->outputMode, 0);
+			}
+			#endif
+			lastUpdated->Lcdc_layer = RDMA_VIDEO;
+		} else {
+			lastUpdated->Lcdc_layer = RDMA_VIDEO_SUB;
+		}
+		tcc_video_rdma_off(pdp_data, lastUpdated, p->outputMode, 0);
+	}
+
+	return 0;
+}
+
+int tcc_video_last_frame(
+	void *pVSyncDisp,
+	struct stTcc_last_frame iLastFrame,
+	struct tcc_lcdc_image_update *lastUpdated,
+	unsigned int type)
+{
+	int ret = 0;
+	struct tcc_video_disp *p = (struct tcc_video_disp *)pVSyncDisp;
+	struct tcc_dp_device *dp_device = NULL;
+	unsigned int target_address = 0x00;
+	unsigned int target_size = 0x00;
+	WMIXER_INFO_TYPE WmixerInfo;
+	struct file *file;
+
+	if (!p) {
+		p = &tccvid_vsync[type];
+		/* prevent KCS warning */
+	}
+
+	dp_device = tca_fb_get_displayType(p->outputMode);
+
+	if (tca_fb_divide_get_status()) {
+		pr_info("[INF][VSYNC] %s: [%d] Skip last frame because 3D UI is displayed\n",
+			__func__, type);
+		return 0;
+	}
+
+	if (tcc_vsync_mvc_status == 1) {
+		dbg("%s: [%d] return because of mvc frame view\n",
+			__func__, type);
+		return 0;
+	}
+
+	memcpy(lastUpdated, &tccvid_lastframe[type].LastImage,
+		sizeof(struct tcc_lcdc_image_update));
+
+	if (lastUpdated->enable == 0) {
+		pr_info("[INF][VSYNC] [%d] return last-frame :: The channel has already disabled. info(%dx%d), resolution_changed(%d), codec_changed(%d)\n",
+			type, lastUpdated->Frame_width,
+			lastUpdated->Frame_height,
+			tccvid_lastframe[type].reason.Resolution,
+			tccvid_lastframe[type].reason.Codec);
+		return -100;
+	}
+
+	//if (lastUpdated->Lcdc_layer != RDMA_VIDEO) {
+	//	pr_info("%s: return last-frame\n", __func__);
+	//	pr_info(" channel(%d) is not Main-Video\n",
+	//		lastUpdated->Lcdc_layer);
+	//	pr_info(" %dx%d, resolution_changed(%d), codec_changed(%d)\n",
+	//		lastUpdated->Frame_width,
+	//		lastUpdated->Frame_height,
+	//		tccvid_lastframe[type].reason.Resolution,
+	//		tccvid_lastframe[type].reason.Codec);
+	//
+	//	return -100;
+	//}
+
+	if (lastUpdated->outputMode != p->outputMode-TCC_OUTPUT_LCD) {
+		pr_info("[INF][VSYNC] [%d] return last-frame :: mode is different between %d and %d\n",
+			type, lastUpdated->outputMode,
+			p->outputMode-TCC_OUTPUT_LCD);
+		return -100;
+	}
+
+	if (lastUpdated->Frame_width == 0 || lastUpdated->Frame_height == 0) {
+		pr_err("[ERR][VSYNC]  [%d] no setting for Last-Frame\n", type);
+		return -1;
+	}
+
+	if ((iLastFrame.codec_id != 0)
+		&& (lastUpdated->codec_id != iLastFrame.codec_id)) {
+		pr_err("[ERR][VSYNC]  [%d] codec mismatch\n", type);
+		return -1;
+	}
+
+	if (tccvid_lastframe[type].enabled) {
+		if (iLastFrame.reason&LASTFRAME_FOR_RESOLUTION_CHANGE) {
+			tccvid_lastframe[type].reason.Resolution = 1;
+			/* prevent KCS warning */
+		} else if (iLastFrame.reason&LASTFRAME_FOR_CODEC_CHANGE) {
+			tccvid_lastframe[type].reason.Codec = 1;
+		}
+		pr_info("[INF][VSYNC] [%d] TCC_LCDC_VIDEO_KEEP_LASTFRAME returned due to (LastFrame %d)!! resolution_changed(%d), codec_changed(%d)\n",
+			type, tccvid_lastframe[type].enabled,
+			tccvid_lastframe[type].reason.Resolution,
+			tccvid_lastframe[type].reason.Codec);
+		return 0;
+	}
+
+	if (!dp_device) {
+		pr_err("[ERR][VSYNC] [%d] Display device is null. outputMode is %d\n",
+			type, p->outputMode);
+		return -1;
+	}
+
+	if (tccvid_lastframe[type].CurrImage.addr0
+		== tccvid_lastframe[type].pmapBuff.base) {
+		target_address = tccvid_lastframe[type].pmapBuff.base
+			+ (tccvid_lastframe[type].pmapBuff.size / 2);
+	} else {
+		target_address = tccvid_lastframe[type].pmapBuff.base;
+	}
+	target_size = (tccvid_lastframe[type].pmapBuff.size / 2);
+
+	dbg("LAST-FRAME[%d] :: support[%d] pmap[0x%x] m2m[%d/%d]\n",
+		type, tccvid_lastframe[type].support,
+		target_size, p->output_toMemory, p->m2m_mode);
+
+	/*----------------------------------------------------------------------
+	 * 1.
+	 *----------------------------------------------------------------------
+	 */
+	if (((type == VSYNC_MAIN && !(p->output_toMemory && p->m2m_mode))
+		|| (type == VSYNC_SUB0 && !(p->output_toMemory && p->m2m_mode)))
+		&& (tccvid_lastframe[type].support && target_size)
+	) {
+		if ((p->outputMode == TCC_OUTPUT_HDMI
+			|| p->outputMode == TCC_OUTPUT_COMPOSITE
+			|| p->outputMode == TCC_OUTPUT_COMPONENT
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			|| p->outputMode == TCC_OUTPUT_LCD
+			#endif
+			) == 0) {
+
+			pr_info("[INF][VSYNC] [%d] TCC_LCDC_VIDEO_KEEP_LASTFRAME skip :: reason(p->outputMode == %d)\n",
+				type, p->outputMode);
+
+			return 0;
+		}
+
+		tccvid_lastframe[type].enabled = 1;
+		tccvid_lastframe[type].nCount = 0;
+		tccvid_lastframe[type].reason.Resolution
+			= iLastFrame.reason & 0x1;
+		tccvid_lastframe[type].reason.Codec = iLastFrame.reason & 0x2;
+
+		if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+			msleep(p->vsync_interval*2);
+			spin_lock_irq(&vsync_lock);
+			tcc_vsync_pop_all_buffer(p, __LINE__);
+			spin_unlock_irq(&vsync_lock);
+		} else {
+			msleep(40);
+			//goto Screen_off;
+		}
+
+		memcpy(lastUpdated, &tccvid_lastframe[type].LastImage,
+			sizeof(struct tcc_lcdc_image_update));
+
+		#ifdef CONFIG_VIOC_DOLBY_VISION_EDR
+		//if (lastUpdated->private_data.optional_info[
+		//	VID_OPT_CONTENT_TYPE] == ATTR_DV_WITHOUT_BC) {
+		if (lastUpdated->private_data.optional_info[
+			VID_OPT_HAVE_DOLBYVISION_INFO] != 0) {
+			spin_lock_irq(&LastFrame_lockDisp);
+			tcc_origin_video_off_for_last_frame(p, dp_device,
+				lastUpdated, type, 1);
+			spin_unlock_irq(&LastFrame_lockDisp);
+
+			pr_info("[INF][VSYNC] [%d]  TCC_LCDC_VIDEO_KEEP_LASTFRAME to diable only (DV)RDMA channel. info(%dx%d), resolution_changed(%d), codec_changed(%d)\n",
+				type, lastUpdated->Frame_width,
+				lastUpdated->Frame_height,
+				tccvid_lastframe[type].reason.Resolution,
+				tccvid_lastframe[type].reason.Codec);
+
+			return -100;
+		}
+		#endif
+
+		#if defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT) || defined(CONFIG_VIDEO_DISPLAY_BY_VSYNC_INT_MODULE)
+		// this code prevent a error of transparent
+		// on layer0 after stopping v
+		if (lastUpdated->Lcdc_layer == 0
+			&& lastUpdated->enable == 0) {
+			pr_info("[INF][VSYNC] Last-frame[%d] for a error prevention\n",
+				type);
+			spin_lock_irq(&vsync_lock);
+			p->outputMode = -1;
+			spin_unlock_irq(&vsync_lock);
+		}
+		#endif
+
+		#if 1
+		// for PIP mode with dual-vsync. No need to display on M2M mode.
+		if (p->deinterlace_mode) {
+			if (!p->duplicateUseFlag) {
+				if (p->output_toMemory && p->m2m_mode) {
+					return 0;
+					/* prevent KCS warning */
+				}
+			}
+		} else if (p->output_toMemory && p->m2m_mode) {
+			return 0;
+		}
+		#endif
+
+		pr_info("[INF][VSYNC] [%d] TCC_LCDC_VIDEO_KEEP_LASTFRAME(%d) called with reason(%d), out-Mode(%d) target(0x%x/0x%x) MC(%d)!!\n",
+			type, tccvid_lastframe[type].support,
+			iLastFrame.reason, p->outputMode,
+			target_address, target_size,
+		lastUpdated->private_data.optional_info[VID_OPT_HAVE_MC_INFO]);
+
+		ret = tcc_move_video_last_frame(lastUpdated,
+			p->deinterlace_mode, target_address,
+			target_size, LAST_FRAME_FORMAT);
+		if (ret < 0) {
+			goto Screen_off;
+			/* prevent KCS warning */
+		}
+
+		lastUpdated->Frame_width = lastUpdated->Image_width;
+		lastUpdated->Frame_height = lastUpdated->Image_height;
+		lastUpdated->fmt = LAST_FRAME_FORMAT; // W x H * 2 = Max 4Mb
+
+		#ifdef CONFIG_VIOC_MAP_DECOMP
+		if (lastUpdated->private_data.optional_info[
+			VID_OPT_HAVE_MC_INFO] != 0) {
+			lastUpdated->private_data.optional_info[
+				VID_OPT_HAVE_MC_INFO] = 0;
+		}
+		#endif
+
+		#ifdef CONFIG_USE_FORCE_8BIT_OUT_LASTFRAME
+		lastUpdated->private_data.optional_info[VID_OPT_BIT_DEPTH] = 0;
+		#endif
+
+		pr_info("[INF][VSYNC] [%d] TCC_LCDC_VIDEO_KEEP_LASTFRAME RDMA(0x%px) :: Start info(%dx%d), Reason(0x%x)\n",
+			type,
+			dp_device->rdma_info[RDMA_LASTFRM].virt_addr,
+			lastUpdated->Frame_width,
+			lastUpdated->Frame_height,
+			iLastFrame.reason);
+
+		lastUpdated->enable = 1;
+		lastUpdated->on_the_fly = 0;
+		lastUpdated->one_field_only_interlace = 0;
+		lastUpdated->crop_left = lastUpdated->crop_top = 0;
+		lastUpdated->crop_right = lastUpdated->Frame_width;
+		lastUpdated->crop_bottom = lastUpdated->Frame_height;
+		lastUpdated->Lcdc_layer = RDMA_LASTFRM;
+		tccvid_lastframe[type].pRDMA
+			= dp_device->rdma_info[RDMA_LASTFRM].virt_addr;
+
+		spin_lock_irq(&LastFrame_lockDisp);
+		tca_scale_display_update_with_sync(dp_device,
+			lastUpdated);
+		spin_unlock_irq(&LastFrame_lockDisp);
+
+Screen_off:
+		tcc_origin_video_off_for_last_frame(p, dp_device,
+			lastUpdated, type, 1);
+
+		pr_info("[INF][VSYNC] [%d] TCC_LCDC_VIDEO_KEEP_LASTFRAME End\n",
+			type);
+
+		return 0;
+	}
+
+	if ((p->outputMode == TCC_OUTPUT_HDMI
+		|| p->outputMode == TCC_OUTPUT_COMPOSITE
+		|| p->outputMode == TCC_OUTPUT_COMPONENT
+		#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+		|| p->outputMode ==  TCC_OUTPUT_LCD
+		#endif
+		) == 0) {
+
+		pr_info("[INF][VSYNC] fake[%d] TCC_LCDC_VIDEO_KEEP_LASTFRAME skip :: reason(p->outputMode == %d)\n",
+			type, p->outputMode);
+
+		return -1;
+	}
+
+	/*----------------------------------------------------------------------
+	 * 2.
+	 *----------------------------------------------------------------------
+	 */
+	tccvid_lastframe[type].enabled = 1;
+	tccvid_lastframe[type].nCount = 0;
+	tccvid_lastframe[type].reason.Resolution
+		= iLastFrame.reason&LASTFRAME_FOR_RESOLUTION_CHANGE;
+	tccvid_lastframe[type].reason.Codec
+		= iLastFrame.reason&LASTFRAME_FOR_CODEC_CHANGE ? 1 : 0;
+
+	if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+		msleep(p->vsync_interval * 2);
+		/* prevent KCS warning */
+	}
+
+	memcpy(lastUpdated, &tccvid_lastframe[type].LastImage,
+		sizeof(struct tcc_lcdc_image_update));
+
+	if (p->deinterlace_mode > 0 && p->isVsyncRunning == EM_VSYNC_RUNNING) {
+		if (!tccvid_lastframe[type].reason.Codec) {
+			pr_info("[INF][VSYNC] [%d] return last-frame :: deinterlace_mode %d. info(%dx%d), resolution_changed(%d), codec_changed(%d)\n",
+				type, p->deinterlace_mode,
+				tccvid_lastframe[type].LastImage.Frame_width,
+				tccvid_lastframe[type].LastImage.Frame_height,
+				tccvid_lastframe[type].reason.Resolution,
+				tccvid_lastframe[type].reason.Codec);
+			return -100;
+		}
+	}
+
+	if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+		spin_lock_irq(&vsync_lock);
+		tcc_vsync_pop_all_buffer(p, __LINE__);
+		spin_unlock_irq(&vsync_lock);
+	}
+
+	//if (type == VSYNC_SUB0
+	//	&& tccvid_lastframe[type].support
+	//	&& (p->output_toMemory && p->m2m_mode)) {
+	//
+	//	if (tcc_fill_black_lastframe(lastUpdated, target_address,
+	//		target_size, type) < 0) {
+	//		//do not process anythings!!
+	//		return -100;
+	//	}
+	//
+	//	lastUpdated->enable = 1;
+	//	lastUpdated->on_the_fly = 0;
+	//	lastUpdated->addr0 = target_address;
+	//	lastUpdated->addr1 = target_address
+	//		+ (lastUpdated->Image_width
+	//		* lastUpdated->Image_height);
+	//	lastUpdated->one_field_only_interlace = 0;
+	//	lastUpdated->crop_left = lastUpdated->crop_top = 0;
+	//	lastUpdated->crop_right = lastUpdated->Image_width;
+	//	lastUpdated->crop_bottom = lastUpdated->Image_height;
+	//	lastUpdated->Frame_width = lastUpdated->Image_width;
+	//	lastUpdated->Frame_height = lastUpdated->Image_height;
+	//	// W x H * 2 = Max 4Mb
+	//	lastUpdated->fmt = TCC_LCDC_IMG_FMT_YUV420ITL0;
+	//	lastUpdated->private_data.optional_info[VID_OPT_HAVE_MC_INFO]
+	//		= 0;
+	//	lastUpdated->private_data.optional_info[VID_OPT_BIT_DEPTH]
+	//		= 0;
+	//	lastUpdated->private_data.optional_info[VID_OPT_HAVE_USERDATA]
+	//		= 0;
+	//	lastUpdated->private_data.optional_info[VID_OPT_HAVE_DTRC_INFO]
+	//		= 0;
+	//	tccvid_lastframe[type].pRDMA = NULL;
+	//
+	//	spin_lock_irq(&LastFrame_lockDisp);
+	//	tca_scale_display_update(dp_device, lastUpdated);
+	//	spin_unlock_irq(&LastFrame_lockDisp);
+	//
+	//	pr_info("%s: [%d] black TCC_LCDC_VIDEO_KEEP_LASTFRAME\n",
+	//		__func__);
+	//	pr_info(" %dx%d, resolution_changed(%d), codec_changed(%d)\n",
+	//		type, lastUpdated->Frame_width,
+	//		lastUpdated->Frame_height,
+	//		tccvid_lastframe[type].reason.Resolution,
+	//		tccvid_lastframe[type].reason.Codec);
+	//
+	//	return 0;
+	//}
+
+	if ((tccvid_lastframe[type].reason.Codec)
+		|| (type == VSYNC_SUB0)
+		|| (type == VSYNC_MAIN /*&& !tccvid_lastframe[type].support*/)
+		|| (target_size == 0)
+		) {
+#if 1
+		int ch_disable = 1;
+
+		if (p->output_toMemory && p->m2m_mode) {
+			dbg("[%d] fake TCC_LCDC_VIDEO_KEEP_LASTFRAME\n",
+				type);
+			ch_disable = 0;
+		}
+#endif
+		spin_lock_irq(&LastFrame_lockDisp);
+		tcc_origin_video_off_for_last_frame(p, dp_device, lastUpdated,
+			type, ch_disable);
+		spin_unlock_irq(&LastFrame_lockDisp);
+
+		pr_info("[INF][VSYNC] [%d] fake TCC_LCDC_VIDEO_KEEP_LASTFRAME to diable only RDMA channel. info(%dx%d), resolution_changed(%d), codec_changed(%d)\n",
+			type, lastUpdated->Frame_width,
+			lastUpdated->Frame_height,
+			tccvid_lastframe[type].reason.Resolution,
+			tccvid_lastframe[type].reason.Codec);
+
+		return -100;
+	}
+
+	file = filp_open(WMIXER_PATH, O_RDWR, 0666);
+	ret = tcc_move_video_frame_simple(file, lastUpdated, &WmixerInfo,
+		target_address, target_size, LAST_FRAME_FORMAT);
+	filp_close(file, 0);
+	if (ret <= 0) {
+		pr_info("[INF][VSYNC] [%d] Error[%d] :: wmixer ctrl\n",
+			type, ret);
+
+		return -100;
+	}
+
+	lastUpdated->fmt = WmixerInfo.dst_fmt;
+	lastUpdated->addr0 = WmixerInfo.dst_y_addr;
+	lastUpdated->addr1 = WmixerInfo.dst_u_addr;
+	lastUpdated->addr2 = WmixerInfo.dst_v_addr;
+
+	pr_info("[INF][VSYNC] [%d] fake TCC_LCDC_VIDEO_KEEP_LASTFRAME Start info(%dx%d), resolution_changed(%d), codec_changed(%d)\n",
+		type, lastUpdated->Frame_width, lastUpdated->Frame_height,
+		tccvid_lastframe[type].reason.Resolution,
+		tccvid_lastframe[type].reason.Codec);
+
+	spin_lock_irq(&LastFrame_lockDisp);
+
+	switch (p->outputMode) {
+	case TCC_OUTPUT_NONE:
+		break;
+	#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	case TCC_OUTPUT_LCD:
+		tca_scale_display_update(dp_device, lastUpdated);
+		break;
+	#endif
+	case TCC_OUTPUT_HDMI:
+	case TCC_OUTPUT_COMPONENT:
+	case TCC_OUTPUT_COMPOSITE:
+		tca_scale_display_update(dp_device, lastUpdated);
+		break;
+	default:
+		break;
+	}
+
+	spin_unlock_irq(&LastFrame_lockDisp);
+
+	pr_info("[INF][VSYNC] [%d] fake TCC_LCDC_VIDEO_KEEP_LASTFRAME End\n",
+		type);
+
+	return -0x100;
+}
+EXPORT_SYMBOL(tcc_video_last_frame);
+
+void tcc_video_clear_last_frame(
+	unsigned int lcdc_layer,
+	bool reset)
+{
+	unsigned int type = tcc_vsync_get_video_ch_type(lcdc_layer);
+
+	if (type >= VSYNC_MAX)
+		return;
+
+	if (tca_fb_divide_get_status()) {
+		//pr_info("[INF][VSYNC] %s, 3D UI(%s) is displayed!!\n",
+		//	__func__);
+		return;
+	}
+
+	//last-frame has to be disabled regardless of support option!!
+	if (tccvid_lastframe[type].pRDMA != NULL
+		/*&& tccvid_lastframe[type].nCount >= 2*/) {
+
+		VIOC_RDMA_SetImageDisable(tccvid_lastframe[type].pRDMA);
+		pr_info("[INF][VSYNC] &&&&&&&&& ----> lastframe[%d] cleared(%d)!! 0x%px\n",
+			type, tccvid_lastframe[type].nCount,
+			tccvid_lastframe[type].pRDMA);
+
+		tccvid_lastframe[type].pRDMA = NULL;
+	}
+	tccvid_lastframe[type].nCount += 1;
+
+	if (reset) {
+		dbg("lastframe[%d] reset variables\n", type);
+		tccvid_lastframe[type].enabled
+			= tccvid_lastframe[type].reason.Resolution
+			= tccvid_lastframe[type].reason.Codec = 0;
+		tccvid_lastframe[type].LastImage.enable = 0;
+	}
+}
+
+int tcc_video_ctrl_last_frame(int type, int enable)
+{
+	#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME_STB_ENABLE)
+	tccvid_lastframe[type].support = 1;
+	#else
+	tccvid_lastframe[type].support = enable;
+	#endif
+
+	return 0;
+}
+
+#ifdef CONFIG_DISPLAY_EXT_FRAME
+int tcc_display_ext_frame(
+	struct tcc_lcdc_image_update *lastUpdated,
+	char bInterlaced,
+	int output_mode)
+{
+	struct tcc_dp_device *dp_device = tca_fb_get_displayType(output_mode);
+	unsigned int type =
+		tcc_vsync_get_video_ch_type(lastUpdated->Lcdc_layer);
+	int ret = 0;
+
+	if (type != VSYNC_MAIN) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	#ifdef CONFIG_VIOC_DOLBY_VISION_EDR
+	if (VIOC_CONFIG_DV_GET_EDR_PATH() && (vioc_get_video_attribute()
+		== ATTR_DV_WITHOUT_BC)) {
+		pr_warn("[WAN][VSYNC]  can't support it due to DV\n");
+		return 0; // may need to disable original Video-RDMA.
+	}
+	#endif
+
+	mutex_lock(&ext_mutex);
+
+	if (lastUpdated->enable) {
+		unsigned int dest_addr = 0x00;
+		struct tcc_lcdc_image_update iImage;
+
+		memcpy(&iImage, lastUpdated,
+			sizeof(struct tcc_lcdc_image_update));
+
+		if (iImage.Frame_width == 0 || iImage.Frame_height == 0) {
+			pr_err("[ERR][VSYNC]  TCC_LCDC_VIDEO_CTRL_EXT_FRAME Error :: no setting for Ext-Frame\n");
+			ret = -1;
+			goto Error;
+		}
+
+		if (bCamera_mode) {
+			pr_err("[ERR][VSYNC]  TCC_LCDC_VIDEO_CTRL_EXT_FRAME Info Cam(%d):: already enabled\n",
+				bCamera_mode);
+			bExt_Frame = 1;
+			ret = -1;
+			goto Error;
+		}
+
+		if (!dp_device) {
+			pr_err("[ERR][VSYNC]  Display device is null. outputMode is %d\n",
+				output_mode);
+			ret = -1;
+			goto Error;
+		}
+
+		if (bToggleBuffer) {
+			dest_addr = tccvid_lastframe[type].pmapBuff.base;
+			/* prevent KCS warning */
+		} else {
+			dest_addr = tccvid_lastframe[type].pmapBuff.base
+				+ (tccvid_lastframe[type].pmapBuff.size / 2);
+		}
+		bToggleBuffer = ~bToggleBuffer;
+
+		memcpy(&last_backup, &iImage,
+			sizeof(struct tcc_lcdc_image_update));
+
+		ret = tcc_move_video_last_frame(&iImage, bInterlaced, dest_addr,
+			(tccvid_lastframe[type].pmapBuff.size / 2),
+			LAST_FRAME_FORMAT);
+		if (ret < 0) {
+			ret = -1;
+			goto Error;
+		}
+
+		iImage.Frame_width = iImage.Image_width;
+		iImage.Frame_height = iImage.Image_height;
+		iImage.fmt = LAST_FRAME_FORMAT; // W x H * 2 = Max 4Mb
+
+		#ifdef CONFIG_VIOC_MAP_DECOMP
+		if (iImage.private_data.optional_info[VID_OPT_HAVE_MC_INFO]
+			!= 0) {
+			iImage.private_data.optional_info[VID_OPT_HAVE_MC_INFO]
+				= 0;
+		}
+		#endif
+
+		#ifdef CONFIG_USE_FORCE_8BIT_OUT_LASTFRAME
+		iImage.private_data.optional_info[VID_OPT_BIT_DEPTH] = 0;
+		#endif
+
+		pr_info("[INF][VSYNC] ### TCC_LCDC_VIDEO_CTRL_EXT_FRAME Phy(0x%x) :: Start info(%dx%d, %d,%d ~ %dx%d), Display(%d,%d ~ %dx%d)\n",
+			dest_addr,
+			last_backup.Frame_width, last_backup.Frame_height,
+			last_backup.crop_left, last_backup.crop_top,
+			last_backup.crop_right, last_backup.crop_bottom,
+			iImage.offset_x, iImage.offset_y,
+			iImage.Image_width, iImage.Image_height);
+
+		iImage.enable       = 1;
+		iImage.on_the_fly   = 0;
+		iImage.one_field_only_interlace = 0;
+		iImage.crop_left    = iImage.crop_top = 0;
+		iImage.crop_right   = iImage.Frame_width;
+		iImage.crop_bottom  = iImage.Frame_height;
+		iImage.Lcdc_layer   = RDMA_LASTFRM;
+		pExtFrame_RDMABase  =
+			dp_device->rdma_info[RDMA_LASTFRM].virt_addr;
+
+		spin_lock_irq(&LastFrame_lockDisp);
+		tca_scale_display_update(dp_device, &iImage);
+		spin_unlock_irq(&LastFrame_lockDisp);
+
+		bExt_Frame = 1;
+	} else {
+		int alive = bExt_Frame;
+
+		if (bExt_Frame) {
+			if (!bCamera_mode) {
+				if (pExtFrame_RDMABase != NULL) {
+					VIOC_RDMA_SetImageDisable(
+						pExtFrame_RDMABase);
+					pr_info("[INF][VSYNC] ext frame cleared. 0x%px\n",
+						pExtFrame_RDMABase);
+				}
+			}
+			last_backup.enable = bExt_Frame = 0;
+		}
+
+		ret = alive;
+	}
+
+Error:
+	mutex_unlock(&ext_mutex);
+
+	return ret;
+}
+#endif
+
+void tcc_ext_mutex(char lock, char bCamera)
+{
+#ifdef CONFIG_DISPLAY_EXT_FRAME
+	if (lock) {
+		mutex_lock(&ext_mutex);
+		/* prevent KCS warning */
+	} else {
+		mutex_unlock(&ext_mutex);
+	}
+	bCamera_mode = bCamera;
+#endif
+}
+EXPORT_SYMBOL(tcc_ext_mutex);
+
+int tcc_ctrl_ext_frame(char enable)
+{
+#ifdef CONFIG_DISPLAY_EXT_FRAME
+	struct tcc_lcdc_image_update iImage;
+
+	if (!enable) {
+		if (bExt_Frame) {
+			memcpy(&iImage, &last_backup,
+				sizeof(struct tcc_lcdc_image_update));
+			iImage.enable = 0;
+			tcc_display_ext_frame((void *)&iImage, 0,
+				Output_SelectMode);
+		}
+	} else {
+		memcpy(&iImage, &last_backup,
+			sizeof(struct tcc_lcdc_image_update));
+		iImage.enable = enable;
+		tcc_display_ext_frame((void *)&iImage, iImage.deinterlace_mode,
+			Output_SelectMode);
+	}
+#endif
+	return 0;
+}
+EXPORT_SYMBOL(tcc_ctrl_ext_frame);
+#endif
+
+#ifdef CONFIG_VIDEO_DISPLAY_SWAP_VPU_FRAME
+void tcc_video_frame_backup(struct tcc_lcdc_image_update *Image)
+{
+	unsigned int type = tcc_vsync_get_video_ch_type(Image->Lcdc_layer);
+
+	if (type >= VSYNC_MAX) {
+		return;
+		/* prevent KCS warning */
+	}
+
+	if (Image->enable) {
+		if (tccvid_lastframe[type].CurrImage.enable != 0
+			&& (tccvid_lastframe[type].CurrImage.buffer_unique_id
+			== Image->buffer_unique_id) && Image->bSize_Changed
+			== 0) {
+			dbg("return same buffer_id (%d) for seek\n",
+				Image->buffer_unique_id);
+
+			return;
+		}
+
+		memcpy(&tccvid_lastframe[type].CurrImage, Image,
+		sizeof(struct tcc_lcdc_image_update));
+	}
+}
+EXPORT_SYMBOL(tcc_video_frame_backup);
+
+int tcc_video_swap_vpu_frame(
+	struct tcc_video_disp *p,
+	int idx,
+	WMIXER_INFO_TYPE *WmixerInfo,
+	struct tcc_lcdc_image_update *TempImage,
+	enum VSYNC_CH_TYPE type)
+{
+	int ret = 0;
+	struct file *file = NULL;
+	unsigned int target_address = 0x00;
+	unsigned int target_size = 0x00;
+
+	if (p->outputMode != Output_SelectMode) {
+		pr_warn("[WAN][VSYNC]  %s :: [%d] can't start ::z due to outputmode mismatch(%d/%d)\n",
+			__func__, type, p->outputMode, Output_SelectMode);
+		goto Error;
+	}
+
+	if (p->isVsyncRunning != EM_VSYNC_RUNNING
+		|| tccvid_lastframe[type].CurrImage.enable == 0
+		|| tccvid_lastframe[type].enabled
+		|| tccvid_lastframe[type].CurrImage.Lcdc_layer != RDMA_VIDEO) {
+
+		if (tccvid_lastframe[type].CurrImage.Lcdc_layer != RDMA_VIDEO) {
+			pr_info("[INF][VSYNC] %s ---->[%d] return :: The channel(%d) is not Main-Video. info(%dx%d)\n",
+				__func__, type,
+				tccvid_lastframe[type].CurrImage.Lcdc_layer,
+				tccvid_lastframe[type].CurrImage.Frame_width,
+				tccvid_lastframe[type].CurrImage.Frame_height);
+		} else {
+			pr_info("[INF][VSYNC] %s [%d] return :: reason %d/%d/%d\n",
+				__func__, type, p->isVsyncRunning,
+				tccvid_lastframe[type].CurrImage.enable,
+				tccvid_lastframe[type].enabled);
+		}
+
+		ret = -1;
+		if (p->isVsyncRunning == EM_VSYNC_RUNNING
+			&& (tccvid_lastframe[type].CurrImage.enable
+			|| tccvid_lastframe[type].enabled)) {
+			tcc_video_clear_frame(p, idx, 12);
+		}
+
+		goto Error;
+	}
+
+	if (tccvid_lastframe[type].pmapBuff.size == 0) {
+		goto Error;
+		/* prevent KCS warning */
+	}
+
+	file = filp_open(WMIXER_PATH, O_RDWR, 0666);
+	tcc_video_clear_frame(p, idx, 3);
+	msleep(p->vsync_interval*2); // wait 2 vsync based on 24hz!!
+
+	if (tccvid_lastframe[type].CurrImage.addr0
+		== tccvid_lastframe[type].pmapBuff.base) {
+		target_address = tccvid_lastframe[type].pmapBuff.base
+			+ (tccvid_lastframe[type].pmapBuff.size / 2);
+	} else {
+		target_address = tccvid_lastframe[type].pmapBuff.base;
+	}
+	target_size = (tccvid_lastframe[type].pmapBuff.size / 2);
+
+	memcpy(TempImage, &tccvid_lastframe[type].CurrImage,
+		sizeof(struct tcc_lcdc_image_update));
+
+	ret = tcc_move_video_frame_simple(file, TempImage, WmixerInfo,
+		target_address, target_size, TempImage->fmt);
+	if (ret <= 0) {
+		pr_err("[ERR][VSYNC]  %s [%d] Error[%d] :: wmixer ctrl\n",
+			__func__, type, ret);
+		//ret = tccvid_lastframe[type].CurrImage.buffer_unique_id;
+		goto Error;
+	}
+
+	pr_info("[INF][VSYNC] %s :: [%d] start :: %d En:%d/%d, vsync: %d ms, I(%d)D(%d)/M(%d/%d)\n",
+		__func__, type, TempImage->buffer_unique_id, TempImage->enable,
+		tccvid_lastframe[type].CurrImage.enable, p->vsync_interval,
+		p->deinterlace_mode, p->duplicateUseFlag, p->output_toMemory,
+		p->m2m_mode);
+
+	//TempImage->buffer_unique_id
+	//	= p->vsync_buffer.available_buffer_id_on_vpu;
+
+	if (p->deinterlace_mode) {
+		if (p->duplicateUseFlag) {
+			int current_time;
+
+			viqe_render_init();
+
+			current_time = tcc_vsync_get_time(p);
+			viqe_render_frame(TempImage, p->vsync_interval,
+				current_time, VIQE_RESET_NONE);
+			viqe_render_field(current_time);
+		} else {
+			if (p->output_toMemory && p->m2m_mode) {
+				/* No need to display on M2M mode */
+				//TCC_VIQE_DI_Run60Hz_M2M(TempImage,
+				//	VIQE_RESET_NONE);
+			} else {
+				if (TempImage->Lcdc_layer == RDMA_VIDEO) {
+					TCC_VIQE_DI_Run60Hz(TempImage,
+						VIQE_RESET_NONE);
+				}
+			}
+		}
+	} else if (p->output_toMemory && p->m2m_mode) {
+		/* for PIP mode with dual-vsync!! */
+		struct tcc_lcdc_image_update M2mImage;
+
+		TCC_VIQE_DI_GET_SOURCE_INFO(&M2mImage, TempImage->Lcdc_layer);
+
+		dbg("%s : L(%d) U-%d(D-%d/%d), I-%d, addr(0x%x), dtrc(%d)\n",
+			__func__, TempImage->Lcdc_layer,
+			M2mImage.buffer_unique_id,
+		M2mImage.private_data.optional_info[VID_OPT_DISP_OUT_IDX],
+			M2mImage.private_data.optional_info[VID_OPT_BUFFER_ID],
+			M2mImage.deinterlace_mode,
+			M2mImage.addr0,
+		M2mImage.private_data.optional_info[VID_OPT_HAVE_DTRC_INFO]);
+
+		if (M2mImage.private_data.optional_info[VID_OPT_HAVE_DTRC_INFO]
+			!= 0) {
+			ret = tcc_move_video_frame_simple(file, &M2mImage,
+				WmixerInfo, target_address,
+				target_size, M2mImage.fmt);
+
+			// No need to display on M2M mode.
+			TCC_VIQE_DI_Run60Hz_M2M(&M2mImage, VIQE_RESET_NONE);
+		}
+	} else {
+		struct tcc_dp_device *dp_device
+			= tca_fb_get_displayType(p->outputMode);
+
+		if (dp_device != NULL) {
+			switch (p->outputMode) {
+			case TCC_OUTPUT_NONE:
+				break;
+
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			case TCC_OUTPUT_LCD:
+				tca_scale_display_update(dp_device, TempImage);
+				break;
+			#endif
+
+			case TCC_OUTPUT_HDMI:
+			case TCC_OUTPUT_COMPONENT:
+			case TCC_OUTPUT_COMPOSITE:
+				tca_scale_display_update(dp_device, TempImage);
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+
+	memcpy(&tccvid_lastframe[type].CurrImage, TempImage,
+		sizeof(struct tcc_lcdc_image_update));
+
+	msleep(p->vsync_interval*2); // wait 2 vsync based on 24hz!!
+	pr_info("[INF][VSYNC] %s :: ----> video seek %d : backup %d\n",
+		__func__, idx,
+		tccvid_lastframe[type].CurrImage.buffer_unique_id);
+
+	ret = tccvid_lastframe[type].CurrImage.buffer_unique_id;
+
+Error:
+	if (file != NULL) {
+		filp_close(file, 0);
+		/* prevent KCS warning */
+	}
+	if (ret < 0) {
+		pr_err("[ERR][VSYNC] %s [%d] error due to %d\n",
+			__func__, type, ret);
+	}
+
+	return ret;
+}
+
+int tcc_fb_swap_vpu_frame(
+	struct tcc_dp_device *pdp_data,
+	WMIXER_INFO_TYPE *WmixerInfo,
+	struct tcc_lcdc_image_update *TempImage,
+	enum VSYNC_CH_TYPE type)
+{
+	int ret;
+	struct file *file = NULL;
+	unsigned int target_address;
+	unsigned int target_size;
+
+	if (tccvid_lastframe[type].pmapBuff.size == 0) {
+		ret = -1;
+		goto exit;
+	}
+
+	file = filp_open(WMIXER_PATH, O_RDWR, 0666);
+
+	msleep(33);
+
+	if (tccvid_lastframe[type].CurrImage.addr0
+		== tccvid_lastframe[type].pmapBuff.base) {
+		target_address = tccvid_lastframe[type].pmapBuff.base
+			+ (tccvid_lastframe[type].pmapBuff.size / 2);
+	} else {
+		target_address = tccvid_lastframe[type].pmapBuff.base;
+	}
+	target_size = (tccvid_lastframe[type].pmapBuff.size / 2);
+
+	memcpy(TempImage, &tccvid_lastframe[type].CurrImage,
+		sizeof(struct tcc_lcdc_image_update));
+
+	ret = tcc_move_video_frame_simple(file, TempImage, WmixerInfo,
+		target_address, target_size, TempImage->fmt);
+	if (ret > 0) {
+		pr_info("[INF][FB] %s: id(%d) enable(%d/%d)\n", __func__,
+			TempImage->buffer_unique_id, TempImage->enable,
+			tccvid_lastframe[type].CurrImage.enable);
+
+		if (pdp_data->FbPowerState) {
+			tca_scale_display_update(pdp_data, TempImage);
+			/* prevent KCS warning */
+		}
+
+		memcpy(&tccvid_lastframe[type].CurrImage, TempImage,
+			sizeof(struct tcc_lcdc_image_update));
+
+		msleep(33);
+
+		pr_info("[INF][FB] %s: backup id(%d)\n", __func__,
+			tccvid_lastframe[type].CurrImage.buffer_unique_id);
+	} else {
+		pr_err("[ERR][FB] %s [%d] Error[%d] :: wmixer ctrl\n",
+			__func__, type, ret);
+	}
+
+	ret = tccvid_lastframe[type].CurrImage.buffer_unique_id;
+
+exit:
+	if (file != NULL) {
+		filp_close(file, 0);
+		/* prevent KCS warning */
+	}
+	if (ret < 0) {
+		pr_err("[ERR][FB] %s: ret(%d)\n", __func__, ret);
+		/* prevent KCS warning */
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL(tcc_fb_swap_vpu_frame);
+#endif
+
+
+static int tcc_vsync_push_main_process(
+	unsigned int cmd,
+	struct tcc_video_disp *p,
+	struct tcc_lcdc_image_update *input_image,
+	struct tcc_dp_device *dp_device,
+	enum VSYNC_CH_TYPE type)
+{
+	int ret = 0;
+	int err_type = 0;
+
+	#ifdef CONFIG_USE_SUB_MULTI_FRAME
+	if (type != VSYNC_MAIN) {
+		input_image->m2m_mode = 1;
+		input_image->output_toMemory = 1;
+		input_image->Lcdc_layer = RDMA_VIDEO_SUB;
+	}
+	#endif
+
+	if ((cmd == TCC_LCDC_VIDEO_PUSH_VSYNC_EXT)
+		|| (cmd == TCC_LCDC_VIDEO_PUSH_VSYNC_EXT_KERNEL)) {
+		print_vsync_input("TCC_LCDC_VIDEO_PUSH_VSYNC_EXT",
+			input_image);
+	} else if ((cmd == TCC_LCDC_VIDEO_PUSH_RENDER_INFO)
+		|| (cmd == TCC_LCDC_VIDEO_PUSH_RENDER_INFO_KERNEL)) {
+		print_vsync_input("TCC_LCDC_VIDEO_PUSH_RENDER_INFO",
+			input_image);
+	} else {
+		print_vsync_input("TCC_LCDC_VIDEO_PUSH_VSYNC", input_image);
+	}
+	dbg_v("%s: PUSH_%d ioctl ID(%d) - TS(v[%d ms] / s[%d ms])\n",
+		input_image->Lcdc_layer == RDMA_VIDEO ? "M" : "S",
+		type, input_image->buffer_unique_id,
+		input_image->time_stamp, input_image->sync_time);
+
+	err_type = tcc_vsync_push_preprocess(p, dp_device, input_image, type);
+	if (err_type < 0) {
+		goto TCC_VSYNC_PUSH_ERROR;
+		/* prevent KCS warning */
+	}
+
+#ifdef CONFIG_HDMI_DISPLAY_LASTFRAME
+	tcc_video_info_backup(type, input_image);
+#endif
+
+	if (p->outputMode < 0) {
+		tcc_vsync_push_set_outputMode(p, dp_device, input_image);
+		/* prevent KCS warning */
+	}
+
+	tcc_vsync_push_preprocess_deinterlacing(p, dp_device, input_image);
+
+	// This is for Display underrun issue.
+	if (!p->deinterlace_mode && !p->output_toMemory) {
+		#if 0
+		if (p->outputMode == Output_SelectMode
+			&& (p->outputMode == TCC_OUTPUT_HDMI
+			|| p->outputMode == TCC_OUTPUT_LCD)) {
+			tca_set_onthefly(pdp_data, &input_image);
+		}
+		#else
+		tca_lcdc_set_onthefly(dp_device, input_image);
+		#endif
+	}
+
+	if (tcc_vsync_push_bypass_frame(p, dp_device, input_image, type) > 0) {
+		goto PUSH_VIDEO_FORCE;
+		/* prevent KCS warning */
+	}
+
+	err_type = tcc_vsync_push_check_error(p, dp_device, input_image);
+	if (err_type < 0) {
+		goto TCC_VSYNC_PUSH_ERROR;
+		/* prevent KCS warning */
+	}
+
+PUSH_VIDEO_FORCE:
+	tcc_vsync_push_process(p, dp_device, input_image, type);
+
+TCC_VSYNC_PUSH_ERROR:
+	if (err_type < 0) {
+		pr_err("[ERR][VSYNC] %s: PUSH Error(%d)_%d ioctl ID(%d) - TS(v[%d ms] / s[%d ms])\n",
+			input_image->Lcdc_layer == RDMA_VIDEO ? "M" : "S",
+			err_type, type, input_image->buffer_unique_id,
+			input_image->time_stamp, input_image->sync_time);
+	}
+
+	ret = p->vsync_buffer.writeIdx;
+
+	return ret;
+}
+
+
+struct mutex vsync_io_mutex[VSYNC_MAX];
+static long tcc_vsync_do_ioctl(
+	unsigned int cmd,
+	unsigned long arg,
+	enum VSYNC_CH_TYPE type)
+{
+	int ret = 0;
+	struct tcc_video_disp *p = &tccvid_vsync[type];
+
+	p->type = type;
+
+	dbg("%s-%d :: cmd: 0x%x\n", __func__, __LINE__, cmd);
+
+	mutex_lock(&vsync_io_mutex[type]);
+
+	switch (cmd) {
+	case TCC_LCDC_VIDEO_START_VSYNC:
+	case TCC_LCDC_VIDEO_START_VSYNC_KERNEL:
+	{
+		struct tcc_lcdc_image_update *input_image =
+			kmalloc(sizeof(struct tcc_lcdc_image_update),
+			GFP_KERNEL);
+
+		if (!input_image) {
+			ret = -EFAULT;
+			goto Error;
+		}
+
+		#if 0//defined(CONFIG_TCC_DISPLAY_MODE_USE)
+		if (Output_SelectMode == TCC_OUTPUT_NONE) {
+			//pr_err("[ERR][VSYNC] invalid output on STB\n");
+			ret = -EFAULT;
+			goto TCC_VSYNC_OPEN_ERROR;
+		}
+		#endif
+
+		if (cmd == TCC_LCDC_VIDEO_START_VSYNC_KERNEL) {
+			if (memcpy((void *)input_image, (const void *)arg,
+				sizeof(struct tcc_lcdc_image_update)) == NULL) {
+				ret = -EFAULT;
+			}
+		} else {
+			if (copy_from_user((void *)input_image,
+				(const void *)arg,
+				sizeof(struct tcc_lcdc_image_update))) {
+				ret = -EFAULT;
+			}
+		}
+
+		if (ret != 0) {
+			pr_err("[ERR][VSYNC] copy_from_user\n");
+			ret = -EFAULT;
+			goto TCC_VSYNC_OPEN_ERROR;
+		}
+
+		if (!vsync_power_state) {
+			pr_err("[ERR][VSYNC] vsync_power_state\n");
+			ret = -EFAULT;
+			goto TCC_VSYNC_OPEN_ERROR;
+		}
+
+		#ifdef CONFIG_USE_SUB_MULTI_FRAME
+		if (type != VSYNC_MAIN) {
+			input_image->m2m_mode = 1;
+			input_image->output_toMemory = 1;
+			input_image->Lcdc_layer = RDMA_VIDEO_SUB;
+		}
+		#endif
+
+		print_vsync_input("TCC_LCDC_VIDEO_START_VSYNC", input_image);
+		if (tcc_vsync_start(p, input_image, type) < 0) {
+			pr_err("[ERR][VSYNC]  ### vsync_start\n");
+			ret = -EFAULT;
+			goto TCC_VSYNC_OPEN_ERROR;
+		}
+
+		vsync_rdma_off[type] = 0;
+
+TCC_VSYNC_OPEN_ERROR:
+		kfree((const void *)input_image);
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_END_VSYNC:
+	case TCC_LCDC_VIDEO_END_VSYNC_KERNEL:
+	{
+		unsigned int keep_display = 0;
+
+		if (cmd == TCC_LCDC_VIDEO_END_VSYNC_KERNEL) {
+			if (memcpy((void *)&keep_display, (const void *)arg,
+				sizeof(unsigned int)) == NULL) {
+				pr_err("[ERR][VSYNC]  copy err");
+				ret = 0;
+			}
+		} else {
+			if (copy_from_user((void *)&keep_display,
+				(const void *)arg, sizeof(unsigned int))) {
+				pr_err("[ERR][VSYNC]  copy err");
+				ret = 0;
+			}
+		}
+
+		vsync_rdma_off[type] = 0;
+		tcc_vsync_end(p, keep_display);
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_SET_SIZE_CHANGE:
+		#if 0
+		pr_info("[INF][VSYNC] SET_SIZE_CHANGE, firstFrame(%d) deint_mode(%d)\n",
+			p->firstFrameFlag, p->deinterlace_mode);
+		spin_lock_irq(&vsync_lock);
+		tcc_vsync_pop_all_buffer(p, __LINE__);
+		spin_unlock_irq(&vsync_lock);
+		#endif
+
+		break;
+
+	case TCC_LCDC_VIDEO_SET_FRAMERATE:
+		dbg("%s-%d :: TCC_LCDC_VIDEO_SET_FRAMERATE %d\n",
+			__func__, __LINE__, (int)arg);
+		tcc_video_set_framerate(p, (int)arg);
+		break;
+
+	case TCC_LCDC_VIDEO_SET_MVC_STATUS:
+	{
+		int status;
+
+		if (copy_from_user(&status, (int *)arg, sizeof(int))) {
+			ret = -EFAULT;
+			goto Error;
+		}
+
+		if (status) {
+			tcc_vsync_mvc_status = 1;
+			pr_info("[INF][VSYNC]  $$$ tcc_vsync_mvc_status= %d\n",
+				tcc_vsync_mvc_status);
+		} else {
+			tcc_vsync_mvc_status = 0;
+			pr_info("[INF][VSYNC]  $$$ tcc_vsync_mvc_status= %d\n",
+				tcc_vsync_mvc_status);
+		}
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_PUSH_VSYNC_EXT:
+	case TCC_LCDC_VIDEO_PUSH_VSYNC_EXT_KERNEL:
+	case TCC_LCDC_VIDEO_PUSH_VSYNC:
+	case TCC_LCDC_VIDEO_PUSH_VSYNC_KERNEL:
+	{
+		struct tcc_lcdc_image_update *input_image =
+			kmalloc(sizeof(struct tcc_lcdc_image_update),
+			GFP_KERNEL);
+		struct tcc_dp_device *dp_device =
+			tca_fb_get_displayType(Output_SelectMode);
+
+		if (!input_image) {
+			pr_err("[ERR][VSYNC] %s-%d :: kmalloc fail\n",
+				__func__, __LINE__);
+			ret = -EFAULT;
+			goto Error;
+		}
+
+		if ((cmd == TCC_LCDC_VIDEO_PUSH_VSYNC_KERNEL)
+			|| (cmd == TCC_LCDC_VIDEO_PUSH_VSYNC_EXT_KERNEL)) {
+			if (memcpy((void *)input_image, (const void *)arg,
+				sizeof(struct tcc_lcdc_image_update)) == NULL) {
+				pr_err("[ERR][VSYNC]  copy err");
+				ret = 0;
+				kfree((const void *)input_image);
+				goto Error;
+			}
+		} else {
+			if (copy_from_user((void *)input_image,
+				(const void *)arg,
+				sizeof(struct tcc_lcdc_image_update))) {
+				pr_err("[ERR][VSYNC] copy err");
+				ret = 0;
+				kfree((const void *)input_image);
+				goto Error;
+			}
+		}
+
+		if ((cmd == TCC_LCDC_VIDEO_PUSH_VSYNC_EXT)
+			|| (cmd == TCC_LCDC_VIDEO_PUSH_VSYNC_EXT_KERNEL)) {
+
+			TCC_PLATFORM_PRIVATE_PMEM_INFO *private_data;
+
+			private_data = &input_image->private_data;
+
+			p->push_ext_count += 1;
+			p->push_ext_infoframe.addr0 = private_data->offset[0];
+			p->push_ext_infoframe.addr1 = private_data->offset[1];
+			p->push_ext_infoframe.addr2 = private_data->offset[2];
+			p->push_ext_infoframe.time_stamp =
+				private_data->optional_info[VID_OPT_TIMESTAMP];
+			p->push_ext_infoframe.sync_time =
+				private_data->optional_info[VID_OPT_SYNC_TIME];
+			p->push_ext_infoframe.first_frame_after_seek =
+				(private_data->optional_info[VID_OPT_FLAGS]
+				& 0x00000001) ? 1 : 0;
+			p->push_ext_infoframe.buffer_unique_id =
+				private_data->optional_info[VID_OPT_BUFFER_ID];
+			p->push_ext_infoframe.codec_id =
+				private_data->unique_addr;
+
+			memcpy(input_image, &(p->push_ext_infoframe),
+				sizeof(struct tcc_lcdc_image_update)
+				- sizeof(TCC_PLATFORM_PRIVATE_PMEM_INFO));
+		} else {
+			if (p->push_ext_count > 0) {
+				dbg_ext("Info :: This is PUSH_VSYNC_EXT mode");
+				ret = 0;
+				kfree((const void *)input_image);
+				goto Error;
+			}
+		}
+
+		if (p->isVsyncRunning != EM_VSYNC_RUNNING) {
+			pr_err("[DBG][VSYNC] vsync is not started");
+			ret = 0;
+			kfree((const void *)input_image);
+			goto Error;
+		}
+
+
+		ret = tcc_vsync_push_main_process(cmd, p, input_image,
+			dp_device, type);
+
+		kfree((const void *)input_image);
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_GET_DISPLAYED:
+	case TCC_LCDC_VIDEO_GET_DISPLAYED_KERNEL:
+		ret = tcc_video_get_displayed(p, type);
+
+		if (cmd == TCC_LCDC_VIDEO_GET_DISPLAYED_KERNEL) {
+			if (memcpy((int *)arg, &ret, sizeof(int)) == NULL) {
+				ret = -EFAULT;
+				/* prevent KCS warning */
+			}
+		} else {
+			if (copy_to_user((int *)arg, &ret, sizeof(int))) {
+				ret = -EFAULT;
+				/* prevent KCS warning */
+			}
+		}
+
+		break;
+
+	case TCC_LCDC_VIDEO_CHECK_BUFFER_STATUS:
+	{
+		unsigned int ref_buffer_id = 0;
+
+		if (copy_from_user((void *)&ref_buffer_id, (const void *)arg,
+			sizeof(unsigned int))) {
+			ret = -EFAULT;
+		} else {
+			ret = tcc_vsync_buffer_check(p, ref_buffer_id);
+		}
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_GET_VALID_COUNT:
+		ret = tcc_video_get_readable_count(p);
+		if (copy_to_user((int *)arg, &ret, sizeof(int))) {
+			ret = -EFAULT;
+			/* prevent KCS warning */
+		}
+		break;
+
+	case TCC_LCDC_VIDEO_CLEAR_FRAME:
+	case TCC_LCDC_VIDEO_CLEAR_FRAME_KERNEL:
+		dbg("%s-%d :: TCC_LCDC_VIDEO_CLEAR_FRAME %d\n",
+			__func__, __LINE__, (int)arg);
+
+		tcc_video_clear_frame(p, (int)arg, 5);
+		break;
+
+	case TCC_LCDC_VIDEO_SKIP_FRAME_START:
+	case TCC_LCDC_VIDEO_SKIP_FRAME_START_KERNEL:
+		tcc_video_skip_frame_start(p, type);
+		break;
+
+	case TCC_LCDC_VIDEO_SKIP_FRAME_END:
+		tcc_video_skip_frame_end(p, type);
+		break;
+
+	case TCC_LCDC_VIDEO_SKIP_ONE_FRAME:
+		dbg("%s-%d :: TCC_LCDC_VIDEO_SKIP_ONE_FRAME %d\n",
+			__func__, __LINE__, (int)arg);
+
+		tcc_video_skip_one_frame(p, (int)arg);
+		break;
+
+	case TCC_LCDC_VIDEO_VSYNC_STATUS:
+	{
+		unsigned int status = 1;
+		struct tcc_dp_device *dp_device =
+			tca_fb_get_displayType(Output_SelectMode);
+
+		if (dp_device == NULL) {
+			status = 0;
+			/* prevent KCS warning */
+		} else if (!dp_device->FbPowerState) {
+			status = 0;
+		}
+
+		if (copy_to_user((unsigned int *)arg, &status,
+			sizeof(unsigned int))) {
+			ret = -EFAULT;
+		}
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_SWAP_VPU_FRAME:
+	{
+		#if defined(CONFIG_VIDEO_DISPLAY_SWAP_VPU_FRAME)
+		WMIXER_INFO_TYPE WmixerInfo;
+		struct tcc_lcdc_image_update *TempImage =
+			kmalloc(sizeof(struct tcc_lcdc_image_update),
+			GFP_KERNEL);
+
+		if (!TempImage) {
+			ret = -EFAULT;
+			goto Error;
+		}
+
+		dbg("%s-%d :: TCC_LCDC_VIDEO_SWAP_VPU_FRAME %d\n",
+			__func__, __LINE__, (int)arg);
+
+		ret = tcc_video_swap_vpu_frame(p, (int)arg, &WmixerInfo,
+			TempImage, type);
+
+		kfree((const void *)TempImage);
+		#endif
+
+		if (p->player_no_sync_time) {
+			p->player_seek = 1;
+			p->skipFrameStatus = 1;
+		}
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_KEEP_LASTFRAME:
+	{
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		// if (!g_is_vsync1_opened)
+
+		struct stTcc_last_frame lastframe_info;
+
+		if (copy_from_user((void *)&lastframe_info, (const void *)arg,
+			sizeof(struct stTcc_last_frame))) {
+			ret = -EFAULT;
+		} else {
+			struct tcc_lcdc_image_update *lastUpdated =
+				kmalloc(sizeof(struct tcc_lcdc_image_update),
+				GFP_KERNEL);
+
+			if (!lastUpdated) {
+				ret = -EFAULT;
+				goto Error;
+			}
+
+			ret = tcc_video_last_frame((void *)p, lastframe_info,
+				lastUpdated, type);
+
+			if (ret > 0) {
+				p->deinterlace_mode = 0;
+				/* prevent KCS warning */
+			}
+
+			kfree((const void *)lastUpdated);
+		}
+		#endif
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_GET_LASTFRAME_STATUS:
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		if (tccvid_lastframe[type].support) {
+			ret = 0;
+			/* prevent KCS warning */
+		} else
+		#endif
+		{
+			ret = -EFAULT;
+		}
+
+		break;
+
+	case TCC_LCDC_VIDEO_CTRL_LAST_FRAME:
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		dbg("%s-%d :: TCC_LCDC_VIDEO_CTRL_LAST_FRAME[%d] %d\n",
+			__func__, __LINE__, type, (int)arg);
+
+		tcc_video_ctrl_last_frame(type, (int)arg);
+		#endif
+
+		break;
+
+	case TCC_LCDC_VIDEO_OFF_LAST_FRAME:
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		pr_info("[INF][VSYNC] TCC_LCDC_VIDEO_OFF_LAST_FRAME type: %d\n",
+			type);
+
+		if (type == VSYNC_MAIN) {
+			tcc_video_clear_last_frame(RDMA_VIDEO, true);
+			/* prevent KCS warning */
+		} else {
+			tcc_video_clear_last_frame(RDMA_VIDEO_SUB, true);
+		}
+		#endif
+
+		break;
+
+	case TCC_LCDC_SET_M2M_LASTFRAME:
+		#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+		tccvid_lastframe[type].enabled = 0;
+		Output_SelectMode = TCC_OUTPUT_NONE;
+
+		dbg("[%d] TCC_LCDC_SET_M2M_LASTFRAME\n", type);
+		dbg("[%d] LastFrame=%d Output_SelectMode=%d\n", type,
+			tccvid_lastframe[type].enabled, Output_SelectMode);
+
+		if (Output_SelectMode == TCC_OUTPUT_NONE) {
+			if (LCD_LCDC_NUM) {
+				tccvid_lastframe[type].pRDMA
+					= VIOC_RDMA_GetAddress(4+RDMA_LASTFRM);
+			} else {
+				tccvid_lastframe[type].pRDMA
+					= VIOC_RDMA_GetAddress(RDMA_LASTFRM);
+			}
+
+			if (tccvid_lastframe[type].pRDMA != NULL) {
+				VIOC_RDMA_SetImageDisable(
+					tccvid_lastframe[type].pRDMA);
+				dbg("lastframe[%d] cleared!! 0x%px\n",
+					type, tccvid_lastframe[type].pRDMA);
+			}
+		}
+		#endif
+
+		break;
+
+#ifdef CONFIG_DISPLAY_EXT_FRAME
+	case TCC_LCDC_VIDEO_CONFIGURE_EXT_FRAME:
+	case TCC_LCDC_VIDEO_CONFIGURE_EXT_FRAME_KERNEL:
+	{
+		struct tcc_lcdc_image_update *input_image
+			= kmalloc(sizeof(struct tcc_lcdc_image_update),
+			GFP_KERNEL);
+
+		if (!input_image) {
+			ret = -EFAULT;
+			goto Error;
+		}
+
+		if (cmd == TCC_LCDC_VIDEO_CONFIGURE_EXT_FRAME_KERNEL) {
+			if (memcpy((void *)input_image, (const void *)arg,
+				sizeof(struct tcc_lcdc_image_update)) == NULL) {
+				ret = -EFAULT;
+			} else {
+				memcpy(&last_backup, input_image,
+					sizeof(struct tcc_lcdc_image_update));
+			}
+		} else {
+			if (copy_from_user((void *)input_image,
+				(const void *)arg,
+				sizeof(struct tcc_lcdc_image_update))) {
+				ret = -EFAULT;
+			} else {
+				memcpy(&last_backup, input_image,
+					sizeof(struct tcc_lcdc_image_update));
+			}
+		}
+
+		kfree((const void *)input_image);
+
+		break;
+	}
+
+	/* change the region displaying */
+	case TCC_LCDC_VIDEO_CHANGE_REGION_OF_EXT_FRAME:
+	{
+		struct tcc_ext_dispregion disp_region;
+
+		if (copy_from_user((void *)&disp_region, (const void *)arg,
+			sizeof(struct tcc_ext_dispregion))) {
+			ret = -EFAULT;
+		} else {
+			last_backup.offset_x     = disp_region.start_x;
+			last_backup.offset_y     = disp_region.start_y;
+			last_backup.Image_width  = disp_region.width;
+			last_backup.Image_height = disp_region.height;
+
+			if (bExt_Frame) {
+				tcc_display_ext_frame((void *)&last_backup,
+				last_backup.deinterlace_mode,
+				Output_SelectMode);
+			}
+		}
+	}
+		break;
+
+	/* refresh current frame with LUT */
+	case TCC_LCDC_VIDEO_REFRESH_EXT_FRAME:
+	{
+		if (bExt_Frame) {
+			tcc_display_ext_frame((void *)&last_backup,
+			last_backup.deinterlace_mode, Output_SelectMode);
+		}
+
+		break;
+	}
+
+	/* control on/off */
+	case TCC_LCDC_VIDEO_CTRL_EXT_FRAME:
+	case TCC_LCDC_VIDEO_CTRL_EXT_FRAME_KERNEL:
+	{
+		unsigned int enable;
+
+		if (cmd == TCC_LCDC_VIDEO_CTRL_EXT_FRAME_KERNEL) {
+			if (memcpy((void *)&enable, (const void *)arg,
+				sizeof(unsigned int)) == NULL) {
+				ret = -EFAULT;
+			} else {
+				last_backup.enable = enable;
+				tcc_display_ext_frame((void *)&last_backup,
+					last_backup.deinterlace_mode,
+					Output_SelectMode);
+			}
+		} else {
+			if (copy_from_user((void *)&enable, (const void *)arg,
+				sizeof(unsigned int))) {
+				ret = -EFAULT;
+			} else {
+				last_backup.enable = enable;
+				tcc_display_ext_frame((void *)&last_backup,
+					last_backup.deinterlace_mode,
+					Output_SelectMode);
+			}
+		}
+
+		break;
+	}
+#endif
+	case TCC_LCDC_VIDEO_WAIT_TOO_LONG:
+		dbg("%s-%d :: TCC_LCDC_VIDEO_WAIT_TOO_LONG\n",
+			__func__, __LINE__);
+
+		if (p->player_no_sync_time) {
+			p->wait_too_long_indicate = 1;
+			/* prevent KCS warning */
+		}
+
+		break;
+
+	// restrict access of ext_frame
+	case TCC_LCDC_VIDEO_RESTRICT_EXT_FRAME:
+	case TCC_LCDC_VIDEO_RESTRICT_EXT_FRAME_KERNEL:
+		#ifdef CONFIG_DISPLAY_EXT_FRAME
+		if (cmd == TCC_LCDC_VIDEO_RESTRICT_EXT_FRAME_KERNEL) {
+			if (memcpy((void *)&restricted_ExtFrame,
+				(const void *)arg, sizeof(unsigned int))
+				== NULL) {
+				goto Error;
+			}
+		} else {
+			if (copy_from_user((void *)&restricted_ExtFrame,
+				(const void *)arg, sizeof(unsigned int))) {
+				goto Error;
+			}
+		}
+		#endif
+
+		break;
+
+	case TCC_LCDC_VIDEO_PUSH_RENDER_INFO:
+	case TCC_LCDC_VIDEO_PUSH_RENDER_INFO_KERNEL:
+	{
+		struct tcc_lcdc_image_update *input_image;
+		struct tcc_dp_device *dp_device;
+		TCC_PLATFORM_PRIVATE_PMEM_INFO *private_data;
+
+		dbg_ext("TCC_LCDC_VIDEO_PUSH_RENDER_INFO\n");
+
+		if (cmd == TCC_LCDC_VIDEO_PUSH_RENDER_INFO_KERNEL) {
+			if (memcpy((void *)&p->push_ext_infoframe, (const void *)arg, sizeof(struct tcc_lcdc_image_update)) == NULL) {
+				pr_err("[ERR][VSYNC]  copy err");
+				ret = 0;
+			}
+		} else {
+			if (copy_from_user((void *)&p->push_ext_infoframe, (const void *)arg, sizeof(struct tcc_lcdc_image_update))) {
+				pr_err("[ERR][VSYNC]  copy err");
+				ret = 0;
+			}
+		}
+
+		if (p->push_ext_status_paused == 0) {
+			break;
+			/* prevent KCS warning */
+		}
+
+		input_image = &p->push_ext_infoframe;
+		dp_device = tca_fb_get_displayType(Output_SelectMode);
+		private_data = &tccvid_lastframe[type].LastImage.private_data;
+
+		input_image->addr0 = private_data->offset[0];
+		input_image->addr1 = private_data->offset[1];
+		input_image->addr2 = private_data->offset[2];
+		input_image->time_stamp = private_data->optional_info[VID_OPT_TIMESTAMP];
+		input_image->sync_time = private_data->optional_info[VID_OPT_SYNC_TIME];
+		input_image->first_frame_after_seek = (private_data->optional_info[VID_OPT_FLAGS] & 0x00000001) ? 1 : 0;
+		input_image->buffer_unique_id = private_data->optional_info[VID_OPT_BUFFER_ID];
+		input_image->codec_id = private_data->unique_addr;
+
+		memcpy(&input_image->private_data, private_data, sizeof(TCC_PLATFORM_PRIVATE_PMEM_INFO));
+
+		if (p->isVsyncRunning != EM_VSYNC_RUNNING) {
+			pr_err("[ERR][VSYNC]  vsync is not started");
+			ret = 0;
+			goto Error;
+		}
+
+		ret = tcc_vsync_push_main_process(cmd, p, input_image, dp_device, type);
+
+		break;
+	}
+
+	case TCC_LCDC_VIDEO_SET_STATUS_PAUSE:
+	case TCC_LCDC_VIDEO_SET_STATUS_PAUSE_KERNEL:
+		dbg_ext("TCC_LCDC_VIDEO_SET_STATUS_PAUSE\n");
+
+		if (cmd == TCC_LCDC_VIDEO_SET_STATUS_PAUSE_KERNEL) {
+			if (memcpy((void *)&p->push_ext_status_paused,
+				(const void *)arg, sizeof(unsigned int))
+				== NULL) {
+				pr_err("[ERR][VSYNC]  copy err");
+
+				ret = 0;
+			}
+		} else {
+			if (copy_from_user((void *)&p->push_ext_status_paused,
+				(const void *)arg, sizeof(unsigned int))) {
+				pr_err("[ERR][VSYNC] copy err");
+
+				ret = 0;
+			}
+		}
+
+		break;
+
+	case TCC_LCDC_VIDEO_RDMA_DISABLE:
+		if (copy_from_user((void *)&vsync_rdma_off[type],
+			(const void *)arg, sizeof(unsigned int))) {
+			ret = -EFAULT;
+		}
+
+		pr_info("[INF][VSYNC-%d] TCC_LCDC_VIDEO_RDMA_DISABLE(%d, ret = %d)\n",
+			type, vsync_rdma_off[type], ret);
+
+		break;
+
+	default:
+		pr_err("[ERR][VSYNC] unrecognized ioctl (0x%x)\n", cmd);
+		ret = -EINVAL;
+	}
+
+Error:
+	mutex_unlock(&vsync_io_mutex[type]);
+
+	return ret;
+}
+
+static void _tca_vsync_intr_onoff(char on, char vsync_disp_num)
+{
+	char lcdc_num = EX_OUT_LCDC;
+
+	#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	if (vsync_started_device == LCD_START_VSYNC) {
+		lcdc_num = LCD_LCDC_NUM;
+		/* prevent KCS warning */
+	}
+	#endif
+
+	#if defined(CONFIG_VIOC_DOLBY_VISION_EDR)
+	if (VIOC_CONFIG_DV_GET_EDR_PATH()) {
+		if (on) {
+			vioc_intr_enable(vsync_vioc0_disp.irq_num,
+				VIOC_INTR_V_DV, DV_VIDEO_INT);
+		} else {
+			void __iomem *pDV_Cfg
+				= VIOC_DV_VEDR_GetAddress(VDV_CFG);
+
+			#ifdef USE_DOLBY_VISION_SUB_INTERRUPT
+			vioc_intr_disable(vsync_vioc0_disp.irq_num,
+				VIOC_INTR_V_DV, DV_VIDEO_INT
+				| DV_VIDEO_INT_SUB);
+			#else
+			vioc_intr_disable(vsync_vioc0_disp.irq_num,
+				VIOC_INTR_V_DV, DV_VIDEO_INT);
+			#endif
+			VIOC_V_DV_ClearInterrupt(pDV_Cfg,
+				DV_VIDEO_INT | DV_VIDEO_INT_SUB);
+		}
+	} else
+	#endif
+	{
+		if (vsync_disp_num == 0) {
+			if (on) {
+				vioc_intr_enable(vsync_vioc0_disp.irq_num,
+					lcdc_num,
+					vsync_vioc0_disp.vioc_intr->bits);
+			} else {
+				vioc_intr_disable(vsync_vioc0_disp.irq_num,
+					lcdc_num,
+					vsync_vioc0_disp.vioc_intr->bits);
+				vioc_intr_clear(lcdc_num,
+					vsync_vioc0_disp.vioc_intr->bits);
+			}
+		} else {
+			if (on) {
+				vioc_intr_enable(vsync_vioc1_disp.irq_num,
+					lcdc_num,
+					vsync_vioc1_disp.vioc_intr->bits);
+			} else {
+				vioc_intr_disable(vsync_vioc1_disp.irq_num,
+					lcdc_num,
+					vsync_vioc1_disp.vioc_intr->bits);
+				vioc_intr_clear(lcdc_num,
+					vsync_vioc1_disp.vioc_intr->bits);
+			}
+		}
+	}
+}
+
+void tca_vsync_video_display_enable(void)
+{
+	int ret = -1;
+	char lcdc_num = EX_OUT_LCDC;
+
+	#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	if (vsync_started_device == LCD_START_VSYNC) {
+		lcdc_num = LCD_LCDC_NUM;
+		/* prevent KCS warning */
+	}
+	#endif
+
+
+	if (lcdc_interrupt_onoff == 0) {
+		if (lcdc_num) {
+
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			if (vsync_started_device == LCD_START_VSYNC) {
+				_tca_vsync_intr_onoff(0, lcdc_num);
+
+				if (!vsync_vioc1_disp.irq_reged) {
+					ret = request_irq(
+						vsync_vioc1_disp.irq_num,
+						tcc_vsync_handler_for_video,
+						IRQF_SHARED,
+						"vioc_vsync1",
+						&vsync_vioc1_disp);
+
+					if (ret) {
+						pr_info("[INF][VSYNC] %s: vioc1 ret=%d\n",
+							__func__, ret);
+					} else {
+						vsync_vioc1_disp.irq_reged = 1;
+					}
+				}
+				_tca_vsync_intr_onoff(1, lcdc_num);
+			} else
+			#endif
+			{
+				// TODO:
+				BUG();
+
+			}
+		} else {
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			if (vsync_started_device == LCD_START_VSYNC) {
+				_tca_vsync_intr_onoff(0, lcdc_num);
+
+				if (!vsync_vioc0_disp.irq_reged) {
+					ret = request_irq(
+						vsync_vioc0_disp.irq_num,
+						tcc_vsync_handler_for_video,
+						IRQF_SHARED,
+						"vioc_vsync0",
+						&vsync_vioc0_disp);
+
+					if (ret) {
+						pr_info("[INF][VSYNC] %s: vioc0 ret=%d\n",
+							__func__, ret);
+					} else {
+						vsync_vioc0_disp.irq_reged = 1;
+					}
+				}
+				_tca_vsync_intr_onoff(1, lcdc_num);
+			} else
+			#endif
+			{
+				_tca_vsync_intr_onoff(0, lcdc_num);
+				if (!vsync_vioc0_disp.irq_reged) {
+					ret = request_irq(
+						vsync_vioc0_disp.irq_num,
+						tcc_vsync_handler_for_video,
+						IRQF_SHARED,
+						"vioc_vsync0",
+						&vsync_vioc0_disp);
+
+					if (ret) {
+						pr_info("[INF][VSYNC] %s: vioc0 ret=%d\n",
+							__func__, ret);
+					} else {
+						vsync_vioc0_disp.irq_reged = 1;
+					}
+				}
+				_tca_vsync_intr_onoff(1, lcdc_num);
+			}
+		}
+
+		dbg("%s: onoff(%d) request_irq(%d) ret(%d)\n", __func__,
+			lcdc_interrupt_onoff, lcdc_num, ret);
+
+		#ifdef CONFIG_VIOC_DOLBY_VISION_CERTIFICATION_TEST
+		INIT_WORK(&dolby_out_change_work_q,
+			tcc_video_change_dolby_out_wq_isr);
+		#endif
+
+		lcdc_interrupt_onoff = 1;
+		video_display_disable_check = 0;
+	} else {
+		pr_info("[INF][VSYNC] tccfb info: lcdc interrupt have been enabled already\n");
+	}
+
+	#ifdef USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT
+	tcc_vsync_unplugged_int_stop();
+	#endif
+}
+
+void tca_vsync_video_display_disable(void)
+{
+	char lcdc_num = EX_OUT_LCDC;
+
+#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	if (vsync_started_device == LCD_START_VSYNC) {
+		lcdc_num = LCD_LCDC_NUM;
+		/* prevent KCS warning */
+	}
+
+	pr_info("[INF][VSYNC] %s: onoff(%d) started_device(%d)\n", __func__,
+		lcdc_interrupt_onoff, vsync_started_device);
+#else
+	pr_info("[INF][VSYNC] %s: onoff(%d) lcdc_num(%d)\n", __func__,
+		lcdc_interrupt_onoff, lcdc_num);
+#endif
+
+	if (lcdc_interrupt_onoff == 1) {
+		if (lcdc_num) {
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			if (vsync_started_device == LCD_START_VSYNC) {
+				_tca_vsync_intr_onoff(0, lcdc_num);
+				//free_irq(vsync_vioc1_disp.irq_num,
+				//	&vsync_vioc1_disp);
+			} else
+			#endif
+			{
+				// TODO:
+				BUG();
+			}
+		} else {
+			#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+			if (vsync_started_device == LCD_START_VSYNC) {
+				_tca_vsync_intr_onoff(0, lcdc_num);
+				//free_irq(vsync_vioc0_disp.irq_num,
+				//	&vsync_vioc0_disp);
+			} else
+			#endif
+			{
+				_tca_vsync_intr_onoff(0, lcdc_num);
+				//free_irq(vsync_vioc0_disp.irq_num,
+				//	&vsync_vioc0_disp);
+			}
+		}
+
+		lcdc_interrupt_onoff = 0;
+	} else {
+		pr_info("[INF][VSYNC] video vsync: interrupt have been disabled already\n");
+	}
+
+#ifdef USE_VSYNC_TIMER_INT_FOR_UNPLUGED_OUTPUT
+	tcc_vsync_unplugged_int_start(tcc_vsync_unplugged_output_for_video);
+#endif
+}
+
+int tcc_video_get_displayed(struct tcc_video_disp *p, enum VSYNC_CH_TYPE type)
+{
+	int buffer_id = -1;
+
+	/*
+	 * -2: skip status
+	 * -1 : vsync is not started.
+	 * -100: diplaying 0'th buffer-id, should wait proper buffer-id.
+	 */
+
+	if (p->isVsyncRunning != EM_VSYNC_RUNNING) {
+		dbg_v("vsync is not started!! return\n");
+		return -1;
+	}
+
+	if (p->skipFrameStatus) {
+		dbg_v("frame skip mode return\n");
+		return -2;
+	}
+
+	if (p->wait_too_long_indicate == 1) {
+		dbg_v("wait_too_long_indicate return\n");
+		return -2;
+	}
+
+	//pr_info("[INF][VSYNC] # last disp num(%d)\n",
+	//	p->vsync_buffer.last_cleared_buff_id);
+
+	if (p->mvcMode == 1) {
+		buffer_id = p->vsync_buffer.last_cleared_buff_id >= 2
+			? (p->vsync_buffer.last_cleared_buff_id - 2) : -100;
+	} else {
+		buffer_id = p->vsync_buffer.last_cleared_buff_id >= 1
+			? (p->vsync_buffer.last_cleared_buff_id - 1) : -100;
+	}
+
+	dbg_v("%s_[%d] : cleared buffer (%d -> %d)\n", __func__,
+		type, p->vsync_buffer.last_cleared_buff_id, buffer_id);
+
+	return buffer_id;
+}
+
+void tcc_vsync_set_firstFrameFlag(struct tcc_video_disp *p,
+	int firstFrameFlag)
+{
+	p->firstFrameFlag = firstFrameFlag;
+}
+
+void tcc_vsync_set_firstFrameFlag_all(int firstFrameFlag)
+{
+#ifdef CONFIG_USE_SUB_MULTI_FRAME
+	unsigned int type = VSYNC_MAIN;
+
+	for (type = VSYNC_MAIN; type < VSYNC_MAX; type++) {
+		tcc_vsync_set_firstFrameFlag(&tccvid_vsync[type],
+			firstFrameFlag);
+	}
+#else
+	tcc_vsync_set_firstFrameFlag(&tccvid_vsync[0], firstFrameFlag);
+	tcc_vsync_set_firstFrameFlag(&tccvid_vsync[1], firstFrameFlag);
+#endif
+}
+
+void tcc_video_clear_frame(struct tcc_video_disp *p, int idx, int who_call)
+{
+	int syncBufferIdx;
+
+	syncBufferIdx = idx;
+
+	pr_info("[INF][VSYNC]  video frame clear %d called by %d\n",
+		syncBufferIdx, who_call);
+
+	spin_lock_irq(&vsync_lock);
+	tcc_vsync_pop_all_buffer(p, __LINE__);
+	spin_unlock_irq(&vsync_lock);
+	//pr_info("[INF][VSYNC] valid video fram count %d\n",
+	//	p->vsync_buffer.valid_buff_count);
+
+	p->vsync_buffer.available_buffer_id_on_vpu = syncBufferIdx;//+1;
+}
+
+void tcc_video_set_framerate(struct tcc_video_disp *p, int fps)
+{
+	int media_time_gap;
+
+	dbg("%s: fps(%d)\n", __func__, fps);
+
+	if (!(fps < 1000)) {
+		fps += 500;
+		fps /= 1000;
+	}
+
+	if (fps == 29) {
+		fps = 30;
+		/* prevent KCS warning */
+	} else if (fps == 23) {
+		fps = 24;
+	}
+
+	p->video_frame_rate = fps;
+
+	if (p->video_frame_rate > 0) {
+		media_time_gap = 1000 / fps;
+		/* prevent KCS warning */
+	} else {
+		media_time_gap = 32;
+	}
+
+	p->updateGapTime = p->nTimeGapToNextField = media_time_gap;
+
+	dbg("video_frame_rate(%d), media_time_gap(%d) updateGapTime(%d)\n",
+		p->video_frame_rate, media_time_gap, p->updateGapTime);
+}
+
+int tcc_video_check_framerate(struct tcc_video_disp *p, int fps)
+{
+	int media_time_gap;
+
+	if (p->player_no_sync_time && fps == 0) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	if (!(fps < 1000)) {
+		fps += 500;
+		fps /= 1000;
+	}
+
+	if (fps == 29) {
+		fps = 30;
+		/* prevent KCS warning */
+	} else if (fps == 23) {
+		fps = 24;
+	}
+
+	if (p->video_frame_rate != fps) {
+
+		p->video_frame_rate = fps;
+
+		if (p->video_frame_rate > 0) {
+			media_time_gap = 1000 / fps;
+			/* prevent KCS warning */
+		} else {
+			media_time_gap = 32;
+		}
+
+		p->updateGapTime = p->nTimeGapToNextField = media_time_gap;
+
+		pr_info("[INF][VSYNC] ### video_frame_rate(%d), media_time_gap(%d) updateGapTime(%d)\n",
+			p->video_frame_rate, media_time_gap, p->updateGapTime);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+void tcc_video_skip_frame_start(struct tcc_video_disp *p,
+	enum VSYNC_CH_TYPE type)
+{
+	dbg_v("[%d] video fram skip start\n", type);
+	pr_info("[INF][VSYNC]  TCC_LCDC_VIDEO_SKIP_FRAME_START\n");
+	spin_lock_irq(&vsync_lock);
+	tcc_vsync_pop_all_buffer(p, __LINE__);
+	spin_unlock_irq(&vsync_lock);
+	p->skipFrameStatus = 1;
+}
+
+void tcc_video_skip_frame_end(struct tcc_video_disp *p, enum VSYNC_CH_TYPE type)
+{
+	if (p->skipFrameStatus) {
+		dbg_v("[%d] video fram skip end\n", type);
+		spin_lock_irq(&vsync_lock);
+		tcc_vsync_pop_all_buffer(p, __LINE__);
+		spin_unlock_irq(&vsync_lock);
+		pr_info("[INF][VSYNC] [%d] TCC_LCDC_VIDEO_SKIP_FRAME_END\n",
+			type);
+
+		p->skipFrameStatus = 0;
+		tcc_vsync_reset_syncTime(p, 0, type);
+	}
+
+}
+
+void tcc_video_skip_one_frame(struct tcc_video_disp *p, int frame_id)
+{
+	spin_lock_irq(&vsync_lockDisp);
+	//pr_info("[INF][VSYNC] TCC_LCDC_VIDEO_SKIP_ONE_FRAME frame_id %d\n",
+	//	frame_id);
+	p->vsync_buffer.last_cleared_buff_id = frame_id;
+	spin_unlock_irq(&vsync_lockDisp);
+}
+
+int tcc_video_get_readable_count(struct tcc_video_disp *p)
+{
+	return atomic_read(&p->vsync_buffer.readable_buff_count);
+}
+
+int tcc_video_get_valid_count(struct tcc_video_disp *p)
+{
+	return atomic_read(&p->vsync_buffer.valid_buff_count);
+}
+
+
+void tcc_vsync_set_output_mode(struct tcc_video_disp *p, int mode)
+{
+	spin_lock_irq(&vsync_lockDisp);
+	p->outputMode = mode;
+	spin_unlock_irq(&vsync_lockDisp);
+}
+
+void tcc_vsync_set_output_mode_all(int mode)
+{
+#ifdef CONFIG_USE_SUB_MULTI_FRAME
+	unsigned int type = VSYNC_MAIN;
+
+	for (type = VSYNC_MAIN; type < VSYNC_MAX; type++)
+		tcc_vsync_set_output_mode(&tccvid_vsync[type], mode);
+#else
+	tcc_vsync_set_output_mode(&tccvid_vsync[0], mode);
+	tcc_vsync_set_output_mode(&tccvid_vsync[1], mode);
+#endif
+}
+
+void tcc_vsync_hdmi_start(
+	struct tcc_dp_device *pdp_data,
+	int *lcd_video_started)
+{
+
+#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	pr_info("[INF][VSYNC] %s : SelectMode(%d) started_device(%d)\n",
+		__func__, Output_SelectMode, vsync_started_device);
+
+	Output_SelectMode = TCC_OUTPUT_HDMI;
+	if (tccvid_vsync[0].isVsyncRunning == EM_VSYNC_RUNNING) {
+		pr_info("[INF][VSYNC]  VSYNC CH0 HDMI TIMING, by the way LCD and vsync enable\n");
+		// interlace video on LCD -> HDMI plug in
+		// -> garbage screen debugging
+		if (tccvid_vsync[0].deinterlace_mode
+			&& !tccvid_vsync[0].output_toMemory
+			&& !tccvid_vsync[0].interlace_bypass_lcdc) {
+
+			pr_info("and Interlaced\n");
+
+		} else {
+			struct tcc_lcdc_image_update ImageInfo;
+
+			memset(&ImageInfo, 0x00,
+				sizeof(struct tcc_lcdc_image_update));
+			ImageInfo.enable = 0;
+			ImageInfo.Lcdc_layer = RDMA_VIDEO;
+
+			tca_scale_display_update(pdp_data, &ImageInfo);
+		}
+	}
+
+	if (tccvid_vsync[1].isVsyncRunning == EM_VSYNC_RUNNING) {
+		pr_info("[INF][VSYNC]  VSYNC CH1 HDMI TIMING, by the way LCD and vsync enable\n");
+
+		// interlace video on LCD -> HDMI plug in
+		// -> garbage screen debugging
+		if (tccvid_vsync[1].deinterlace_mode
+			&& !tccvid_vsync[1].output_toMemory
+			&& !tccvid_vsync[1].interlace_bypass_lcdc) {
+
+			pr_info("and Interlaced\n");
+
+		} else {
+			struct tcc_lcdc_image_update ImageInfo;
+
+			memset(&ImageInfo, 0x00,
+				sizeof(struct tcc_lcdc_image_update));
+			ImageInfo.enable = 0;
+			ImageInfo.Lcdc_layer = RDMA_VIDEO_SUB;
+
+			tca_scale_display_update(pdp_data, &ImageInfo);
+		}
+	}
+
+#else
+	pr_info("[INF][VSYNC]  %s: SelectMode(%d) lcd_started(%d)\n", __func__,
+		Output_SelectMode, *lcd_video_started);
+
+	if (*lcd_video_started) {
+		struct tcc_lcdc_image_update ImageInfo;
+
+		pr_info("[INF][VSYNC]  TCC_LCDC_HDMI_TIMING => TCC_LCDC_DISPLAY_END\n");
+
+		memset(&ImageInfo, 0x00, sizeof(struct tcc_lcdc_image_update));
+		ImageInfo.enable = 0;
+		ImageInfo.Lcdc_layer = RDMA_VIDEO;
+
+		tca_scale_display_update(pdp_data,
+			(struct tcc_lcdc_image_update *)&ImageInfo);
+
+		ImageInfo.enable = 0;
+		ImageInfo.Lcdc_layer = RDMA_VIDEO_SUB;
+
+		tca_scale_display_update(pdp_data,
+			(struct tcc_lcdc_image_update *)&ImageInfo);
+
+		*lcd_video_started = 0;
+	}
+
+	Output_SelectMode = TCC_OUTPUT_HDMI;
+
+	if (video_display_disable_check) {
+		tca_vsync_video_display_enable();
+		video_display_disable_check = 0;
+	}
+
+	#if defined(CONFIG_TCC_OUTPUT_AUTO_HDMI_CVBS) || defined(CONFIG_TCC_OUTPUT_ATTACH)
+	tcc_vsync_set_firstFrameFlag_all(1);
+	#endif
+
+	if (tcc_vsync_mvc_status && tccvid_vsync[0].mvcMode == 1) {
+		VIOC_WMIX_GetOverlayPriority(pdp_data->wmixer_info.virt_addr,
+			&tcc_vsync_mvc_overlay_priority); //save
+		VIOC_WMIX_SetOverlayPriority(pdp_data->wmixer_info.virt_addr,
+			16); //Image1 - Image0 - Image2 - Image3
+		VIOC_WMIX_SetUpdate(pdp_data->wmixer_info.virt_addr);
+	}
+
+	spin_lock_irq(&vsync_lock);
+	tcc_vsync_set_output_mode_all(-1);
+	spin_unlock_irq(&vsync_lock);
+
+	#if defined(CONFIG_VSYNC_DRV_ALWAYS_ACCEPT_START_VSYNC)
+	pr_debug("%s tccvid_vsync[VSYNC_MAIN].isVsyncRunning=%d\n", __func__,
+		tccvid_vsync[VSYNC_MAIN].isVsyncRunning);
+
+	if (tccvid_vsync[VSYNC_MAIN].isVsyncRunning == EM_VSYNC_PREPARE) {
+		tcc_vsync_start(&tccvid_vsync[VSYNC_MAIN],
+			prepare_input_image_info[VSYNC_MAIN], VSYNC_MAIN);
+	}
+
+	pr_debug("%s tccvid_vsync[VSYNC_SUB0].isVsyncRunning=%d\n", __func__,
+		tccvid_vsync[VSYNC_SUB0].isVsyncRunning);
+
+	if (tccvid_vsync[VSYNC_SUB0].isVsyncRunning == EM_VSYNC_PREPARE) {
+		tcc_vsync_start(&tccvid_vsync[VSYNC_SUB0],
+			prepare_input_image_info[VSYNC_SUB0], VSYNC_SUB0);
+	}
+	#endif
+#endif
+}
+
+void tcc_vsync_hdmi_end(struct tcc_dp_device *pdp_data)
+{
+#ifdef CONFIG_LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	pr_info("[INF][VSYNC]  %s: out %d start %d\n", __func__,
+		Output_SelectMode, vsync_started_device);
+
+	if (Output_SelectMode == TCC_OUTPUT_HDMI) {
+		struct tcc_lcdc_image_update lcdc_image;
+
+		// this check is for the case LCD video - HDMI cable plug out -
+		// plug in after short time(before HDMI video) - LCD video
+		if (vsync_started_device == LCD_START_VSYNC) {
+			Output_SelectMode = TCC_OUTPUT_LCD;
+			/* prevent KCS warning */
+		} else {
+			Output_SelectMode = TCC_OUTPUT_NONE;
+		}
+
+		memset(&lcdc_image, 0x00, sizeof(struct tcc_lcdc_image_update));
+		lcdc_image.enable = 0;
+		lcdc_image.Lcdc_layer = RDMA_VIDEO;
+
+		tca_scale_display_update(pdp_data, &lcdc_image);
+	}
+
+	tcc_vsync_set_firstFrameFlag_all(1);
+
+#else
+	pr_info("[INF][VSYNC]  %s: SelectMode %d\n",
+		__func__, Output_SelectMode);
+
+	if (Output_SelectMode == TCC_OUTPUT_HDMI) {
+		struct tcc_lcdc_image_update lcdc_image;
+
+		if (!video_display_disable_check) {
+			tca_vsync_video_display_disable();
+			video_display_disable_check = 1;
+		}
+
+		Output_SelectMode = TCC_OUTPUT_NONE;
+		memset(&lcdc_image, 0x00, sizeof(struct tcc_lcdc_image_update));
+		lcdc_image.enable = 0;
+		lcdc_image.Lcdc_layer = RDMA_VIDEO;
+
+		tca_scale_display_update(pdp_data, &lcdc_image);
+
+		lcdc_image.enable = 0;
+		lcdc_image.Lcdc_layer = RDMA_VIDEO_SUB;
+
+		tca_scale_display_update(pdp_data, &lcdc_image);
+
+		#if !defined(CONFIG_TCC_OUTPUT_AUTO_HDMI_CVBS) && !defined(CONFIG_TCC_OUTPUT_ATTACH)
+		tcc_vsync_set_firstFrameFlag_all(1);
+		#endif
+	}
+
+	#ifdef CONFIG_VIDEO_DISPLAY_DEINTERLACE_MODE
+	if (tccvid_vsync[0].isVsyncRunning == EM_VSYNC_RUNNING) {
+		if (tccvid_vsync[0].output_toMemory
+			&& tccvid_vsync[0].m2m_mode) {
+			TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO);
+		} else if (tccvid_vsync[0].deinterlace_mode
+			&& !tccvid_vsync[0].interlace_bypass_lcdc) {
+			if (!tccvid_vsync[0].output_toMemory) {
+				TCC_VIQE_DI_DeInit60Hz();
+				/* prevent KCS warning */
+			}
+		}
+	}
+
+	if (tccvid_vsync[1].isVsyncRunning == EM_VSYNC_RUNNING) {
+		if (tccvid_vsync[1].output_toMemory
+			&& tccvid_vsync[1].m2m_mode) {
+			#if defined(CONFIG_TCC_VIQE_FOR_SUB_M2M)
+			TCC_VIQE_DI_DeInit60Hz_M2M(RDMA_VIDEO_SUB);
+			#else
+			TCC_VIQE_DI_Sub_DeInit60Hz_M2M(RDMA_VIDEO_SUB);
+			#endif
+		} else if (tccvid_vsync[1].deinterlace_mode
+			&& !tccvid_vsync[1].interlace_bypass_lcdc) {
+			if (!tccvid_vsync[1].output_toMemory) {
+				TCC_VIQE_DI_DeInit60Hz();
+				/* prevent KCS warning */
+			}
+		}
+	}
+	#endif
+	//tcc_vsync_pop_all_buffer(&tccvid_vsync[0], __LINE__);
+	//tcc_vsync_pop_all_buffer(&tccvid_vsync[1], __LINE__);
+#endif
+
+#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+	tcc_video_clear_last_frame(RDMA_VIDEO, false);
+	tcc_video_clear_last_frame(RDMA_VIDEO_SUB, false);
+#endif
+}
+
+void tcc_vsync_reset_all(void)
+{
+	int i;
+
+	for (i = 0; i < VSYNC_MAX; i++) {
+		memset(&tccvid_vsync[i], 0, sizeof(struct tcc_video_disp));
+		tccvid_vsync[i].firstFrameFlag = 1;
+		tccvid_vsync[i].type = i;
+	}
+}
+
+void tcc_vsync_if_pop_all_buffer(struct tcc_video_disp *p)
+{
+	spin_lock_irq(&vsync_lock);
+	tcc_vsync_pop_all_buffer(p, __LINE__);
+	spin_unlock_irq(&vsync_lock);
+}
+
+void tcc_vsync_set_deinterlace_mode(struct tcc_video_disp *p, int mode)
+{
+	p->deinterlace_mode = mode;
+}
+EXPORT_SYMBOL(tcc_vsync_set_deinterlace_mode);
+
+int tcc_vsync_isVsyncRunning(enum VSYNC_CH_TYPE type)
+{
+	return (tccvid_vsync[type].isVsyncRunning == EM_VSYNC_RUNNING) ? 1 : 0;
+}
+EXPORT_SYMBOL(tcc_vsync_isVsyncRunning);
+
+int tcc_vsync_get_isVsyncRunning(enum VSYNC_CH_TYPE type)
+{
+	#ifdef CONFIG_USE_SUB_MULTI_FRAME
+	if (tccvid_vsync[type].isVsyncRunning) {
+		return tccvid_vsync[type].isVsyncRunning;
+		/* prevent KCS warning */
+	}
+	#else
+	if (type == VSYNC_MAIN && tccvid_vsync[VSYNC_SUB0].isVsyncRunning
+		!= EM_VSYNC_RUNNING) {
+		return (tccvid_vsync[type].isVsyncRunning == EM_VSYNC_RUNNING)
+			? 1 : 0;
+	} else if (type != VSYNC_MAIN && tccvid_vsync[VSYNC_MAIN].isVsyncRunning
+		!= EM_VSYNC_RUNNING) {
+		return (tccvid_vsync[type].isVsyncRunning == EM_VSYNC_RUNNING)
+			? 1 : 0;
+	}
+	#endif
+	return 0;
+}
+
+int tcc_vsync_get_output_toMemory(struct tcc_video_disp *p)
+{
+	return p->output_toMemory;
+}
+
+int tcc_vsync_get_interlace_bypass_lcdc(struct tcc_video_disp *p)
+{
+	return p->interlace_bypass_lcdc;
+}
+
+int tcc_vsync_get_deinterlace_mode(struct tcc_video_disp *p)
+{
+	return p->deinterlace_mode;
+}
+
+int is_deinterlace_enabled(enum VSYNC_CH_TYPE type)
+{
+	if (tcc_vsync_get_deinterlace_mode(&tccvid_vsync[type])
+		&& !tcc_vsync_get_output_toMemory(&tccvid_vsync[type])
+		&& !tcc_vsync_get_interlace_bypass_lcdc(&tccvid_vsync[type])) {
+
+		return 1;
+	}
+
+	return 0;
+}
+
+
+#ifdef CONFIG_USE_SUB_MULTI_FRAME
+static long tcc_vsync3_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, arg, VSYNC_SUB2);
+}
+
+#ifdef CONFIG_COMPAT
+static long tcc_vsync3_compat_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, (unsigned long)compat_ptr(arg),
+		VSYNC_SUB2);
+}
+#endif
+
+static int tcc_vsync3_release(struct inode *inode, struct file *filp)
+{
+	dbg("%s(%d)\n", __func__, g_is_vsync3_opened);
+
+	if (--g_is_vsync3_opened) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	if (g_is_vsync3_opened == 0) {
+		struct tcc_video_disp *p = &tccvid_vsync[VSYNC_SUB2];
+
+		if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+			tcc_vsync_end(p, 0);
+			/* prevent KCS warning */
+		}
+
+		p->isVsyncRunning = EM_VSYNC_DISABLED;
+
+		if (!g_is_vsync0_opened) {
+			tca_vsync_video_display_disable();
+
+			if (vsync_vioc0_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc0_disp.irq_num, NULL);
+				free_irq(vsync_vioc0_disp.irq_num,
+					&vsync_vioc0_disp);
+				vsync_vioc0_disp.irq_reged = 0;
+			}
+			if (vsync_vioc1_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc1_disp.irq_num, NULL);
+				free_irq(vsync_vioc1_disp.irq_num,
+					&vsync_vioc1_disp);
+				vsync_vioc1_disp.irq_reged = 0;
+			}
+
+			#ifdef USE_VSYNC_TIMER
+			if (vsync_timer) {
+				tcc_timer_disable(vsync_timer);
+				/* prevent KCS warning */
+			}
+			#endif
+		}
+	}
+
+	return 0;
+}
+
+static int tcc_vsync3_open(struct inode *inode, struct file *filp)
+{
+	struct tcc_video_disp *p;
+
+	dbg("%s(%d)\n", __func__, g_is_vsync3_opened);
+	if (g_is_vsync3_opened++) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	p = &tccvid_vsync[VSYNC_SUB2];
+	p->type = VSYNC_SUB2;
+
+	#ifdef USE_VSYNC_TIMER
+	if (vsync_timer && !g_is_vsync0_opened) {
+		tcc_timer_enable(vsync_timer);
+		//msleep(0);
+	}
+	#endif
+
+	return 0;
+}
+
+static long tcc_vsync2_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, arg, VSYNC_SUB1);
+}
+
+#ifdef CONFIG_COMPAT
+static long tcc_vsync2_compat_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, (unsigned long)compat_ptr(arg),
+		VSYNC_SUB1);
+}
+#endif
+
+static int tcc_vsync2_release(struct inode *inode, struct file *filp)
+{
+	dbg("%s(%d)\n", __func__, g_is_vsync2_opened);
+
+	if (--g_is_vsync2_opened) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	if (g_is_vsync2_opened == 0) {
+		struct tcc_video_disp *p = &tccvid_vsync[VSYNC_SUB1];
+
+		if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+			tcc_vsync_end(p, 0);
+			/* prevent KCS warning */
+		}
+
+		p->isVsyncRunning = EM_VSYNC_DISABLED;
+
+		if (!g_is_vsync0_opened) {
+			tca_vsync_video_display_disable();
+
+			if (vsync_vioc0_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc0_disp.irq_num, NULL);
+				free_irq(vsync_vioc0_disp.irq_num,
+					&vsync_vioc0_disp);
+				vsync_vioc0_disp.irq_reged = 0;
+			}
+
+			if (vsync_vioc1_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc1_disp.irq_num, NULL);
+				free_irq(vsync_vioc1_disp.irq_num,
+					&vsync_vioc1_disp);
+				vsync_vioc1_disp.irq_reged = 0;
+			}
+
+			#ifdef USE_VSYNC_TIMER
+			if (vsync_timer) {
+				tcc_timer_disable(vsync_timer);
+				/* prevent KCS warning */
+			}
+			#endif
+		}
+	}
+
+	return 0;
+}
+
+static int tcc_vsync2_open(struct inode *inode, struct file *filp)
+{
+	struct tcc_video_disp *p;
+
+	dbg("%s(%d)\n", __func__, g_is_vsync2_opened);
+
+	if (g_is_vsync2_opened++) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	p = &tccvid_vsync[VSYNC_SUB1];
+	p->type = VSYNC_SUB1;
+
+	#ifdef USE_VSYNC_TIMER
+	if (vsync_timer && !g_is_vsync0_opened) {
+		tcc_timer_enable(vsync_timer);
+		//msleep(0);
+	}
+	#endif
+
+	return 0;
+}
+#endif
+
+static long tcc_vsync1_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, arg, VSYNC_SUB0);
+}
+
+#ifdef CONFIG_COMPAT
+static long tcc_vsync1_compat_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, (unsigned long)compat_ptr(arg), VSYNC_SUB0);
+}
+#endif
+
+static int tcc_vsync1_release(struct inode *inode, struct file *filp)
+{
+	dbg("%s(%d)\n", __func__, g_is_vsync1_opened);
+
+	if (--g_is_vsync1_opened) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	if (g_is_vsync1_opened == 0) {
+		struct tcc_video_disp *p = &tccvid_vsync[VSYNC_SUB0];
+
+		if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+			tcc_vsync_end(p, 0);
+			/* prevent KCS warning */
+		}
+
+		p->isVsyncRunning = EM_VSYNC_DISABLED;
+
+		if (!g_is_vsync0_opened) {
+			tca_vsync_video_display_disable();
+
+			if (vsync_vioc0_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc0_disp.irq_num, NULL);
+				free_irq(vsync_vioc0_disp.irq_num,
+					&vsync_vioc0_disp);
+				vsync_vioc0_disp.irq_reged = 0;
+			}
+
+			if (vsync_vioc1_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc1_disp.irq_num, NULL);
+				free_irq(vsync_vioc1_disp.irq_num,
+					&vsync_vioc1_disp);
+				vsync_vioc1_disp.irq_reged = 0;
+			}
+
+			#ifdef USE_VSYNC_TIMER
+			if (vsync_timer) {
+				tcc_timer_disable(vsync_timer);
+				/* prevent KCS warning */
+			}
+			#endif
+		}
+
+		if (tccvid_lastframe[VSYNC_SUB0].pmapBuff.base) {
+			tccvid_lastframe[VSYNC_SUB0].pmapBuff.base = 0x00;
+		}
+	}
+
+	return 0;
+}
+
+static int tcc_vsync1_open(struct inode *inode, struct file *filp)
+{
+	struct tcc_video_disp *p;
+
+	dbg("%s(%d)\n", __func__, g_is_vsync1_opened);
+
+	if (g_is_vsync1_opened++) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	p = &tccvid_vsync[VSYNC_SUB0];
+	p->type = VSYNC_SUB0;
+
+	#ifdef USE_VSYNC_TIMER
+	if (vsync_timer && !g_is_vsync0_opened) {
+		tcc_timer_enable(vsync_timer);
+		//msleep(0);
+	}
+	#endif
+
+	if (pmap_get_info("fb_wmixer1",
+		&tccvid_lastframe[VSYNC_SUB0].pmapBuff) < 0) {
+		pr_info("[INF][VSYNC] %s-%d : fb_wmixer1 allocation is failed.\n",
+			__func__, __LINE__);
+		//return -ENOMEM;
+	}
+
+	dbg("%s :: Sub LastFrame(%d/%d) - wmixer base:0x%08llx/0x%llx\n",
+		__func__,
+		tccvid_lastframe[VSYNC_SUB0].support,
+		tccvid_lastframe[VSYNC_SUB0].enabled,
+		tccvid_lastframe[VSYNC_SUB0].pmapBuff.base,
+		tccvid_lastframe[VSYNC_SUB0].pmapBuff.size);
+
+	return 0;
+}
+
+static long tcc_vsync0_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, arg, VSYNC_MAIN);
+}
+
+#ifdef CONFIG_COMPAT
+static long tcc_vsync0_compat_ioctl(struct file *filp,
+	unsigned int cmd, unsigned long arg)
+{
+	return tcc_vsync_do_ioctl(cmd, (unsigned long)compat_ptr(arg),
+		VSYNC_MAIN);
+}
+#endif
+
+static int tcc_vsync0_release(struct inode *inode, struct file *filp)
+{
+	dbg("%s(%d) In\n", __func__, g_is_vsync0_opened);
+
+	if (--g_is_vsync0_opened) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	if (g_is_vsync0_opened == 0) {
+		struct tcc_video_disp *p = &tccvid_vsync[VSYNC_MAIN];
+
+		if (p->isVsyncRunning == EM_VSYNC_RUNNING) {
+			tcc_vsync_end(p, 0);
+			/* prevent KCS warning */
+		}
+
+		p->isVsyncRunning = EM_VSYNC_DISABLED;
+
+		if (!g_is_vsync1_opened) {
+			tca_vsync_video_display_disable();
+
+			if (vsync_vioc0_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc0_disp.irq_num, NULL);
+				free_irq(vsync_vioc0_disp.irq_num,
+					&vsync_vioc0_disp);
+				vsync_vioc0_disp.irq_reged = 0;
+			}
+
+			if (vsync_vioc1_disp.irq_reged) {
+				(void)irq_set_affinity_hint(vsync_vioc1_disp.irq_num, NULL);
+				free_irq(vsync_vioc1_disp.irq_num,
+					&vsync_vioc1_disp);
+				vsync_vioc1_disp.irq_reged = 0;
+			}
+
+			#ifdef USE_VSYNC_TIMER
+			if (vsync_timer) {
+				tcc_timer_disable(vsync_timer);
+				/* prevent KCS warning */
+			}
+			#endif
+		}
+
+		if (tccvid_lastframe[VSYNC_MAIN].pmapBuff.base) {
+			tccvid_lastframe[VSYNC_MAIN].pmapBuff.base = 0x00;
+		}
+	}
+
+	dbg("%s(%d) Out\n", __func__, g_is_vsync0_opened);
+
+	return 0;
+}
+
+static int tcc_vsync0_open(struct inode *inode, struct file *filp)
+{
+	struct tcc_video_disp *p;
+
+	dbg("%s(%d)\n", __func__, g_is_vsync0_opened);
+
+	if (g_is_vsync0_opened++) {
+		return 0;
+		/* prevent KCS warning */
+	}
+
+	p = &tccvid_vsync[VSYNC_MAIN];
+	p->type = VSYNC_MAIN;
+
+	#ifdef USE_VSYNC_TIMER
+	if (vsync_timer && !g_is_vsync1_opened) {
+		tcc_timer_enable(vsync_timer);
+		//msleep(0);
+	}
+	#endif
+
+	if (pmap_get_info("fb_wmixer",
+		&tccvid_lastframe[VSYNC_MAIN].pmapBuff) < 0) {
+		pr_warn("[WAN][VSYNC] %s-%d : fb_wmixer allocation is failed.\n",
+			__func__, __LINE__);
+		//return -ENOMEM;
+	}
+
+	dbg("%s :: Main LastFrame(%d/%d) - wmixer base:0x%08llx/0x%llx\n",
+		__func__,
+		tccvid_lastframe[VSYNC_MAIN].support,
+		tccvid_lastframe[VSYNC_MAIN].enabled,
+		tccvid_lastframe[VSYNC_MAIN].pmapBuff.base,
+		tccvid_lastframe[VSYNC_MAIN].pmapBuff.size);
+
+	return 0;
+}
+
+
+static int tcc_vsync_parse_dt(struct device_node *np)
+{
+	struct device_node *vioc0_node, *vioc1_node;
+	int index;
+
+	if (np == NULL) {
+		goto err;
+		/* prevent KCS warning */
+	}
+
+	memset(&vsync_vioc1_disp, 0x00, sizeof(struct tcc_vsync_display_info_t));
+
+	vioc1_node = of_parse_phandle(np, "display-vioc1", 0);
+	if (vioc1_node) {
+		of_property_read_u32_index(np, "display-vioc1", 1, &index);
+		vsync_vioc1_disp.virt_addr = VIOC_DISP_GetAddress(index);
+		vsync_vioc1_disp.lcdc_num = get_vioc_index(index);
+		vsync_vioc1_disp.irq_num = irq_of_parse_and_map(vioc1_node, 0);
+
+		pr_info("[INF][VSYNC] %s: vioc1 addr(%px) lcdc_num(%d) irq_num(%d)\n", __func__,
+			vsync_vioc1_disp.virt_addr, vsync_vioc1_disp.lcdc_num, vsync_vioc1_disp.irq_num);
+	}
+
+	memset(&vsync_vioc0_disp, 0x00, sizeof(struct tcc_vsync_display_info_t));
+
+	vioc0_node = of_parse_phandle(np, "display-vioc0", 0);
+	if (!vioc0_node) {
+		goto err;
+		/* prevent KCS warning */
+	}
+
+	of_property_read_u32_index(np, "display-vioc0", 1, &index);
+	vsync_vioc0_disp.virt_addr = VIOC_DISP_GetAddress(index);
+	vsync_vioc0_disp.lcdc_num = get_vioc_index(index);
+	vsync_vioc0_disp.irq_num = irq_of_parse_and_map(vioc0_node, 0);
+
+	pr_info("[INF][VSYNC] %s: vioc0 addr(%px) lcdc_num(%d) irq_num(%d)\n", __func__,
+		vsync_vioc0_disp.virt_addr, vsync_vioc0_disp.lcdc_num, vsync_vioc0_disp.irq_num);
+
+	return 0;
+err:
+	pr_err("[ERR][VSYNC] %s: could not find telechips,ddc node\n", __func__);
+	return -ENODEV;
+}
+
+#ifdef CONFIG_PM
+static int tcc_vsync_suspend(struct device *dev)
+{
+	pr_info("[INF][VSYNC] %s\n", __func__);
+
+	return 0;
+}
+
+static int tcc_vsync_resume(struct device *dev)
+{
+	pr_info("[INF][VSYNC] %s\n", __func__);
+
+	return 0;
+}
+#else
+#define tcc_vsync_suspend NULL
+#define tcc_vsync_resume NULL
+#endif
+
+#ifdef CONFIG_PM
+static int tcc_vsync_runtime_suspend(struct device *dev)
+{
+	pr_info("[INF][VSYNC] %s:\n", __func__);
+	vsync_power_state = 0;
+
+	return 0;
+}
+
+static int tcc_vsync_runtime_resume(struct device *dev)
+{
+	pr_info("[INF][VSYNC] %s:\n", __func__);
+	vsync_power_state = 1;
+
+	return 0;
+}
+
+static const struct dev_pm_ops tcc_vsync_pm_ops = {
+	.runtime_suspend = tcc_vsync_runtime_suspend,
+	.runtime_resume  = tcc_vsync_runtime_resume,
+	.suspend         = tcc_vsync_suspend,
+	.resume          = tcc_vsync_resume,
+};
+#endif
+
+static const struct file_operations tcc_vsync0_fops = {
+	.owner          = THIS_MODULE,
+	.open           = tcc_vsync0_open,
+	.release        = tcc_vsync0_release,
+	.unlocked_ioctl = tcc_vsync0_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl   = tcc_vsync0_compat_ioctl, // for 32bit OMX
+#endif
+};
+
+static const struct file_operations tcc_vsync1_fops = {
+	.owner          = THIS_MODULE,
+	.open           = tcc_vsync1_open,
+	.release        = tcc_vsync1_release,
+	.unlocked_ioctl = tcc_vsync1_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl   = tcc_vsync1_compat_ioctl, // for 32bit OMX
+#endif
+};
+
+#ifdef CONFIG_USE_SUB_MULTI_FRAME
+static const struct file_operations tcc_vsync2_fops = {
+	.owner          = THIS_MODULE,
+	.open           = tcc_vsync2_open,
+	.release        = tcc_vsync2_release,
+	.unlocked_ioctl = tcc_vsync2_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl   = tcc_vsync2_compat_ioctl, // for 32bit OMX
+#endif
+};
+
+static const struct file_operations tcc_vsync3_fops = {
+	.owner          = THIS_MODULE,
+	.open           = tcc_vsync3_open,
+	.release        = tcc_vsync3_release,
+	.unlocked_ioctl = tcc_vsync3_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl   = tcc_vsync3_compat_ioctl, // for 32bit OMX
+#endif
+};
+#endif
+
+static struct miscdevice vsync0_misc_device = {
+	MISC_DYNAMIC_MINOR,
+	"tcc_vsync0",
+	&tcc_vsync0_fops,
+};
+
+static struct miscdevice vsync1_misc_device = {
+	MISC_DYNAMIC_MINOR,
+	"tcc_vsync1",
+	&tcc_vsync1_fops,
+};
+
+#ifdef CONFIG_USE_SUB_MULTI_FRAME
+static struct miscdevice vsync2_misc_device = {
+	MISC_DYNAMIC_MINOR,
+	"tcc_vsync2",
+	&tcc_vsync2_fops,
+};
+
+static struct miscdevice vsync3_misc_device = {
+	MISC_DYNAMIC_MINOR,
+	"tcc_vsync3",
+	&tcc_vsync3_fops,
+};
+#endif
+
+static int tcc_vsync_probe(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	spin_lock_init(&vsync_lock);
+	spin_lock_init(&vsync_lockDisp);
+
+	vsync_power_state = 1;
+
+	ret = tcc_dp_dt_parse_data();
+	if (ret < 0) {
+		pr_err("%s: tcc_dp_dt_parse_data(%d)\n", __func__, ret);
+	}
+
+	if (tcc_vsync_parse_dt(pdev->dev.of_node) < 0) {
+		return -ENODEV;
+		/* prevent KCS warning */
+	}
+	#if defined(CONFIG_ANDROID) || defined(CONFIG_PLATFORM_STB)
+	EX_OUT_LCDC = vsync_vioc0_disp.lcdc_num;
+	LCD_LCDC_NUM = vsync_vioc1_disp.lcdc_num;
+	#else // for ALS dxb : 160630 inbest
+	EX_OUT_LCDC = vsync_vioc1_disp.lcdc_num;
+	LCD_LCDC_NUM = vsync_vioc0_disp.lcdc_num;
+	#endif
+
+	vsync_vioc0_disp.vioc_intr = kzalloc(sizeof(struct vioc_intr_type), GFP_KERNEL);
+	if (vsync_vioc0_disp.vioc_intr == NULL) {
+		return -ENOMEM;
+	}
+
+	vsync_vioc0_disp.vioc_intr->id = vsync_vioc0_disp.lcdc_num;
+	vsync_vioc0_disp.vioc_intr->bits = (1 << VIOC_DISP_INTR_VSF);
+
+	vsync_vioc1_disp.vioc_intr = kzalloc(sizeof(struct vioc_intr_type), GFP_KERNEL);
+	if (vsync_vioc1_disp.vioc_intr == NULL) {
+		return -ENOMEM;
+	}
+
+	vsync_vioc1_disp.vioc_intr->id = vsync_vioc1_disp.lcdc_num;
+	vsync_vioc1_disp.vioc_intr->bits = (1 << VIOC_DISP_INTR_VSF);
+
+	#ifdef USE_VSYNC_TIMER
+	vsync_timer = tcc_register_timer(NULL, 1000/*msec*/, NULL);
+	if (IS_ERR(vsync_timer)) {
+		pr_debug("[DBG][VSYNC] %s: tcc_timer failed\n", __func__);
+		vsync_timer = NULL;
+		BUG();
+	}
+	#endif
+
+	if (misc_register(&vsync0_misc_device)) {
+		dbg(KERN_WARNING "Couldn't register device .\n");
+		return -EBUSY;
+	}
+
+	if (misc_register(&vsync1_misc_device)) {
+		dbg(KERN_WARNING "Couldn't register device .\n");
+		return -EBUSY;
+	}
+
+	#if defined(CONFIG_VSYNC_DRV_ALWAYS_ACCEPT_START_VSYNC)
+	prepare_input_image_info[VSYNC_MAIN] = devm_kzalloc(&pdev->dev, sizeof(struct tcc_lcdc_image_update), GFP_KERNEL);
+	prepare_input_image_info[VSYNC_SUB0] = devm_kzalloc(&pdev->dev, sizeof(struct tcc_lcdc_image_update), GFP_KERNEL);
+	if (prepare_input_image_info[VSYNC_MAIN] == NULL) {
+		return -ENOMEM;
+		/* prevent KCS warning */
+	}
+	if (prepare_input_image_info[VSYNC_SUB0] == NULL) {
+		return -ENOMEM;
+		/* prevent KCS warning */
+	}
+	#endif
+
+	#ifdef CONFIG_USE_SUB_MULTI_FRAME
+	if (misc_register(&vsync2_misc_device)) {
+		dbg(KERN_WARNING "Couldn't register device .\n");
+		return -EBUSY;
+	}
+
+	if (misc_register(&vsync3_misc_device)) {
+		dbg(KERN_WARNING "Couldn't register device .\n");
+		return -EBUSY;
+	}
+	#endif
+
+	return ret;
+}
+
+static int tcc_vsync_remove(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	misc_deregister(&vsync0_misc_device);
+	misc_deregister(&vsync1_misc_device);
+#ifdef CONFIG_USE_SUB_MULTI_FRAME
+	misc_deregister(&vsync2_misc_device);
+	misc_deregister(&vsync3_misc_device);
+#endif
+	return ret;
+}
+
+#ifdef CONFIG_OF
+static const struct of_device_id vsync_of_match[] = {
+	{ .compatible = "telechips,tcc_vsync" },
+	{}
+};
+MODULE_DEVICE_TABLE(of, vsync_of_match);
+#endif
+
+static struct platform_driver tcc_vsync_driver = {
+	.probe         = tcc_vsync_probe,
+	.remove        = tcc_vsync_remove,
+	.driver        = {
+		.name  = "tcc_vsync",
+		.owner = THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm    = &tcc_vsync_pm_ops,
+#endif
+#ifdef CONFIG_OF
+		.of_match_table = of_match_ptr(vsync_of_match),
+#endif
+
+	},
+};
+
+#define CONFIG_DUMP_REGS
+#ifdef CONFIG_DUMP_REGS
+void __iomem *panic_disp0, *panic_disp1;
+void __iomem *panic_wdma;
+static int dump_vioc_regs(
+	struct notifier_block *this,
+	unsigned long event,
+	void *ptr)
+{
+	if (panic_disp0) {
+		pr_err("[ERR][VSYNC] [vioc disp0] M:0x%08x S:0x%08x\n",
+			__raw_readl(panic_disp0 + DIM),
+			__raw_readl(panic_disp0 + DSTATUS));
+	}
+	if (panic_disp1) {
+		pr_err("[ERR][VSYNC] [vioc disp1] M:0x%08x S:0x%08x\n",
+			__raw_readl(panic_disp1 + DIM),
+			__raw_readl(panic_disp1 + DSTATUS));
+	}
+	if (panic_wdma) {
+		pr_err("[ERR][VSYNC] [viod wdma2] M:0x%08x S:0x%08x\n",
+			__raw_readl(panic_wdma + WDMAIRQMSK_OFFSET),
+			__raw_readl(panic_wdma + WDMAIRQSTS_OFFSET));
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block panic_vioc = {
+	.notifier_call = dump_vioc_regs,
+};
+
+static void panic_vioc_init(void)
+{
+	panic_disp0 = VIOC_DISP_GetAddress(0);
+	panic_disp1 = VIOC_DISP_GetAddress(1);
+	panic_wdma = VIOC_WDMA_GetAddress(2);
+	atomic_notifier_chain_register(&panic_notifier_list, &panic_vioc);
+}
+#endif
+
+static int __init tcc_vsync_init(void)
+{
+	int type = VSYNC_MAIN;
+
+#if defined(CONFIG_HDMI_DISPLAY_LASTFRAME)
+	memset(&tccvid_lastframe[0], 0x00, sizeof(struct tcc_video_lastframe));
+	memset(&tccvid_lastframe[1], 0x00, sizeof(struct tcc_video_lastframe));
+
+	pmap_get_info("fb_wmixer", &tccvid_lastframe[type].pmapBuff);
+	tcc_video_ctrl_last_frame(type, 1);
+	pr_info("[INF][VSYNC] %s :: Main LastFrame(%d/%d) - wmixer base:0x%08llx/0x%llx\n",
+		__func__, tccvid_lastframe[type].support,
+		tccvid_lastframe[type].enabled,
+		tccvid_lastframe[type].pmapBuff.base,
+		tccvid_lastframe[type].pmapBuff.size);
+
+	type = VSYNC_SUB0;
+	#ifdef CONFIG_USE_SUB_MULTI_FRAME
+	for (type = VSYNC_SUB0; type < VSYNC_MAX; type++)
+	#endif
+	{
+		// SKBB :: for sub otf, can use same pmap region
+		// because otf between main and sub is only one.
+		pmap_get_info("fb_wmixer", &tccvid_lastframe[type].pmapBuff);
+		tcc_video_ctrl_last_frame(type, 1);
+	}
+	spin_lock_init(&LastFrame_lockDisp);
+#endif
+
+	for (type = VSYNC_MAIN; type < VSYNC_MAX; type++) {
+		mutex_init(&vsync_io_mutex[type]);
+		/* prevent KCS warning */
+	}
+
+#ifdef CONFIG_DISPLAY_EXT_FRAME
+	mutex_init(&ext_mutex);
+#endif
+
+#ifdef CONFIG_DUMP_REGS
+	panic_vioc_init();
+#endif
+
+	return platform_driver_register(&tcc_vsync_driver);
+}
+
+static void __exit tcc_vsync_exit(void)
+{
+	pr_info("[INF][VSYNC] %s\n", __func__);
+	platform_driver_unregister(&tcc_vsync_driver);
+}
+
+module_init(tcc_vsync_init);
+module_exit(tcc_vsync_exit);
+
+MODULE_AUTHOR("linux <linux@telechips.com>");
+MODULE_DESCRIPTION("Telechips TCC Vsync driver");
+MODULE_LICENSE("GPL");
+MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);

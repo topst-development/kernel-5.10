@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc805x-subcore.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8059 LPD4X321 Sub-Core";
+	board-id = <BOARD_ID_TCC8059_EVB>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc805x-subcore-wdt.dtsi"
+#include "override/tcc805x-subcore-dma.dtsi"
+#include "override/tcc805x-subcore-scfw.dtsi"
+#include "override/tcc805x-subcore-mmc.dtsi"
+#include "override/tcc805x-subcore-vpu.dtsi"
+#include "override/tcc8059-subcore-cpu.dtsi"
+#include "override/tcc8059-gpio.dtsi"
+#include "override/tcc8059-lpd4x321-subcore-uart.dtsi"
+#include "override/tcc8059-lpd4x321-subcore-i2c.dtsi"
+#include "override/tcc8059-lpd4x321-subcore-usb.dtsi"
+#include "override/tcc8059-lpd4x321-subcore-display.dtsi"
+#include "override/tcc8059-lpd4x321-subcore-camera.dtsi"

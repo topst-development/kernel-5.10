@@ -1,0 +1,361 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+&i2c0 {
+	status = "okay";
+	port-mux = <12>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c12_bus_active>;
+	pinctrl-1 = <&i2c12_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	pmic@5a {
+		compatible = "dlg,da9063";
+		reg = <0x5a>;
+
+		da9063_gpio: gpio {
+			compatible = "dlg,da9063-gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
+
+		regulators {
+			vdd_bcore1: bcore1 {
+				regulator-name = "cpu_0p9v";
+				regulator-min-microvolt = <855000>;
+				regulator-max-microvolt = <900000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_bcore2: bcore2 {
+				regulator-name = "core_0p8v";
+				regulator-min-microvolt = <760000>;
+				regulator-max-microvolt = <800000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_bpro: bpro {
+				regulator-name = "vdd_mali";
+				regulator-min-microvolt = <760000>;
+				regulator-max-microvolt = <800000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_bmem: bmem {
+				regulator-name = "io_1p8v";
+				regulator-min-microvolt = <1700000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_bio: bio {
+				regulator-name = "io_3p3v";
+				regulator-min-microvolt = <3000000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_bperi: bperi {
+				regulator-name = "mem_1p1v";
+				regulator-min-microvolt = <1045000>;
+				regulator-max-microvolt = <1100000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_ldo3: ldo3 {
+				/* peri_1p8v */
+				regulator-name = "sdio_pwr";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_ldo7: ldo7 {
+				regulator-name = "cpu_1p2v";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <1200000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_ldo8: ldo8 {
+				regulator-name = "mem_1p8v";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_ldo9: ldo9 {
+				regulator-name = "pmic_io_pwr";
+				regulator-min-microvolt = <950000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vdd_ldo11: ldo11 {
+				/* peri_3p3v */
+				regulator-name = "emmc_pwr";
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+		};
+	}; /* pmic da9063 */
+};
+
+&i2c1 {
+	status = "okay";
+	port-mux = <13>; /* [0]SCL [1]SDA */
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c13_bus_active>;
+	pinctrl-1 = <&i2c13_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/* Use burst-mode for touch */
+	burst-mode;
+
+	/* Retransmission due to nack response from mxt touch */
+	retry-count = <100>;
+
+	ssd253x@48 {
+		compatible = "solomon,ssd253x";
+		reg = <0x48>;
+		status = "disabled";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tsc_default>;
+		int-gpios = <&gpsd1 9 0x0>;
+		rst-gpios = <&gpb 16 0x0>;
+	};
+
+	ga657x@5d {
+		compatible = "goodix,ga657x";
+		reg = <0x5d>;
+		status = "disabled";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tsc_default>;
+
+		reset-gpios = <&gpb 16 0x0>;
+		irq-gpios = <&gpsd1 9 0x0>;
+		irq-flags = <2>;
+
+		touchscreen-max-id = <11>;
+		touchscreen-size-x = <1920>;
+		touchscreen-size-y = <720>;
+		touchscreen-max-w = <512>;
+		touchscreen-max-p = <512>;
+		/* KEY_HOMEPAGE=172, KEY_BACK=158, KEY_MENU=139 */
+		touchscreen-key-map = <172>, <158>;
+		goodix,slide-wakeup = <0>;
+		goodix,type-a-report = <0>;
+		goodix,driver-send-cfg = <0>;
+		goodix,resume-in-workqueue = <0>;
+		goodix,swap-x2y = <0>;
+		goodix,esd-protect = <1>;
+		goodix,auto-update = <0>;
+		goodix,auto-update-cfg = <0>;
+		goodix,power-off-sleep = <0>;
+		goodix,pen-suppress-finger = <0>;
+		goodix,cfg-group0 = [
+			53 D0 02 00 05 05 F5 D5 21 48 2D 0F 5A 41 0E
+			05 00 00 32 32 20 00 05 14 14 1A 14 8B 2B 00
+		];
+	};
+
+	/* BOE panel */
+	mxt_touch@4a {
+		compatible = "atmel,maxtouch";
+		reg = <0x4a>;
+		status = "disabled";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tsc_default>;
+
+		interrupt-parent = <&gpsd1>;
+		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
+		reset-gpios = <&gpb 16 GPIO_ACTIVE_LOW>;
+	};
+
+	/* AUO panel */
+	gt9xx@14 {
+		compatible = "goodix,gt9xx";
+		reg = <0x14>;
+		status = "disabled";
+		interrupt-parent = <&gpsd1>;
+		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
+		pinctrl-names = "default", "int-output-low","int-output-high", "int-input", "sleep";
+		pinctrl-0 = <&auo_tsc0_int_default>;
+		pinctrl-1 = <&auo_tsc0_int_output_low>;
+		pinctrl-2 = <&auo_tsc0_int_output_high>;
+		pinctrl-3 = <&auo_tsc0_int_input>;
+		pinctrl-4 = <&auo_tsc0_int_default>;
+
+		reset-gpios = <&gpb 16 GPIO_ACTIVE_LOW>;
+		irq-gpios = <&gpsd1 9 IRQ_TYPE_EDGE_FALLING>;
+		irq-flags = <2>;
+
+		touchscreen-max-id = <11>;
+		touchscreen-size-x = <1920>;
+		touchscreen-size-y = <720>;
+		touchscreen-max-w = <512>;
+		touchscreen-max-p = <512>;
+		touchscreen-key-map = <172>, <158>; /*KEY_HOMEPAGE=172, KEY_BACK=158，KEY_MENU=139*/
+
+		goodix,slide-wakeup = <0>;
+		goodix,type-a-report = <0>;
+		goodix,driver-send-cfg = <0>;
+		goodix,resume-in-workqueue = <0>;
+		goodix,int-sync = <1>;
+		goodix,swap-x2y = <0>;
+		goodix,esd-protect = <1>;
+		goodix,auto-update-cfg = <0>;
+		goodix,power-off-sleep = <0>;
+		goodix,pen-suppress-finger = <0>;
+		goodix,cfg-group0 = [
+			53 D0 02 00 05 05 F5 D5 21 48 2D 0F 5A 41 0E 05 00 00 32 32 20 00 05 14 14 1A 14 8B 2B 00
+		];
+	};
+
+};
+
+&i2c2 {
+	status = "okay";
+	port-mux = <20>; /* [0]SCL [1]SDA */
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c20_bus_active>;
+	pinctrl-1 = <&i2c20_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	ak4601: ak4601@10 {
+		compatible = "akm,ak4601";
+		ak4601,pdn-gpio = <&gpe 14 0>;
+		/* 0: active high, 1: active low */
+		cmute-gpios = <&gpe 15 1>;	// CODEC_MUTE
+		amute-gpios = <&gpma 1 0>;	// AMP_MUTE
+		stanby-gpios = <&gpma 2 0>;	// AMP_STBY
+		reg = <0x10>;
+	};
+};
+
+&i2c3 {
+	status = "okay";
+	port-mux = <11>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c11_bus_active>;
+	pinctrl-1 = <&i2c11_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/* carplay ack timeout count: 500 */
+	retry-count = <500>;
+
+};
+
+&pinctrl {
+	i2c11_bus_active: i2c11_bus_active {
+		telechips,pins = "gpb-19", "gpb-20";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c11_bus_sleep: i2c11_bus_sleep {
+		telechips,pins = "gpb-19", "gpb-20";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c12_bus_active: i2c12_bus_active {
+		telechips,pins = "gpb-21", "gpb-22";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c12_bus_sleep: i2c12_bus_sleep {
+		telechips,pins = "gpb-21", "gpb-22";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c13_bus_active: i2c13_bus_active {
+		telechips,pins = "gpb-23", "gpb-24";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c13_bus_sleep: i2c13_bus_sleep {
+		telechips,pins = "gpb-23", "gpb-24";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c20_bus_active: i2c20_bus_active {
+		telechips,pins = "gpe-9", "gpe-10";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c20_bus_sleep: i2c20_bus_sleep {
+		telechips,pins = "gpe-9", "gpe-10";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	tsc_default: tsc_default {
+		telechips,pins = "gpsd1-9", "gpb-16";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+		telechips,input_buffer_enable;
+	};
+
+	auo_tsc0_int_default: auo_tsc0_int_default {
+		telechips,pins = "gpsd1-9", "gpb-16";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+		telechips,input_buffer_enable;
+		telechips,input-enable;
+	};
+
+	auo_tsc0_int_output_low: auo_tsc0_int_output_low {
+		telechips,pins = "gpsd1-9";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+
+	auo_tsc0_int_output_high: auo_tsc0_int_output_high {
+		telechips,pins = "gpsd1-9";
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+
+	auo_tsc0_int_input: auo_tsc0_int_input {
+		telechips,pins = "gpsd1-9";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+		telechips,input_buffer_enable;
+		telechips,input-enable;
+	};
+};

@@ -1,0 +1,230 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+/ {
+        cied_0 {
+		compatible = "telechips,cied";
+		status = "okay";
+		id = <0>;
+		rect = <1 2 720 480>;
+		winflag = <0x00F>;
+		solid {
+			win_thres = <0x00>;
+			frm_thres = <0xA0>;
+			min_rgb = <0xAA0000>;
+			max_rgb = <0xFF0000>;
+			status = "disabled";
+		};
+		darkness {
+			win_thres = <0x25>;
+			frm_thres = <0xA0>;
+			lum_thres = <0x00>;
+			status = "disabled";
+		};
+		brightness {
+			frm_thres = <0xA0>;
+			win_thres = <0xA0>;
+			lum_thres = <0x00>;
+			status = "okay";
+		};
+		frozen {
+			frm_thres = <0x30>;
+			status = "okay";
+		};
+		phase {
+			frm_thres = <0x30>;
+			win_thres = <0x03>;
+			phz_scale = <0x02>;
+			phz_stride = <0xff>;
+			status = "disabled";
+		};
+		windows {
+			// [left] [top] [width] [height] [flag] [phase_thres]
+			window0 = <0 0 720 480 0x7 10>;
+			window1 = <10 20 720 480 0x7 10>;
+			window2 = <30 40 720 480 0x7 10>;
+			window3 = <50 60 720 480 0x7 10>;
+			window4 = <50 60 720 480 0x7 10>;
+			window5 = <100 100 720 480 0x7 10>;
+			window6 = <200 200 720 480 0x7 10>;
+			window7 = <300 250 720 480 0x7 10>;
+			window8 = <0 0 1920 720 0x7 10>;
+		};
+	};
+	cied_1 {
+		compatible = "telechips,cied";
+		status = "okay";
+		id = <1>;
+		rect = <0 0 1920 720>;
+		winflag = <0x1FF>;
+		solid {
+			win_thres = <0x00>;
+			frm_thres = <0xA0>;
+			min_rgb = <0xAA0000>;
+			max_rgb = <0xFF0000>;
+		};
+		darkness {
+			win_thres = <0x25>;
+			frm_thres = <0xA0>;
+			lum_thres = <0x00>;
+		};
+		brightness {
+			frm_thres = <0xA0>;
+			win_thres = <0xA0>;
+			lum_thres = <0x00>;
+		};
+		frozen {
+			frm_thres = <0x30>;
+		};
+		phase {
+			frm_thres = <0x30>;
+			win_thres = <0x03>;
+			phz_scale = <0x02>;
+			phz_stride = <0xff>;
+			status = "okay";
+		};
+			windows {
+			window0 = <0 0 720 480 0x7 10>;
+			window1 = <0 0 720 480 0x7 10>;
+			window2 = <0 0 720 480 0x7 10>;
+			window3 = <0 0 720 480 0x7 10>;
+			window4 = <0 0 720 480 0x7 10>;
+			window5 = <0 0 720 480 0x7 10>;
+			window6 = <0 0 720 480 0x7 10>;
+			window7 = <0 0 720 480 0x7 10>;
+			window8 = <0 0 720 480 0x7 10>;
+		};
+	};
+	cied_2 {
+		compatible = "telechips,cied";
+		status = "okay";
+		id = <2>;
+		rect = <0 0 1920 720>;
+		winflag = <0x1FF>;
+		solid {
+			win_thres = <0x00>;
+			frm_thres = <0xA0>;
+			min_rgb = <0xAA0000>;
+			max_rgb = <0xFF0000>;
+		};
+		darkness {
+			win_thres = <0x25>;
+			frm_thres = <0xA0>;
+			lum_thres = <0x00>;
+		};
+		brightness {
+			frm_thres = <0xA0>;
+			win_thres = <0xA0>;
+			lum_thres = <0x00>;
+		};
+		frozen {
+			frm_thres = <0x30>;
+		};
+		phase {
+			frm_thres = <0x30>;
+			win_thres = <0x03>;
+			phz_scale = <0x02>;
+			phz_stride = <0xff>;
+			status = "disabled";
+		};
+		windows {
+			window0 = <0 0 720 480 0x7 10>;
+			window1 = <0 0 720 480 0x7 10>;
+			window2 = <0 0 720 480 0x7 10>;
+			window3 = <0 0 720 480 0x7 10>;
+			window4 = <0 0 720 480 0x7 10>;
+			window5 = <0 0 720 480 0x7 10>;
+			window6 = <0 0 720 480 0x7 10>;
+			window7 = <0 0 720 480 0x7 10>;
+			window8 = <0 0 720 480 0x7 10>;
+		};
+	};
+	cied_3 {
+		compatible = "telechips,cied";
+		status = "okay";
+		id = <3>;
+		rect = <0 0 1920 720>;
+		winflag = <0x1FF>;
+		solid {
+			win_thres = <0x00>;
+			frm_thres = <0xA0>;
+			min_rgb = <0xAA0000>;
+			max_rgb = <0xFF0000>;
+		};
+		darkness {
+			win_thres = <0x25>;
+			frm_thres = <0xA0>;
+			lum_thres = <0x00>;
+		};
+		brightness {
+			frm_thres = <0xA0>;
+			win_thres = <0xA0>;
+			lum_thres = <0x00>;
+		};
+		frozen {
+			frm_thres = <0x30>;
+		};
+		phase {
+			frm_thres = <0x30>;
+			win_thres = <0x03>;
+			phz_scale = <0x02>;
+			phz_stride = <0xff>;
+		};
+		windows {
+			window0 = <0 0 720 720 0x7 10>;
+			window1 = <0 0 720 720 0x7 10>;
+			window2 = <0 0 720 720 0x7 10>;
+			window3 = <0 0 720 720 0x7 10>;
+			window4 = <0 0 720 720 0x7 10>;
+			window5 = <0 0 720 720 0x7 10>;
+			window6 = <0 0 720 720 0x7 10>;
+			window7 = <0 0 720 720 0x7 10>;
+			window8 = <0 0 720 720 0x7 10>;
+		};
+	};
+	cied_ir {
+		compatible = "telechips,cied";
+		status = "okay";
+		id = <4>;
+		rect = <0 0 1920 720>;
+		winflag = <0x1FF>;
+		solid {
+			win_thres = <0x00>;
+			frm_thres = <0xA0>;
+			min_rgb = <0xAA0000>;
+			max_rgb = <0xFF0000>;
+		};
+		darkness {
+			win_thres = <50>;
+			frm_thres = <255>;
+			lum_thres = <0xA0>;
+		};
+		brightness {
+			frm_thres = <0xFF>;
+			win_thres = <0xFF>;
+			lum_thres = <0x01>;
+		};
+		frozen {
+			frm_thres = <0x50>;
+		};
+		phase {
+			frm_thres = <0x60>;
+			win_thres = <0x05>;
+			phz_scale = <0x02>;
+			phz_stride = <0xff>;
+		};
+		windows {
+			window0 = <0 0 1720 80 0x5 10>;
+			window1 = <0 0 1720 80 0x5 10>;
+			window2 = <0 0 1720 80 0x5 10>;
+			window3 = <0 0 1720 80 0x5 10>;
+			window4 = <0 0 1720 80 0x5 10>;
+			window5 = <0 0 1720 80 0x5 10>;
+			window6 = <0 0 1720 80 0x5 10>;
+			window7 = <0 0 1720 80 0x5 10>;
+			window8 = <0 0 1720 80 0x5 10>;
+		};
+	};
+};

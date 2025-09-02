@@ -1,0 +1,200 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/pmap/tcc805x/tcc805x-vpu-linux-dvrs.h>
+
+&reserved_vpu_main {
+	status = "okay";
+};
+
+#if (PMAP_SIZE_VIDEO != 0)
+&pmap_video {
+	size = <0x0 PMAP_SIZE_VIDEO>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_VIDEO_EXT != 0)
+&pmap_video_ext {
+	size = <0x0 PMAP_SIZE_VIDEO_EXT>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_VIDEO_EXT2 != 0)
+&pmap_video_ext2 {
+	size = <0x0 PMAP_SIZE_VIDEO_EXT2>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_VIDEO_SW_EXTRA != 0)
+&pmap_video_sw {
+	size = <0x0 PMAP_SIZE_VIDEO_SW_EXTRA>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC != 0)
+&pmap_enc_main {
+	size = <0x0 PMAP_SIZE_ENC>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT != 0)
+&pmap_enc_ext {
+	size = <0x0 PMAP_SIZE_ENC_EXT>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT2 != 0)
+&pmap_enc_ext2 {
+	size = <0x0 PMAP_SIZE_ENC_EXT2>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT3 != 0)
+&pmap_enc_ext3 {
+	size = <0x0 PMAP_SIZE_ENC_EXT3>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT4 != 0)
+&pmap_enc_ext4 {
+	size = <0x0 PMAP_SIZE_ENC_EXT4>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT5 != 0)
+&pmap_enc_ext5 {
+	size = <0x0 PMAP_SIZE_ENC_EXT5>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT6 != 0)
+&pmap_enc_ext6 {
+	size = <0x0 PMAP_SIZE_ENC_EXT6>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT7 != 0)
+&pmap_enc_ext7 {
+	size = <0x0 PMAP_SIZE_ENC_EXT7>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT8 != 0)
+&pmap_enc_ext8 {
+	size = <0x0 PMAP_SIZE_ENC_EXT8>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT9 != 0)
+&pmap_enc_ext9 {
+	size = <0x0 PMAP_SIZE_ENC_EXT9>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT10 != 0)
+&pmap_enc_ext10 {
+	size = <0x0 PMAP_SIZE_ENC_EXT10>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT11 != 0)
+&pmap_enc_ext11 {
+	size = <0x0 PMAP_SIZE_ENC_EXT11>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT12 != 0)
+&pmap_enc_ext12 {
+	size = <0x0 PMAP_SIZE_ENC_EXT12>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT13 != 0)
+&pmap_enc_ext13 {
+	size = <0x0 PMAP_SIZE_ENC_EXT13>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT14 != 0)
+&pmap_enc_ext14 {
+	size = <0x0 PMAP_SIZE_ENC_EXT14>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#if (PMAP_SIZE_ENC_EXT15 != 0)
+&pmap_enc_ext15 {
+	size = <0x0 PMAP_SIZE_ENC_EXT15>;
+	status = "okay";
+	no-map;
+};
+#endif
+
+#ifdef CONFIG_SUPPORT_TCC_VPU
+&vpu_dev_mgr {
+	status = "okay";
+};
+#endif
+
+#ifdef CONFIG_SUPPORT_TCC_JPU
+&jpu_dev_mgr {
+	status = "okay";
+};
+#endif
+
+#ifdef CONFIG_SUPPORT_TCC_WAVE410_HEVC
+&hevc_dev_mgr {
+	status = "okay";
+};
+#endif
+
+#ifdef CONFIG_SUPPORT_TCC_WAVE512_4K_D2
+&vpu_4k_d2_dev_mgr {
+	status = "okay";
+};
+#endif
+
+#ifdef CONFIG_SUPPORT_TCC_WAVE420L_VPU_HEVC_ENC
+&vpu_hevc_enc_dev_mgr {
+	status = "okay";
+};
+#endif

@@ -1,0 +1,33 @@
+&adma0 {
+	status = "okay";
+};
+
+&i2s0 {
+	status = "okay";
+};
+
+&dptx_audio {
+	audio-input = <0 1 2 3>;
+	data-width = <16 16 16 16>;
+	channels = <2 2 2 2>;
+	clock-frequency = <32000 32000 32000 32000>;
+	status = "okay";
+};
+
+&sound0 {
+	compatible = "telechips,snd-card";
+	card-name = "TCC805x EVM Card";
+	status = "okay";
+
+	telechips,dai-link@0 {
+		stream-name="DP_I2S_0";
+		codec,format = "i2s";
+		codec,continuous-clock;
+		mclk_div = <4>; // 4,6,8,16
+		bclk_ratio = <512>;
+		pcm = <&adma0>;
+		dai = <&i2s0>;
+		codec,name = "hdmi-audio-codec.1.auto";
+		codec,dai-name = "i2s-hifi";
+	};
+};

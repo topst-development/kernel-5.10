@@ -1,0 +1,367 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+// #include "tcc807x-camera-cied.dtsi"
+#include <dt-bindings/css/tcc807x-css.h>
+
+&aliases {
+	mipi-csi2-0 = &mipi_csi2_0;
+	mipi-csi2-1 = &mipi_csi2_1;
+	isp0 = &isp0;
+	isp1 = &isp1;
+	isp2 = &isp2;
+	isp3 = &isp3;
+	tcc_svdw = &tcc_svdw;
+	videoinput0 = &videoinput0;
+	videoinput1 = &videoinput1;
+	videoinput2 = &videoinput2;
+	videoinput3 = &videoinput3;
+	videoinput4 = &videoinput4;
+	videoinput5 = &videoinput5;
+	videoinput6 = &videoinput6;
+	videoinput7 = &videoinput7;
+};
+
+/ {
+	tcc_cap_media: tcc_cap_media {
+		compatible = "telechips,tcc-cap-media";
+	};
+
+	cam_odw: cam_odw@1C030000 {
+		compatible = "telechips,cam_odw";
+		reg = <0x0 0x1C030000 0x0 0x1000>;
+	};
+
+	tcc_svdw: tcc_svdw {
+		compatible = "telechips,tcc_svdw";
+		mediadev = <&tcc_cap_media>;
+		reg = <0x0 0x1C030000 0x0 0x500
+                       0x0 0x1C004000 0x0 0x500>;
+		clocks = <&fbus_cam FBUS_CAM_AXI>,
+			 <&fbus_cam FBUS_CAM_PIX>,
+			 <&fbus_cam FBUS_CAM_APB>;
+
+		interrupt-names = "svm_0_eof", "svm_1_eof", "svm_2_eof", "svm_3_eof", "svm_rdone";
+		interrupts = <GIC_SPI 601 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 602 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 603 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 604 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 605 IRQ_TYPE_LEVEL_HIGH>;
+		dma-coherent;
+	};
+
+	vin_wrap_vin: vin_wrap_vin@1C040000 {
+		compatible = "telechips,vin_wrap_vin";
+		reg = <0x0 0x1C040000 0x0 0x400 0x0 0x1C040400 0x0 0x600
+		       0x0 0x1C041000 0x0 0x400 0x0 0x1C041400 0x0 0x600
+		       0x0 0x1C042000 0x0 0x400 0x0 0x1C042400 0x0 0x600
+		       0x0 0x1C043000 0x0 0x400 0x0 0x1C043400 0x0 0x600>;
+		interrupts = <GIC_SPI 607 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 609 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 610 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vin_wrap_wdma: vin_wrap_wdma@1C044000 {
+		compatible = "telechips,vin_wrap_wdma";
+		reg = <0x0 0x1C044000 0x0 0x1000
+		       0x0 0x1C045000 0x0 0x1000
+		       0x0 0x1C046000 0x0 0x1000
+		       0x0 0x1C047000 0x0 0x1000>;
+		interrupts = <GIC_SPI 607 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 609 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 610 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	vin_wrap_cfg: vin_wrap_cfg@1C048000 {
+		compatible = "telechips,vin_wrap_cfg";
+		reg = <0x0 0x1C048000 0x0 0x1000>;
+	};
+
+	vin_wrap_intr: vin_wrap_intr@1C048020 {
+		compatible = "telechips,vin_wrap_intr";
+		reg =  <0x0 0x1C048020 0x0 0x100>;
+		interrupts = <GIC_SPI 607 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 609 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 610 IRQ_TYPE_LEVEL_HIGH>;
+		status = "disabled";
+	};
+
+	cam_cfg: cam_cfg@1C004000 {
+		compatible = "telechips,cam_cfg";
+		reg = <0x0 0x1C004000 0x0 0x1000>;
+	};
+
+	cam_mux: cam_mux@1C00403C {
+		compatible = "telechips,cam_mux";
+		reg = <0x0 0x1C00403C 0x0 0x3>;
+		statue = "okay";
+	};
+
+	mipi_wrap: mipi_wrap {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		compatible = "simple-bus";
+		ranges;
+
+		/*
+		 * If MIPI0 ,1 are used in main & sub core,
+		 * properties below must be same
+		 */
+
+		/*
+		 * 0: select output of MIPI0
+		 * 1: select output of MIPI1
+		 */
+		mipi-chmux-0 = <0>;
+		mipi-chmux-1 = <0>;
+		mipi-chmux-2 = <0>;
+		mipi-chmux-3 = <0>;
+
+		/*
+		 * 0: select output of MIPI1
+		 * 1: select output of MIPI0
+		 */
+		mipi-chmux-4 = <0>;
+		mipi-chmux-5 = <0>;
+		mipi-chmux-6 = <0>;
+		mipi-chmux-7 = <0>;
+
+		/*
+		 * 1: bypass isp
+		 * 0: use isp
+		 */
+		isp0-bypass = <1>;
+		isp1-bypass = <1>;
+		isp2-bypass = <1>;
+		isp3-bypass = <1>;
+
+		mipi_csi2_0: mipi_csi2_0@1c008000 {
+			compatible = "telechips,tcc807x-mipi-csi2";
+			status = "disabled";
+
+			reg = <0x0 0x1C008000 0x0 0x0120>,
+			      <0x0 0x1C014000 0x0 0x1000>,
+			      <0x0 0x1C00C000 0x0 0x0060>,
+			      <0x0 0x1C004000 0x0 0x010c>;
+			reg-names = "csi", "phy", "gdb", "cfg";
+
+			clocks = <&fbus_cam FBUS_CAM_PIX>;
+			clock-names = "camb-pclk";
+			clock-frequency = <800000000>;
+
+			/* TODO: PHY interrupt */
+			interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 198 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "csi", "gdb";
+		};
+
+		mipi_csi2_1: mipi_csi2_1@1c018000 {
+			compatible = "telechips,tcc807x-mipi-csi2";
+			status = "disabled";
+
+			reg = <0x0 0x1C018000 0x0 0x0120>,
+			      <0x0 0x1C024000 0x0 0x1000>,
+			      <0x0 0x1C01C000 0x0 0x0060>,
+			      <0x0 0x1C004000 0x0 0x04C0>;
+			reg-names = "csi", "phy", "gdb", "cfg";
+
+			clocks = <&fbus_cam FBUS_CAM_PIX>;
+			clock-names = "camb-pclk";
+			clock-frequency = <800000000>;
+
+			/* TODO: PHY interrupt */
+			interrupts = <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 201 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "csi", "gdb";
+		};
+
+		isp0: isp0@1C080000 {
+			compatible = "telechips,tcc807x-isp";
+			status = "disabled";
+			reg = <0x0 0x1C080000 0x0 0x10000>,
+			      <0x0 0x1C0E0000 0x0 0x20000>,
+			      <0x0 0x1C004000 0x0 0x04C0>,
+			      <0x0 0x1C0D0000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "scene_data_base";
+		};
+
+		isp1: isp1@1C090000 {
+			compatible = "telechips,tcc807x-isp";
+			status = "disabled";
+			reg = <0x0 0x1C090000 0x0 0x10000>,
+			      <0x0 0x1C0E0000 0x0 0x20000>,
+			      <0x0 0x1C004000 0x0 0x04C0>,
+			      <0x0 0x1C028000 0x0 0x0004>,
+			      <0x0 0x1C0D2000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "rgbir_sync_base",
+				    "scene_data_base";
+		};
+
+		isp2: isp2@1C0A0000 {
+			compatible = "telechips,tcc807x-isp";
+			status = "disabled";
+			reg = <0x0 0x1C0A0000 0x0 0x10000>,
+			      <0x0 0x1C0E0000 0x0 0x20000>,
+			      <0x0 0x1C004000 0x0 0x04C0>,
+			      <0x0 0x1C0D4000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "scene_data_base";
+		};
+
+		isp3: isp3@1C0B0000 {
+			compatible = "telechips,tcc807x-isp";
+			status = "disabled";
+			reg = <0x0 0x1C0B0000 0x0 0x10000>,
+			      <0x0 0x1C0E0000 0x0 0x20000>,
+			      <0x0 0x1C004000 0x0 0x04C0>,
+			      <0x0 0x1C028008 0x0 0x0004>,
+			      <0x0 0x1C0D6000 0x0 0x2000>;
+			reg-names = "isp_base",
+				    "mem_base",
+				    "cfg_base",
+				    "rgbir_sync_base",
+				    "scene_data_base";
+		};
+	};
+
+	videoinput0: videoinput0 {
+		compatible	= "telechips,dewarp";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		interrupts	= <GIC_SPI 601 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "odw-irq";
+		cam-mux		= <&cam_mux		0>;
+		odw-id		= <0>;
+		/*
+		 * 1: bypass dewarp
+		 * 0: use dewarp
+		 */
+		odw-bypass = <1>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput1: videoinput1 {
+		compatible	= "telechips,dewarp";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		interrupts	= <GIC_SPI 602 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "odw-irq";
+		cam-mux		= <&cam_mux		1>;
+		odw-id		= <1>;
+		/*
+		 * 1: bypass dewarp
+		 * 0: use dewarp
+		 */
+		odw-bypass = <1>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput2: videoinput2 {
+		compatible	= "telechips,dewarp";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		interrupts	= <GIC_SPI 603 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "odw-irq";
+		cam-mux		= <&cam_mux		2>;
+		odw-id		= <2>;
+		/*
+		 * 1: bypass dewarp
+		 * 0: use dewarp
+		 */
+		odw-bypass = <1>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput3: videoinput3 {
+		compatible	= "telechips,dewarp";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		interrupts	= <GIC_SPI 604 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "odw-irq";
+		cam-mux		= <&cam_mux		3>;
+		odw-id		= <3>;
+		/*
+		 * 1: bypass dewarp
+		 * 0: use dewarp
+		 */
+		odw-bypass = <1>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput4: videoinput4 {
+		compatible	= "telechips,video-input";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		cam-mux		= <&cam_mux		4>;
+		vin		= <&vin_wrap_vin	VIN_WRAP_VIN00>;
+		wdma		= <&vin_wrap_wdma	VIN_WRAP_WDMA0>;
+                mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput5: videoinput5 {
+		compatible	= "telechips,video-input";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		cam-mux		= <&cam_mux		5>;
+		vin		= <&vin_wrap_vin	VIN_WRAP_VIN10>;
+		wdma		= <&vin_wrap_wdma	VIN_WRAP_WDMA1>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput6: videoinput6 {
+		compatible	= "telechips,video-input";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		cam-mux		= <&cam_mux		6>;
+		vin		= <&vin_wrap_vin	VIN_WRAP_VIN20>;
+		wdma		= <&vin_wrap_wdma	VIN_WRAP_WDMA2>;
+                mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+
+	videoinput7: videoinput7 {
+		compatible	= "telechips,video-input";
+		status		= "disabled";
+		clocks		= <&fbus_cam		FBUS_CAM_AXI>,
+				  <&fbus_cam		FBUS_CAM_PIX>,
+				  <&fbus_cam		FBUS_CAM_APB>;
+		cam-mux		= <&cam_mux		7>;
+		vin		= <&vin_wrap_vin	VIN_WRAP_VIN30>;
+		wdma		= <&vin_wrap_wdma	VIN_WRAP_WDMA3>;
+		mediadev	= <&tcc_cap_media>;
+		dma-coherent;
+	};
+};

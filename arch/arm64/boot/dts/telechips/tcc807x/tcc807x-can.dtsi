@@ -1,0 +1,391 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc807x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+&reserved_memory {
+	reserved_m_can_0: reserved_m_can_0 {
+		status = "disabled";
+	};
+
+	reserved_m_can_1: reserved_m_can_1 {
+		status = "disabled";
+	};
+
+	reserved_m_can_2: reserved_m_can_2 {
+		status = "disabled";
+	};
+
+	reserved_m_can_3: reserved_m_can_3 {
+		status = "disabled";
+	};
+
+	reserved_m_can_4: reserved_m_can_4 {
+		status = "disabled";
+	};
+
+	reserved_m_can_5: reserved_m_can_5 {
+		status = "disabled";
+	};
+
+	reserved_m_can_6: reserved_m_can_6 {
+		status = "disabled";
+	};
+
+	reserved_m_can_7: reserved_m_can_7 {
+		status = "disabled";
+	};
+
+	reserved_m_can_8: reserved_m_can_8 {
+		status = "disabled";
+	};
+
+	reserved_m_can_9: reserved_m_can_9 {
+		status = "disabled";
+	};
+
+	reserved_m_can_10: reserved_m_can_10 {
+		status = "disabled";
+	};
+
+	reserved_m_can_11: reserved_m_can_11 {
+		status = "disabled";
+	};
+
+};
+
+&pinctrl {
+	pinctrl_m_can0: pinctrl_m_can0 {
+		telechips,pins = "gpk-13", "gpk-14"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can1: pinctrl_m_can1 {
+		telechips,pins = "gpk-15", "gpk-16"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can2: pinctrl_m_can2 {
+		telechips,pins = "gpk-17", "gpk-18"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can3: pinctrl_m_can3 {
+		telechips,pins = "gpk-19", "gpk-20"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can4: pinctrl_m_can4 {
+		telechips,pins = "gpk-1", "gpk-2"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can5: pinctrl_m_can5 {
+		telechips,pins = "gpk-3", "gpk-4"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can6: pinctrl_m_can6 {
+		telechips,pins = "gpk-5", "gpk-6"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can7: pinctrl_m_can7 {
+		telechips,pins = "gpk-7", "gpk-8"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can8: pinctrl_m_can8 {
+		telechips,pins = "gpk-9", "gpk-10"; // "Tx", "Rx"
+		telechips,pin-function = <3>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can9: pinctrl_m_can9 {
+		telechips,pins = "gpmd-4", "gpmd-5"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can10: pinctrl_m_can10 {
+		telechips,pins = "gpmd-6", "gpmd-7"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+
+	pinctrl_m_can11: pinctrl_m_can11 {
+		telechips,pins = "gpmd-8", "gpmd-9"; // "Tx", "Rx"
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+};
+
+/ {
+	dy_m_ram: dy_m_ram {
+		compatible = "dy_m_can";
+		reg = <0x0 0x165C0000 0x0 0x3C>;
+
+		can0 {
+			can = <&m_can0>;
+			reg_offset = <0xC>;
+		};
+
+		can1 {
+			can = <&m_can1>;
+			reg_offset = <0x10>;
+		};
+
+		can2 {
+			can = <&m_can2>;
+			reg_offset = <0x14>;
+		};
+
+		can3 {
+			can = <&m_can3>;
+			reg_offset = <0x18>;
+		};
+
+		can4 {
+			can = <&m_can4>;
+			reg_offset = <0x1C>;
+		};
+
+		can5 {
+			can = <&m_can5>;
+			reg_offset = <0x20>;
+		};
+
+		can6 {
+			can = <&m_can6>;
+			reg_offset = <0x24>;
+		};
+
+		can7 {
+			can = <&m_can7>;
+			reg_offset = <0x28>;
+		};
+
+		can8 {
+			can = <&m_can8>;
+			reg_offset = <0x2C>;
+		};
+
+		can9 {
+			can = <&m_can9>;
+			reg_offset = <0x30>;
+		};
+
+		can10 {
+			can = <&m_can10>;
+			reg_offset = <0x34>;
+		};
+
+		can11 {
+			can = <&m_can11>;
+			reg_offset = <0x38>;
+		};
+	};
+
+	m_can0: can@16500000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16500000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 63 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_0>,
+			<&clk_peri PERI_CAN0>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN0>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can1: can@16510000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16510000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_1>,
+			<&clk_peri PERI_CAN1>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN1>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can2: can@16520000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16520000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_2>,
+			<&clk_peri PERI_CAN2>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN2>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can3: can@16530000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16530000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_3>,
+			<&clk_peri PERI_CAN3>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN3>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can4: can@16540000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16540000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_4>,
+			<&clk_peri PERI_CAN4>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN4>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can5: can@16550000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16550000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 89 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_5>,
+			<&clk_peri PERI_CAN5>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN5>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can6: can@16560000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16560000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_6>,
+			<&clk_peri PERI_CAN6>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN6>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can7: can@16570000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16570000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 94 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_7>,
+			<&clk_peri PERI_CAN7>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN7>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can8: can@16580000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16580000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 95 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_8>,
+			<&clk_peri PERI_CAN8>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN8>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can9: can@16590000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x16590000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 107 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_9>,
+			<&clk_peri PERI_CAN9>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN9>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can10: can@165A0000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x165A0000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_10>,
+			<&clk_peri PERI_CAN10>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN10>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+
+	m_can11: can@165B0000 {
+		compatible = "bosch,m_can";
+		reg = <0x0 0x165B0000 0x0 0x4000>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "m_can", "message_ram";
+		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "int0", "int1";
+		clocks = <&clk_io IOBUS_CAN_11>,
+			<&clk_peri PERI_CAN11>;
+		clock-names = "hclk", "cclk";
+		assigned-clocks = <&clk_peri PERI_CAN11>;
+		assigned-clock-rates = <80000000>; /* 80MHz */
+		status = "disabled";
+	};
+};

@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+
+menuconfig ARCH_TCC803X
+	bool "Telechips TCC803x SoC family"
+	select AEABI
+	select CPU_V7
+	select VFP
+	select NEON
+	select USE_OF
+	select ARM_GIC
+	select GENERIC_IRQ_CHIP
+	select ARM_AMBA
+	select HAVE_ARM_SCU if SMP && !TCC803X_CA7S
+	select HAVE_SMP if !TCC803X_CA7S
+	select CLKDEV_LOOKUP
+	select CLKSRC_MMIO
+	select CLKSRC_OF
+	select COMMON_CLK
+	select HAVE_ARM_ARCH_TIMER
+	select ARCH_HAS_OPP
+	select PM_OPP if PM
+	select PM_GENERIC_DOMAINS
+	select USB_ARCH_HAS_XHCI
+	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+	select USB_ARCH_HAS_OHCI if USB_SUPPORT
+	select MIGHT_HAVE_PCI
+	select PCI_DOMAINS if PCI
+	select HAVE_TELECHIPS_SIP_SERVICE if !TCC803X_CA7S
+
+config TCC803X_CA7S
+	bool "Build for TCC803x Sub-Core"
+	depends on ARCH_TCC803X
+	select ARM_ERRATA_814220
+	help
+	  Select this option to build kernel for TCC803x sub-core system based
+	  on Cortex-A7 single core. If not selected, kernel is built for TCC803x
+	  main core system based on Cortex-A53 quad core by default.

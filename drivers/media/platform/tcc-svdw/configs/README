@@ -1,0 +1,2 @@
+The configuration file (svdw_cfg) must be located at /lib/firmware and be
+compiled into *.dtb file.

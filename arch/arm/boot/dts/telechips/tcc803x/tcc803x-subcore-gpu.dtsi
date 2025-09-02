@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+
+
+/ {
+        gpu0: gpu@0x10200000 {
+                compatible = "arm,mali-midgard";
+                status = "okay";
+                reg = <0x10200000 0x4000>;
+                interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_HIGH>,
+                             <GIC_SPI 93 IRQ_TYPE_LEVEL_HIGH>,
+                             <GIC_SPI 93 IRQ_TYPE_LEVEL_HIGH>;
+                interrupt-names = "JOB", "MMU", "GPU";
+                clocks = <&fbus_gpu FBUS_GPU>;
+                clock-names = "mali_clk";
+        };
+};

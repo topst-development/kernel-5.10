@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	pcie_phy: pcie_phy@12400000 {
+		compatible = "synopsys,ln14lpp-pcie-phy";
+		reg = <0 0x12400000 0 0x10000
+			0 0x12410000 0 0x10000>;
+		reg-names = "phy", "clk";
+		#phy-cells = <0>;
+		clocks = <&clk_peri PERI_PCIe>, <&fbus_smu FBUS_PCIe>;
+		clock-names = "pcie_phy", "pcie_fbus";
+		pms = <0x0504C80C>;
+		status = "disabled";
+	};
+
+	pcie: pcie@12000000 {
+		compatible = "telechips,tcc750x-pcie";
+		reg = <0 0x12000000 0 0x400000
+			0 0x12420000 0 0x10000
+			5 0x00000000 0 0x100000>;
+		reg-names = "dbi", "link", "config";
+		interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
+		resets = <&sysckc_rst SYSBUS_PCIe>;
+		bus-range = <0x00 0xff>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		ranges = <0x81000000 0 0x00100000 5 0x00100000 0 0x00100000
+			0x82000000 0 0x10000000 5 0x10000000 0 0x30000000>;
+		#interrupt-cells = <1>;
+		interrupt-map-mask = <0 0 0 0>;
+		interrupt-map = <0 0 0 0 &gic GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
+		num-lanes = <1>;
+		num-viewport = <4>;
+		max-link-speed = <3>;
+		phys = <&pcie_phy>;
+		phy-names = "pcie-phy";
+		status = "disabled";
+	};
+
+	pcie_epc: pcie_epc@12000000 {
+		compatible = "telechips,tcc750x-pcie-ep";
+		reg = <0 0x12000000 0 0x400000
+			0 0x12420000 0 0x10000
+			5 0x00000000 0 0x800000>;
+		reg-names = "dbi", "link", "addr_space";
+		interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 63 IRQ_TYPE_LEVEL_HIGH>;
+		resets = <&sysckc_rst SYSBUS_PCIe>;
+		max-link-speed = <3>;
+		num-lanes = <1>;
+		num-ib-windows = <4>;
+		num-ob-windows = <4>;
+		phys = <&pcie_phy>;
+		phy-names = "pcie-phy";
+		status = "disabled";
+	};
+};

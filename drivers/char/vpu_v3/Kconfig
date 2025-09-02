@@ -1,0 +1,53 @@
+#
+# VPU v3 device configuration
+#
+
+menuconfig TELECHIPS_VPU_V3_DRV
+	tristate "Telechips VPU V3 Driver"
+	help
+		This option enables the Telechips VPU V3 driver as a loadable module.
+
+if TELECHIPS_VPU_V3_DRV
+
+choice
+	prompt "Max Frame Size (W x H)"
+	default VDEC_MAX_FRAME_SIZE_1
+	depends on (ARCH_TCC899X || ARCH_TCC901X || ARCH_TCC805X || ARCH_TCC807X)
+	help
+		max frame size(width/height) for decoder.
+		This adds support
+		the VPU drivers
+		on TCCxxxx Soc devices.
+
+config VDEC_MAX_FRAME_SIZE_1
+	bool "4096x2160"
+	help
+		DEC_MAX_FRAME_SIZE_1
+		This adds support
+		the VPU drivers.
+		on TCCxxxx Soc devices.
+
+config VDEC_MAX_FRAME_SIZE_2
+	bool "3840x2160"
+	help
+		DEC_MAX_FRAME_SIZE_2
+		This adds support
+		the VPU drivers
+		on TCCxxxx Soc devices.
+endchoice
+
+config VPU_TIME_MEASUREMENT
+	bool "processing time masurement"
+	help
+		Enable to measure the time of decoding/encoding.
+		This adds support
+		the VPU drivers
+		on TCCxxxx Soc devices.
+
+config TOPST
+	bool "TOPST SDK"
+	default y
+	help
+		Telechips Open Platform for System development and Training
+
+endif #TELECHIPS_VPU_V3_DRV

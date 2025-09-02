@@ -1,0 +1,39 @@
+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT */
+
+/*
+ * (C) COPYRIGHT 2019-2023 ARM Limited or its affiliates. All rights reserved.
+ */
+
+/* Default settings shared among Arbiter modules */
+bob_defaults {
+    name: "mali_arbiter_shared_config_defaults",
+    defaults: ["mali_arbitration_shared_config_defaults"],
+}
+
+bob_kernel_module {
+    name: "mali_arbiter",
+    srcs: [
+        "Kbuild",
+        "mali_arbiter_core.c",
+        "mali_arbiter_core.h",
+        "mali_arbiter_main.c",
+        "mali_arbiter_power.c",
+        "mali_arbiter_power.h",
+        "mali_arbiter_sysfs.c",
+        "mali_arbiter_sysfs.h",
+    ],
+    local_include_dirs: [
+        "../include",
+        "../../ptm/include",
+    ],
+    enabled: false,
+    build_arbiter_modules: {
+        enabled: true,
+    },
+    kbuild_options: [
+        "CONFIG_MALI_ARBITER_MODULES=m",
+    ],
+    defaults: [
+        "mali_arbiter_shared_config_defaults",
+    ],
+}

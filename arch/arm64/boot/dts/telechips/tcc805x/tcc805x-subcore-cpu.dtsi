@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc805x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	cpus: cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		A53_0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x0>;
+			enable-method = "psci";
+			next-level-cache = <&A53_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+			clocks = <&cpu_ca53 FBUS_CA53>;
+		};
+
+		A53_1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x1>;
+			enable-method = "psci";
+			next-level-cache = <&A53_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		A53_2: cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x2>;
+			enable-method = "psci";
+			next-level-cache = <&A53_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		A53_3: cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x3>;
+			enable-method = "psci";
+			next-level-cache = <&A53_L2>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		A53_L2: l2-cache {
+			compatible = "cache";
+			cache-level = <2>;
+		};
+
+		cpu_opp_table: cpu_opp_table {
+			compatible = "operating-points-v2";
+			opp-shared;
+		};
+	};
+
+	gic: interrupt-controller@17C01000 {
+		compatible = "arm,gic-400";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg = <0x0 0x17C01000 0x0 0x1000>,
+		      <0x0 0x17C02000 0x0 0x2000>,
+		      <0x0 0x17C04000 0x0 0x2000>,
+		      <0x0 0x17C06000 0x0 0x2000>;
+	};
+
+	timer: timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+
+		arm,no-tick-in-suspend;
+	};
+
+	pmu: arm_pmu {
+		compatible = "arm,cortex-a53-pmu";
+		interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 193 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 194 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-affinity = <&A53_0>,
+				     <&A53_1>,
+				     <&A53_2>,
+				     <&A53_3>;
+	};
+};

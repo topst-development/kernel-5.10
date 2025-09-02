@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc803x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	tcc_pmu_wdt: tcc_pmu_wdt {
+		compatible = "telechips,tcc-pmu-wdt";
+		reg =	<0x0 0x144000D8 0x0 0x4>, /* wdt_ctrl - place holder */
+			<0x0 0x14300070 0x0 0x4>, /* wdt_timer_cfg */
+			<0x0 0x14300078 0x0 0x4>, /* wdt_timer_cnt */
+			<0x0 0x14300060 0x0 0x4>; /* wdt_int_sts */
+
+		clocks = <&clk_peri PERI_TCX &clk_peri PERI_TCT>;
+		clock-names = "peri_tcx", "peri_tct";
+
+		assigned-clocks = <&clk_peri PERI_TCX>;
+		assigned-clock-rates= <24000000>;
+
+		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
+
+		int-offset = <6>;
+		clear-bit = <0>;
+		kick-interval = <5>;
+		timeout-sec = <20>;
+
+		have-rstcnt-reg;
+	};
+};

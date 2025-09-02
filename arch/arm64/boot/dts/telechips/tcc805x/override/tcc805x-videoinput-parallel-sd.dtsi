@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&i2c7 {
+	status = "okay";
+};
+
+&adv7182 {
+	status		= "okay";
+	port {
+		adv7182_out: endpoint {
+			remote-endpoint = <&videoinput0_in>;
+			io-direction	= "output";
+			bus-width	= <8>;
+		};
+	};
+};
+
+&videoinput0 {
+	status		= "okay";
+	cifport		= <&cifport		0>;
+	use_pgl		= <0>;
+	/* memory-region
+	 *  - [0]: parking guideline
+	 *  - [1]: deinterlacing by viqe
+	 *  - [2]: preview
+	 *  - [3]: last frame
+	 */
+	memory-region	= <0
+			   &pmap_rearcamera_viqe
+			   &pmap_rearcamera
+			   0>;
+	port {
+		videoinput0_in: endpoint {
+			remote-endpoint	= <&adv7182_out>;
+			io-direction	= "input";
+			stream-enable	= <0>;	// VIN_CTRL.SE
+			flush-vsync	= <0>;	// VIN_MISC.FVS
+		};
+	};
+};

@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+
+/ {
+	compatible = "telechips,tcc805x";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen: chosen {
+		bootargs = "vmalloc=480M console=ttyAMA4,115200n8";
+		stdout-path = "serial4:115200n8,mmio32,0x16640000";
+	};
+
+	aliases: aliases {};
+
+	memory: memory@40000000 {
+		device_type = "memory";
+		reg = <0x0 0x40000000 0x0 0x40000000>;
+	};
+
+	psci: psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		optee_os {
+			compatible = "optee.os";
+			reg = <0x0 0x4e000000 0x0 0x02000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+	};
+};
+
+#include "tcc805x-subcore-cpu.dtsi"
+#include "tcc805x-subcore-clk.dtsi"
+#include "tcc805x-reboot-mode.dtsi"
+#include "tcc805x-reset.dtsi"
+#include "tcc805x-subcore-mbox.dtsi"
+#include "tcc805x-scfw.dtsi"
+#include "tcc805x-gpio.dtsi"
+#include "tcc805x-uart.dtsi"
+#include "tcc805x-wdt.dtsi"
+#include "tcc805x-dma.dtsi"
+#include "tcc805x-mmc.dtsi"
+#include "tcc805x-ufs.dtsi"
+#include "tcc805x-adc.dtsi"
+#include "tcc805x-i2c.dtsi"
+#include "tcc805x-spi.dtsi"
+#include "tcc805x-subcore-thermal.dtsi"
+#include "tcc805x-subcore-ipi.dtsi"
+#include "tcc805x-pmi.dtsi"
+#include "tcc805x-pwm.dtsi"
+#include "tcc805x-subcore-usb.dtsi"
+#include "tcc805x-subcore-hsm.dtsi"
+#include "tcc805x-rng.dtsi"
+#include "tcc805x-vpu.dtsi"
+#include "tcc805x-touchreceiver.dtsi"
+#include "tcc805x-subcore-tccipc.dtsi"
+#include "tcc805x-subcore-gpu.dtsi"

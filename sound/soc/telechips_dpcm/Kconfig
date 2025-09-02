@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+
+menu "SoC Audio for Telechips CPUs"
+
+comment "SoC Audio options for TCC CPUs:"
+
+config SND_SOC_TELECHIPS
+	tristate "ASoC for Telechips"
+	select SND_SOC_TELECHIPS_AUDIO_CHMUX if ARCH_TCC807X != n
+	depends on ( ARCH_TCC807X ) && SND_SOC
+	default y
+	help
+		Telechips I2S, SPDIF, CDIF Driver
+
+config SND_SOC_TELECHIPS_AUDIO_CHMUX
+	tristate
+	depends on SND_SOC_TELECHIPS
+	help
+		Telechips ASoC CHMUX Driver
+
+config SND_SOC_TELECHIPS_CARD
+	tristate "ASoC CARD for Telechips"
+	depends on SND_SOC_TELECHIPS
+	default y
+	help
+		Telechips ASoC Card Driver
+
+config SND_SOC_TELECHIPS_EXTENDED_TBD
+	tristate "For Telechips developers only for verifying new audio IPs"
+	depends on SND_SOC_TELECHIPS
+	default n
+	help
+		Telechips ASoC Card Driver
+source "sound/soc/telechips_dpcm/dptx_audio/Kconfig"
+endmenu

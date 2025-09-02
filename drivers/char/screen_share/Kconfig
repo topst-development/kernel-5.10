@@ -1,0 +1,9 @@
+config TELECHIPS_SCREEN_SHARE_DRV
+	tristate "Telechips Screen Share Driver"
+	depends on TELECHIPS_SCREEN_SHARE
+	default n
+	help
+		Choose this option if you want to use camipc driver.
+		Camipc uses a mailbox to communicate.
+		Communication between main, subcore for ovp change.
+		Communication between subcore and micom for trvc.

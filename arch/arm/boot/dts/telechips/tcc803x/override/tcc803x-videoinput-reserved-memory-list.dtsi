@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&reserved_memory {
+	pmap_rearcamera_viqe: pmap_rearcamera_viqe {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_VIQE>;
+		alignment = <0x1000>;
+		no-map;
+	};
+
+	pmap_rearcamera: pmap_rearcamera {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_PREVIEW0>;
+		alignment = <0x1000>;
+		no-map;
+	};
+
+	pmap_rearcamera1: pmap_rearcamera1 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_PREVIEW1>;
+		alignment = <0x1000>;
+		no-map;
+	};
+
+	pmap_rearcamera2: pmap_rearcamera2 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_PREVIEW2>;
+		alignment = <0x1000>;
+		no-map;
+	};
+
+	pmap_rearcamera3: pmap_rearcamera3 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_PREVIEW3>;
+		alignment = <0x1000>;
+		no-map;
+	};
+
+	pmap_rearcamera4: pmap_rearcamera4 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_PREVIEW4>;
+		alignment = <0x1000>;
+		no-map;
+	};
+
+	pmap_rearcamera5: pmap_rearcamera5 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_PREVIEW5>;
+		alignment = <0x1000>;
+		no-map;
+	};
+
+	pmap_rearcamera6: pmap_rearcamera6 {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <RSVD_MEM_BASE_32 RSVD_MEM_SIZE_32>;
+		size = <PMAP_SIZE_CAMERA_PREVIEW6>;
+		alignment = <0x1000>;
+		no-map;
+	};
+};

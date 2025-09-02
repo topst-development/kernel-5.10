@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+#
+
+config PHY_SEC08LPP_PCIE
+	tristate "Telechips Dolphin5 PCIe PHY Driver"
+	depends on ARCH_TCC807X || COMPILE_TEST
+	select GENERIC_PHY
+	help
+	  Enable this to support the PCIe PHY on Dolphin5 SoCs.
+
+config PHY_SEC14LPP_PCIE
+	tristate "Telechips Dolphin3s PCIe PHY Driver"
+	depends on ARCH_TCC803X
+	select GENERIC_PHY
+	help
+	  Enable this to support the PCIe PHY on Dolphin SoCs.
+
+config PHY_SS14LPP_X1NS_PCIE
+	tristate "Telechips Dolphin3 PCIe PHY Driver"
+	depends on (ARCH_TCC805X || ARCH_TCC750X) || COMPILE_TEST
+	select GENERIC_PHY
+	help
+	  Enable this to support the PCIe PHY on Dolphin SoCs.
+
+config PHY_SS14LPP_X2NS_PCIE
+	tristate "Telechips Designware PCIe PHY x2 lane Driver"
+	depends on ARCH_TCN100X || COMPILE_TEST
+	select GENERIC_PHY
+	help
+	  Enable this to support the PCIe PHY on Axon SoCs.
+

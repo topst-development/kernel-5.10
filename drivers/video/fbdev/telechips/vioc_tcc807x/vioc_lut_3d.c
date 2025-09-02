@@ -1,0 +1,366 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright (C) Telechips Inc.
+ */
+#include <linux/io.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/of_address.h>
+#include <linux/wait.h>
+#include <linux/delay.h>
+#include <soc/telechips/chipinfo.h>
+#include <video/telechips/vioc_global.h>
+#include <video/telechips/vioc_lut_3d.h>
+
+#define LUT0_INDEX	125U
+#define LUT1_INDEX	225U
+#define LUT2_INDEX	325U
+#define LUT3_INDEX	405U
+#define LUT4_INDEX	505U
+#define LUT5_INDEX	585U
+#define LUT6_INDEX	665U
+#define LUT7_INDEX	729U
+
+static void __iomem *pLUT3D_reg[VIOC_LUT_3D_MAX];
+
+static unsigned int default_table[729] = {
+	0x00000000, 0x00000040, 0x00000080, 0x000000C0, 0x000000FF, 0x00004000, 0x00004040, 0x00004080, 0x000040C0, 0x000040FF, 
+	0x00008000, 0x00008040, 0x00008080, 0x000080C0, 0x000080FF, 0x0000C000, 0x0000C040, 0x0000C080, 0x0000C0C0, 0x0000C0FF, 
+	0x0000FF00, 0x0000FF40, 0x0000FF80, 0x0000FFC0, 0x0000FFFF, 0x00400000, 0x00400040, 0x00400080, 0x004000C0, 0x004000FF, 
+	0x00404000, 0x00404040, 0x00404080, 0x004040C0, 0x004040FF, 0x00408000, 0x00408040, 0x00408080, 0x004080C0, 0x004080FF, 
+	0x0040C000, 0x0040C040, 0x0040C080, 0x0040C0C0, 0x0040C0FF, 0x0040FF00, 0x0040FF40, 0x0040FF80, 0x0040FFC0, 0x0040FFFF, 
+	0x00800000, 0x00800040, 0x00800080, 0x008000C0, 0x008000FF, 0x00804000, 0x00804040, 0x00804080, 0x008040C0, 0x008040FF, 
+	0x00808000, 0x00808040, 0x00808080, 0x008080C0, 0x008080FF, 0x0080C000, 0x0080C040, 0x0080C080, 0x0080C0C0, 0x0080C0FF, 
+	0x0080FF00, 0x0080FF40, 0x0080FF80, 0x0080FFC0, 0x0080FFFF, 0x00C00000, 0x00C00040, 0x00C00080, 0x00C000C0, 0x00C000FF, 
+	0x00C04000, 0x00C04040, 0x00C04080, 0x00C040C0, 0x00C040FF, 0x00C08000, 0x00C08040, 0x00C08080, 0x00C080C0, 0x00C080FF, 
+	0x00C0C000, 0x00C0C040, 0x00C0C080, 0x00C0C0C0, 0x00C0C0FF, 0x00C0FF00, 0x00C0FF40, 0x00C0FF80, 0x00C0FFC0, 0x00C0FFFF, 
+	0x00FF0000, 0x00FF0040, 0x00FF0080, 0x00FF00C0, 0x00FF00FF, 0x00FF4000, 0x00FF4040, 0x00FF4080, 0x00FF40C0, 0x00FF40FF, 
+	0x00FF8000, 0x00FF8040, 0x00FF8080, 0x00FF80C0, 0x00FF80FF, 0x00FFC000, 0x00FFC040, 0x00FFC080, 0x00FFC0C0, 0x00FFC0FF, 
+	0x00FFFF00, 0x00FFFF40, 0x00FFFF80, 0x00FFFFC0, 0x00FFFFFF, 0x00002000, 0x00006000, 0x0000A000, 0x0000E000, 0x00004020, 
+	0x00004060, 0x000040A0, 0x000040E0, 0x00008020, 0x00008060, 0x000080A0, 0x000080E0, 0x0000C020, 0x0000C060, 0x0000C0A0, 
+	0x0000C0E0, 0x0000FF20, 0x0000FF60, 0x0000FFA0, 0x0000FFE0, 0x00400020, 0x00400060, 0x004000A0, 0x004000E0, 0x00404020, 
+	0x00404060, 0x004040A0, 0x004040E0, 0x00408020, 0x00408060, 0x004080A0, 0x004080E0, 0x0040C020, 0x0040C060, 0x0040C0A0, 
+	0x0040C0E0, 0x0040FF20, 0x0040FF60, 0x0040FFA0, 0x0040FFE0, 0x00800020, 0x00800060, 0x008000A0, 0x008000E0, 0x00804020, 
+	0x00804060, 0x008040A0, 0x008040E0, 0x00808020, 0x00808060, 0x008080A0, 0x008080E0, 0x0080C020, 0x0080C060, 0x0080C0A0, 
+	0x0080C0E0, 0x0080FF20, 0x0080FF60, 0x0080FFA0, 0x0080FFE0, 0x00C00020, 0x00C00060, 0x00C000A0, 0x00C000E0, 0x00C04020, 
+	0x00C04060, 0x00C040A0, 0x00C040E0, 0x00C08020, 0x00C08060, 0x00C080A0, 0x00C080E0, 0x00C0C020, 0x00C0C060, 0x00C0C0A0, 
+	0x00C0C0E0, 0x00C0FF20, 0x00C0FF60, 0x00C0FFA0, 0x00C0FFE0, 0x00FF0020, 0x00FF0060, 0x00FF00A0, 0x00FF00E0, 0x00FF4020, 
+	0x00FF4060, 0x00FF40A0, 0x00FF40E0, 0x00FF8020, 0x00FF8060, 0x00FF80A0, 0x00FF80E0, 0x00FFC020, 0x00FFC060, 0x00FFC0A0, 
+	0x00FFC0E0, 0x00FFFF20, 0x00FFFF60, 0x00FFFFA0, 0x00FFFFE0, 0x00002000, 0x00002040, 0x00002080, 0x000020C0, 0x000020FF, 
+	0x00006000, 0x00006040, 0x00006080, 0x000060C0, 0x000060FF, 0x0000A000, 0x0000A040, 0x0000A080, 0x0000A0C0, 0x0000A0FF, 
+	0x0000E000, 0x0000E040, 0x0000E080, 0x0000E0C0, 0x0000E0FF, 0x00402000, 0x00402040, 0x00402080, 0x004020C0, 0x004020FF, 
+	0x00406000, 0x00406040, 0x00406080, 0x004060C0, 0x004060FF, 0x0040A000, 0x0040A040, 0x0040A080, 0x0040A0C0, 0x0040A0FF, 
+	0x0040E000, 0x0040E040, 0x0040E080, 0x0040E0C0, 0x0040E0FF, 0x00802000, 0x00802040, 0x00802080, 0x008020C0, 0x008020FF, 
+	0x00806000, 0x00806040, 0x00806080, 0x008060C0, 0x008060FF, 0x0080A000, 0x0080A040, 0x0080A080, 0x0080A0C0, 0x0080A0FF, 
+	0x0080E000, 0x0080E040, 0x0080E080, 0x0080E0C0, 0x0080E0FF, 0x00C02000, 0x00C02040, 0x00C02080, 0x00C020C0, 0x00C020FF, 
+	0x00C06000, 0x00C06040, 0x00C06080, 0x00C060C0, 0x00C060FF, 0x00C0A000, 0x00C0A040, 0x00C0A080, 0x00C0A0C0, 0x00C0A0FF, 
+	0x00C0E000, 0x00C0E040, 0x00C0E080, 0x00C0E0C0, 0x00C0E0FF, 0x00FF2000, 0x00FF2040, 0x00FF2080, 0x00FF20C0, 0x00FF20FF, 
+	0x00FF6000, 0x00FF6040, 0x00FF6080, 0x00FF60C0, 0x00FF60FF, 0x00FFA000, 0x00FFA040, 0x00FFA080, 0x00FFA0C0, 0x00FFA0FF, 
+	0x00FFE000, 0x00FFE040, 0x00FFE080, 0x00FFE0C0, 0x00FFE0FF, 0x00002020, 0x00002060, 0x000020A0, 0x000020E0, 0x00006020, 
+	0x00006060, 0x000060A0, 0x000060E0, 0x0000A020, 0x0000A060, 0x0000A0A0, 0x0000A0E0, 0x0000E020, 0x0000E060, 0x0000E0A0, 
+	0x0000E0E0, 0x00402020, 0x00402060, 0x004020A0, 0x004020E0, 0x00406020, 0x00406060, 0x004060A0, 0x004060E0, 0x0040A020, 
+	0x0040A060, 0x0040A0A0, 0x0040A0E0, 0x0040E020, 0x0040E060, 0x0040E0A0, 0x0040E0E0, 0x00802020, 0x00802060, 0x008020A0, 
+	0x008020E0, 0x00806020, 0x00806060, 0x008060A0, 0x008060E0, 0x0080A020, 0x0080A060, 0x0080A0A0, 0x0080A0E0, 0x0080E020, 
+	0x0080E060, 0x0080E0A0, 0x0080E0E0, 0x00C02020, 0x00C02060, 0x00C020A0, 0x00C020E0, 0x00C06020, 0x00C06060, 0x00C060A0, 
+	0x00C060E0, 0x00C0A020, 0x00C0A060, 0x00C0A0A0, 0x00C0A0E0, 0x00C0E020, 0x00C0E060, 0x00C0E0A0, 0x00C0E0E0, 0x00FF2020, 
+	0x00FF2060, 0x00FF20A0, 0x00FF20E0, 0x00FF6020, 0x00FF6060, 0x00FF60A0, 0x00FF60E0, 0x00FFA020, 0x00FFA060, 0x00FFA0A0, 
+	0x00FFA0E0, 0x00FFE020, 0x00FFE060, 0x00FFE0A0, 0x00FFE0E0, 0x00200000, 0x00200040, 0x00200080, 0x002000C0, 0x002000FF, 
+	0x00204000, 0x00204040, 0x00204080, 0x002040C0, 0x002040FF, 0x00208000, 0x00208040, 0x00208080, 0x002080C0, 0x002080FF, 
+	0x0020C000, 0x0020C040, 0x0020C080, 0x0020C0C0, 0x0020C0FF, 0x0020FF00, 0x0020FF40, 0x0020FF80, 0x0020FFC0, 0x0020FFFF, 
+	0x00600000, 0x00600040, 0x00600080, 0x006000C0, 0x006000FF, 0x00604000, 0x00604040, 0x00604080, 0x006040C0, 0x006040FF, 
+	0x00608000, 0x00608040, 0x00608080, 0x006080C0, 0x006080FF, 0x0060C000, 0x0060C040, 0x0060C080, 0x0060C0C0, 0x0060C0FF, 
+	0x0060FF00, 0x0060FF40, 0x0060FF80, 0x0060FFC0, 0x0060FFFF, 0x00A00000, 0x00A00040, 0x00A00080, 0x00A000C0, 0x00A000FF, 
+	0x00A04000, 0x00A04040, 0x00A04080, 0x00A040C0, 0x00A040FF, 0x00A08000, 0x00A08040, 0x00A08080, 0x00A080C0, 0x00A080FF, 
+	0x00A0C000, 0x00A0C040, 0x00A0C080, 0x00A0C0C0, 0x00A0C0FF, 0x00A0FF00, 0x00A0FF40, 0x00A0FF80, 0x00A0FFC0, 0x00A0FFFF, 
+	0x00E00000, 0x00E00040, 0x00E00080, 0x00E000C0, 0x00E000FF, 0x00E04000, 0x00E04040, 0x00E04080, 0x00E040C0, 0x00E040FF, 
+	0x00E08000, 0x00E08040, 0x00E08080, 0x00E080C0, 0x00E080FF, 0x00E0C000, 0x00E0C040, 0x00E0C080, 0x00E0C0C0, 0x00E0C0FF, 
+	0x00E0FF00, 0x00E0FF40, 0x00E0FF80, 0x00E0FFC0, 0x00E0FFFF, 0x00200020, 0x00200060, 0x002000A0, 0x002000E0, 0x00204020, 
+	0x00204060, 0x002040A0, 0x002040E0, 0x00208020, 0x00208060, 0x002080A0, 0x002080E0, 0x0020C020, 0x0020C060, 0x0020C0A0, 
+	0x0020C0E0, 0x0020FF20, 0x0020FF60, 0x0020FFA0, 0x0020FFE0, 0x00600020, 0x00600060, 0x006000A0, 0x006000E0, 0x00604020, 
+	0x00604060, 0x006040A0, 0x006040E0, 0x00608020, 0x00608060, 0x006080A0, 0x006080E0, 0x0060C020, 0x0060C060, 0x0060C0A0, 
+	0x0060C0E0, 0x0060FF20, 0x0060FF60, 0x0060FFA0, 0x0060FFE0, 0x00A00020, 0x00A00060, 0x00A000A0, 0x00A000E0, 0x00A04020, 
+	0x00A04060, 0x00A040A0, 0x00A040E0, 0x00A08020, 0x00A08060, 0x00A080A0, 0x00A080E0, 0x00A0C020, 0x00A0C060, 0x00A0C0A0, 
+	0x00A0C0E0, 0x00A0FF20, 0x00A0FF60, 0x00A0FFA0, 0x00A0FFE0, 0x00E00020, 0x00E00060, 0x00E000A0, 0x00E000E0, 0x00E04020, 
+	0x00E04060, 0x00E040A0, 0x00E040E0, 0x00E08020, 0x00E08060, 0x00E080A0, 0x00E080E0, 0x00E0C020, 0x00E0C060, 0x00E0C0A0, 
+	0x00E0C0E0, 0x00E0FF20, 0x00E0FF60, 0x00E0FFA0, 0x00E0FFE0, 0x00202000, 0x00202040, 0x00202080, 0x002020C0, 0x002020FF, 
+	0x00206000, 0x00206040, 0x00206080, 0x002060C0, 0x002060FF, 0x0020A000, 0x0020A040, 0x0020A080, 0x0020A0C0, 0x0020A0FF, 
+	0x0020E000, 0x0020E040, 0x0020E080, 0x0020E0C0, 0x0020E0FF, 0x00602000, 0x00602040, 0x00602080, 0x006020C0, 0x006020FF, 
+	0x00606000, 0x00606040, 0x00606080, 0x006060C0, 0x006060FF, 0x0060A000, 0x0060A040, 0x0060A080, 0x0060A0C0, 0x0060A0FF, 
+	0x0060E000, 0x0060E040, 0x0060E080, 0x0060E0C0, 0x0060E0FF, 0x00A02000, 0x00A02040, 0x00A02080, 0x00A020C0, 0x00A020FF, 
+	0x000A0600, 0x00A06040, 0x00A06080, 0x00A060C0, 0x00A060FF, 0x00A0A000, 0x00A0A040, 0x00A0A080, 0x00A0A0C0, 0x00A0A0FF, 
+	0x00A0E000, 0x00A0E040, 0x00A0E080, 0x00A0E0C0, 0x00A0E0FF, 0x00E02000, 0x00E02040, 0x00E02080, 0x00E020C0, 0x00E020FF, 
+	0x00E06000, 0x00E06040, 0x00E06080, 0x00E060C0, 0x00E060FF, 0x00E0A000, 0x00E0A040, 0x00E0A080, 0x00E0A0C0, 0x00E0A0FF, 
+	0x00E0E000, 0x00E0E040, 0x00E0E080, 0x00E0E0C0, 0x00E0E0FF, 0x00202020, 0x00202060, 0x002020A0, 0x002020E0, 0x00206020, 
+	0x00206060, 0x002060A0, 0x002060E0, 0x0020A020, 0x0020A060, 0x0020A0A0, 0x0020A0E0, 0x0020E020, 0x0020E060, 0x0020E0A0, 
+	0x0020E0E0, 0x00602020, 0x00602060, 0x006020A0, 0x006020E0, 0x00606020, 0x00606060, 0x006060A0, 0x006060E0, 0x0060A020, 
+	0x0060A060, 0x0060A0A0, 0x0060A0E0, 0x0060E020, 0x0060E060, 0x0060E0A0, 0x0060E0E0, 0x00A02020, 0x00A02060, 0x00A020A0, 
+	0x00A020E0, 0x00A06020, 0x00A06060, 0x00A060A0, 0x00A060E0, 0x00A0A020, 0x00A0A060, 0x00A0A0A0, 0x00A0A0E0, 0x00A0E020, 
+	0x00A0E060, 0x00A0E0A0, 0x00A0E0E0, 0x00E02020, 0x00E02060, 0x00E020A0, 0x00E020E0, 0x00E06020, 0x00E06060, 0x00E060A0, 
+	0x00E060E0, 0x00E0A020, 0x00E0A060, 0x00E0A0A0, 0x00E0A0E0, 0x00E0E020, 0x00E0E060, 0x00E0E0A0, 0x00E0E0E0,
+};
+
+static int vioc_lut_3d_set_select(unsigned int lut_n, unsigned int sel)
+{
+	int ret = 0;
+	unsigned int value = 0U;
+	void __iomem *reg = NULL;
+
+	reg = VIOC_LUT_3D_GetAddress(lut_n);
+	if (reg == NULL) {
+		ret = -EINVAL;
+	} else {
+		value = __raw_readl(reg + LUT_3D_CTRL_OFFSET) & ~(LUT_3D_CTRL_SEL_MASK);
+		value |= (sel << LUT_3D_CTRL_SEL_SHIFT);
+
+		__raw_writel(value, (reg + LUT_3D_CTRL_OFFSET));
+	}
+
+	return ret;
+}
+
+static int vioc_lut_3d_pend(unsigned int lut_n)
+{
+	int ret = 0;
+	unsigned int value = 0U;
+	void __iomem *reg = NULL;
+
+	reg = VIOC_LUT_3D_GetAddress(lut_n);
+	if (reg == NULL) {
+		ret = -EINVAL;
+	} else {
+		value = (__raw_readl((reg + LUT_3D_PEND_OFFSET)) | ((u32)1U << LUT_3D_PEND_PEND_SHIFT));
+
+		__raw_writel(value, (reg + LUT_3D_PEND_OFFSET));
+	}
+
+	return ret;
+}
+
+static int vioc_lut_3d_setupdate(unsigned int lut_n)
+{
+	int ret = 0;
+	unsigned int value = 0U;
+	void __iomem *reg = NULL;
+
+	reg = VIOC_LUT_3D_GetAddress(lut_n);
+	if (reg == NULL) {
+		ret = -EINVAL;
+	} else {
+		value = (__raw_readl(reg + LUT_3D_CTRL_OFFSET) | ((u32)1U << LUT_3D_CTRL_UPD_SHIFT));
+
+		__raw_writel(value, reg + LUT_3D_CTRL_OFFSET);
+	}
+
+	return ret;
+}
+
+int vioc_lut_3d_set_table(unsigned int lut_n, const unsigned int *lut3dtable)
+{
+	int ret = 0;
+	unsigned int idx = 0U, i = 0U, offset = 0U;
+	void __iomem *reg = NULL;
+
+	reg = VIOC_LUT_3D_GetAddress(lut_n);
+	if (reg == NULL) {
+		ret = -EINVAL;
+	}
+
+	if (ret == 0) {
+		idx = 0U;
+		(void)vioc_lut_3d_set_select(lut_n, 0U);
+		for (i = 0U; i < LUT0_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		idx = 0U;
+		(void)vioc_lut_3d_set_select(lut_n, 1U);
+		for (i = LUT0_INDEX; i < LUT1_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		idx = 0;
+		(void)vioc_lut_3d_set_select(lut_n, 2U);
+		for (i = LUT1_INDEX; i < LUT2_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		idx = 0;
+		(void)vioc_lut_3d_set_select(lut_n, 3U);
+		for (i = LUT2_INDEX; i < LUT3_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		idx = 0;
+		(void)vioc_lut_3d_set_select(lut_n, 4U);
+		for (i = LUT3_INDEX; i < LUT4_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		idx = 0;
+		(void)vioc_lut_3d_set_select(lut_n, 5U);
+		for (i = LUT4_INDEX; i < LUT5_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		idx = 0;
+		(void)vioc_lut_3d_set_select(lut_n, 6U);
+		for (i = LUT5_INDEX; i < LUT6_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		idx = 0;
+		(void)vioc_lut_3d_set_select(lut_n, 7U);
+		for (i = LUT6_INDEX; i < LUT7_INDEX; i++) {
+			offset = (0xFFFU & idx);
+			/* avoid CERT-C Integers Rule INT30-C */
+			if (offset < (UINT_MAX / 4U)) {
+				__raw_writel(lut3dtable[i], ((reg + LUT_3D_TABLE_OFFSET) + (offset * 0x4U)));
+			}
+			idx++;
+		}
+	}
+
+	if (ret == 0) {
+		ret = vioc_lut_3d_pend(lut_n);
+		if (ret != 0) {
+			(void)pr_err("[ERR][VIOC_LUT_3D]%s: table pending fail\n", __func__);
+		}
+	}
+
+	if (ret == 0) {
+		ret = vioc_lut_3d_setupdate(lut_n);
+		if (ret != 0) {
+			(void)pr_err("[ERR][VIOC_LUT_3D]%s: table update fail\n", __func__);
+		}
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL(vioc_lut_3d_set_table);
+
+/*
+ *	vioc_lut_3d_bypass
+ *	@lut_n : 3d LUT NUM
+ *	@onoff :
+ *		0 - Bypass ON	(Disable 3D LUT)
+ *		1 - Bypass OFF	(Enable 3D LUT)
+ *
+ */
+int vioc_lut_3d_bypass(unsigned int lut_n, unsigned int onoff)
+{
+	int ret = 0;
+	unsigned int value = 0U;
+	void __iomem *reg = NULL;
+
+	reg = VIOC_LUT_3D_GetAddress(lut_n);
+	if (reg == NULL) {
+		ret = -EINVAL;
+	}
+
+	if (ret == 0) {
+		if (onoff == 1U) {
+			value = __raw_readl(reg + LUT_3D_CTRL_OFFSET) & ~(LUT_3D_CTRL_BYPASS_MASK);
+		} else {
+			value = __raw_readl(reg + LUT_3D_CTRL_OFFSET) | (LUT_3D_CTRL_BYPASS_MASK);
+		}
+
+		__raw_writel(value, reg + LUT_3D_CTRL_OFFSET);
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL(vioc_lut_3d_bypass);
+
+void __iomem *VIOC_LUT_3D_GetAddress(unsigned int lut_n)
+{
+	void __iomem *reg = NULL;
+	unsigned int index = 0U;
+
+	if (get_vioc_type(lut_n) == get_vioc_type(VIOC_LUT_3D)) {
+		index = get_vioc_index(lut_n);
+		if (index < VIOC_LUT_3D_MAX) {
+			reg = pLUT3D_reg[index];
+		} else {
+			(void)pr_err("[ERR][VIOC_LUT_3D]%s: value out of range\n", __func__);
+		}
+	} else {
+		(void)pr_err("[ERR][VIOC_LUT_3D]%s: VIOC Type is not 3D LUT\n", __func__);
+	}
+
+	return reg;
+}
+EXPORT_SYMBOL(VIOC_LUT_3D_GetAddress);
+
+int vioc_lut_3d_init(void)
+{
+	unsigned int i = 0;
+	struct device_node *ViocLUT3D_np;
+
+	ViocLUT3D_np = of_find_compatible_node(NULL, NULL, "telechips,vioc_lut_3d");
+
+	if (ViocLUT3D_np == NULL) {
+		/* Prevent KCS warning */
+		(void)pr_info("[INF][LUT_3D] disabled\n");
+	} else {
+		for (i = 0; i <  VIOC_LUT_3D_MAX; i++) {
+			pLUT3D_reg[i] = of_iomap(ViocLUT3D_np, (int)i);
+
+			if (pLUT3D_reg[i] != NULL) {
+				/* Prevent KCS warning */
+				(void)pr_info("[INF][LUT_3D] vioc-lut-3d%d\n", i);
+				(void)vioc_lut_3d_set_table((i + VIOC_LUT_3D), default_table);
+			}
+		}
+	}
+	return 0;
+}
+EXPORT_SYMBOL(vioc_lut_3d_init);

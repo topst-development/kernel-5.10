@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&i2c7 {
+	status = "disabled";
+	port-mux = <12>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c12_bus_active>;
+	pinctrl-1 = <&i2c12_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+&pinctrl {
+	i2c12_bus_active: i2c12_bus_active {
+		telechips,pins = "gpb-21", "gpb-22";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c12_bus_sleep: i2c12_bus_sleep {
+		telechips,pins = "gpb-21", "gpb-22";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+};

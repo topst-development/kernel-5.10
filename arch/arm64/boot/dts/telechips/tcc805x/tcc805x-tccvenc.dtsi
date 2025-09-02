@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+/
+{
+	venc_drv0: venc_drv@0 {
+			compatible = "telechips,v4l2_venc";
+			reg = <0x0 0x0 0x0 0x0>;
+			status = "okay";
+		};
+};

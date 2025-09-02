@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT
+#
+# (C) COPYRIGHT 2019-2022 Arm Limited or its affiliates. All rights reserved.
+#
+#
+
+obj-$(CONFIG_MALI_ARBITER_MODULES) := mali_arbiter/

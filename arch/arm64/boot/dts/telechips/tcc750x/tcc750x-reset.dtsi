@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc750x-clks.h>
+
+/ {
+	sysckc_rst: rstctrl-system {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <SYSBUS0_START SYSPERI1_END>;
+	};
+
+	vpubus_rst: rstctrl-video {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <VIDEOBUS_START VIDEOBUS_END>;
+	};
+};

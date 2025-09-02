@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include <dt-bindings/soc/tcc750x,membase.h>
+#include <dt-bindings/pmap/tcc750x/pmap-tcc750x-linux-videoinput.h>
+#include "tcc750x-videoinput-reserved-memory-list.dtsi"

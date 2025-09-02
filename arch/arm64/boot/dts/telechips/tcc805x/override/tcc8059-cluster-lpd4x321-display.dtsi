@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include <dt-bindings/display/tcc8059-lpd4x321-panel.h>
+#include "tcc805x-disp-target-config.dtsi"
+#include "tcc805x-vioc.dtsi"
+#include "tcc805x-disp.dtsi"
+
+#include "tcc8059-linux-cluster-vioc.dtsi"
+/*==============================================================================
+ * TCC805x_Linux_Cluster DISPLAY PATH
+ * ---------------------------
+ * VIOC2 : fb0<fb0_display_out> -> <fb_lvds0_in>fb_tm123xdhp90
+ =============================================================================*/
+
+#if defined(LCD_PORT1_BLK_GPIO) && defined(LCD_PORT1_BLK_NUM)
+&lcd_port1_bl {
+	status = "okay";
+};
+#endif
+
+/* FB0 */
+&fb0 {
+	status = "okay";
+};
+
+/* FB0 -> FB TM123XDHP90 */
+&fb0_display_out {
+	#if (FB_LVDS_PANEL_INDEX == LVDS_PANEL_AUO)
+	remote-endpoint = <&panel_fb_auo_in>;
+	#else
+	remote-endpoint = <&panel_fb_boe_in>;
+	#endif
+};
+
+/* FB TM123XDHP90 */
+FB_LVDS_PANEL {
+	status = "okay";
+	#if defined(LCD_PORT1_PWR) && defined(LCD_PORT1_RST) && \
+	    defined(LCD_PORT1_BLK)
+	pinctrl-0 = <&lcd_port_default1>;
+	pinctrl-1 = <&lcd_port_power_on1>;
+	pinctrl-2 = <&lcd_port_reset_off1>;
+	pinctrl-3 = <&lcd_port_blk_on1>;
+	pinctrl-4 = <&lcd_port_blk_off1>;
+	pinctrl-5 = <&lcd_port_reset_on1 &lcd_port_power_off1>;
+	#endif
+	#if defined(LCD_PORT1_BLK_GPIO) && defined(LCD_PORT1_BLK_NUM)
+	backlight = <&lcd_port1_bl>;
+	#endif
+};
+
+/* FB0 -> FB TM123XDHP90 */
+FB_LVDS_PANEL_IN {
+	remote-endpoint = <&fb0_display_out>;
+};
+/* end of file */

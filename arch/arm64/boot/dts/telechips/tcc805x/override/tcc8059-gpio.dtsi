@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&pinctrl {
+	pinctrl_gpio {
+		gpmb {
+			status = "disabled";
+		};
+
+		gpmc {
+			status = "disabled";
+		};
+
+		gpmd {
+			status = "disabled";
+		};
+	};
+};
+
+&gpmb {
+	status = "disabled";
+};
+
+&gpmc {
+	status = "disabled";
+};
+
+&gpmd {
+	status = "disabled";
+};

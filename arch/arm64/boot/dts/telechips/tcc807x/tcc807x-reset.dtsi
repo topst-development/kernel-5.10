@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc807x-clks.h>
+
+/ {
+	pmu_rst: reset-controller@140000b4 {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <SMUBUS_START SMUBUS_END>;
+	};
+
+	vpubus_rst: reset-controller@15100004 {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <VIDEOBUS_START VIDEOBUS_END>;
+	};
+
+	ddibus_rst: reset-controller@12380004 {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <DDIBUS_START DDIBUS_END>;
+	};
+
+	iobus_rst: reset-controller@1605100c {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <IOBUS0_START IOBUS2_END>;
+	};
+
+	hsiobus_rst: reset-controller@111a0004 {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <HSIOBUS_START HSIOBUS_END>;
+	};
+
+	audiobus_rst: reset-controller@19600030 {
+		compatible = "telechips,reset";
+		#reset-cells = <1>;
+		reset-range = <AUDIOBUS0_START AUDIOBUS1_END>;
+	};
+};

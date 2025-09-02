@@ -1,0 +1,148 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include "tcc805x-disp-target-config.dtsi"
+#include "tcc805x-vioc.dtsi"
+#include "topst-d3-g-disp.dtsi"
+
+#include "tcc805x-linux-ivi-vioc.dtsi"
+/*==============================================================================
+ * TCC805x_Linux_IVI DISPLAY PATH
+ * ---------------------------
+ * VIOC0 : tccdrm_vioc0<vioc0_output_dp0> ->
+ *	   <dp0_in_vioc0>tccdrm_dp0
+ * VIOC1 : tccdrm_vioc1<vioc1_output_dp1> ->
+ *	   <dp1_in_vioc1>tccdrm_dp1
+ * VIOC2 : tccdrm_vioc2<vioc2_output_dp2> ->
+ *	   <dp2_in_vioc2>tccdrm_dp2
+ * VIOC3 : tccdrm_vioc3<vioc3_output_dp3> ->
+ *	   <dp3_in_vioc3>tccdrm_dp3
+ =============================================================================*/
+
+
+/* drm vioc */
+&tccdrm_vioc0 {
+	status = "okay";
+};
+
+&tccdrm_vioc1 {
+	status = "okay";
+};
+
+&tccdrm_vioc2 {
+	status = "okay";
+};
+
+&tccdrm_vioc3 {
+	status = "okay";
+};
+
+&vioc0_out {
+	vioc0_output_dp0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dp0_in_vioc0>;
+	};
+};
+
+&vioc1_out {
+	vioc1_output_dp1: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dp1_in_vioc1>;
+	};
+};
+
+&vioc2_out {
+	vioc2_output_dp2: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dp2_in_vioc2>;
+	};
+};
+
+&vioc3_out {
+	vioc3_output_dp3: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dp3_in_vioc3>;
+	};
+};
+
+
+/* tcdrm dp */
+&tccdrm_dp0 {
+	status = "okay";
+};
+
+&tccdrm_dp1 {
+	status = "okay";
+};
+
+&tccdrm_dp2 {
+	status = "okay";
+};
+
+&tccdrm_dp3 {
+	status = "okay";
+};
+
+/* vioc0_output_dp0 -> dp0_in_vioc0 */
+&dp0_in {
+	dp0_in_vioc0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc0_output_dp0>;
+	};
+};
+
+/* vioc1_output_dp1 -> dp1_in_vioc1 */
+&dp1_in {
+	dp1_in_vioc1: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc1_output_dp1>;
+	};
+};
+
+/* vioc2_output_dp2 -> dp2_in_vioc2 */
+&dp2_in {
+	dp2_in_vioc2: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc2_output_dp2>;
+	};
+};
+
+/* vioc3_output_dp3 -> dp3_in_vioc3 */
+&dp3_in {
+	dp3_in_vioc3: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc3_output_dp3>;
+	};
+};
+
+/* screen_share_display_out -> tcc_drm_dummy0  */
+/* screen share */
+&tccdrm_screen_share {
+	status = "okay";
+};
+
+&screen_share_display_out {
+	screenshare_out_dummy0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dummy0_in_screenshare>;
+	};
+};
+
+/* drm dummy */
+&tcc_drm_dummy0 {
+	status = "okay";
+	connector_type ="VIRTUAL";
+};
+
+&dummy0_in {
+	dummy0_in_screenshare: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&screenshare_out_dummy0>;
+	};
+};
+
+&dpv14_tx {
+	status = "okay";
+};
+/* end of file */

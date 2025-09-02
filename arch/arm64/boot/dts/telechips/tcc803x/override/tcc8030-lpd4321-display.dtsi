@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/display/display-defs.h>
+
+#define DT_DISPDEV_FOR_SCREENSHARE DT_DISPDEV_DUMMY2
+
+/* Definition for H/W LCD ports */
+#include "tcc803x-disp-target-config.dtsi"
+#include "tcc803x-vioc.dtsi"
+#include "tcc803x-disp.dtsi"
+
+#include "tcc803x-linux-ivi-vioc.dtsi"
+/*==============================================================================
+ * TCC803x_Linux_IVI DISPLAY PATH
+ * ---------------------------
+ * VIOC0 : tccdrm_vioc0<vioc0_output_dummy0> -> <dummy0_in_vioc0>tcc_drm_dummy0
+ * VIOC1 : tccdrm_vioc1<vioc0_output_dummy1> -> <dummy1_in_vioc1>tcc_drm_dummy1
+ =============================================================================*/
+
+/*- DRM VIOC (PLANE/CRTC) ----------------------------------------------------*/
+&tccdrm_vioc0 {
+	status = "okay";
+};
+
+&tccdrm_vioc1 {
+	status = "okay";
+};
+
+&vioc0_out {
+	vioc0_output_dummy0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dummy0_in_vioc0>;
+	};
+};
+
+&vioc1_out {
+	vioc1_output_dummy1: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dummy1_in_vioc1>;
+	};
+};
+
+&tccdrm_screen_share {
+	status = "okay";
+};
+
+&screen_share_display_in {
+	screen_share_display_out: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&dummy2_in_screenshare>;
+	};
+};
+
+/*- DRM DUMMY (ENCODER/CONNECTOR ---------------------------------------------*/
+&tcc_drm_dummy0 {
+	status = "okay";
+};
+
+&tcc_drm_dummy1 {
+	status = "okay";
+};
+
+&tcc_drm_dummy2 {
+	status = "okay";
+};
+
+&dummy0_in {
+	dummy0_in_vioc0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc0_output_dummy0>;
+	};
+};
+
+&dummy1_in {
+	dummy1_in_vioc1: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&vioc1_output_dummy1>;
+	};
+};
+
+&dummy2_in {
+	dummy2_in_screenshare: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&screen_share_display_out>;
+	};
+};
+
+
+#if defined(CONFIG_MAINCORE_FB_TEST)
+/* FB0 */
+&fb0 {
+	status = "okay";
+};
+#endif
+
+/* end of file */

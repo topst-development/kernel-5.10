@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	sss_mbox: mbox@14020000 {
+		compatible = "telechips,sss-mailbox";
+		reg = <0x0 0x14020000 0x0 0x3000>;
+		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
+		#mbox-cells = <1>;
+		max-channel = <1>;
+	};
+
+	sec_ipc_hsm: sec-ipc-hsm {
+		compatible = "telechips,sec-ipc-hsm";
+		mbox-names = "sec-ipc-hsm";
+		mboxes = <&sss_mbox 0>;
+	};
+
+	tcc_hsm: tcc_hsm@0 {
+		compatible = "telechips,tcc-hsm";
+		status = "okay";
+	};
+};

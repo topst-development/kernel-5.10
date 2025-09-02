@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc805x.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8050 TOPST D3-G 1.0 Main Core";
+	board-id = <BOARD_ID_TCC8050_TOPST>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc805x-wdt.dtsi"
+#include "override/tcc805x-dma.dtsi"
+#include "override/tcc805x-scfw.dtsi"
+#include "override/tcc805x-gmac.dtsi"
+#include "override/tcc8050-cpu.dtsi"
+#include "override/topst-d3-g-gpio.dtsi"
+#include "override/topst-d3-g-uart.dtsi"
+#include "override/topst-d3-g-mmc.dtsi"
+#include "override/topst-d3-g-i2c.dtsi"
+#include "override/topst-d3-g-spi.dtsi"
+#include "override/topst-d3-g-timer.dtsi"
+#include "override/topst-d3-g-usb.dtsi"
+#include "override/topst-d3-g-gmac.dtsi"
+#include "override/topst-d3-g-pcie.dtsi"
+#include "override/topst-d3-g-display.dtsi"
+#include "override/topst-d3-g-audio.dtsi"
+#include "override/topst-d3-g-vpu.dtsi"
+#include "override/topst-d3-g-camera.dtsi"
+#include "override/topst-d3-g-pwm.dtsi"
+
+&vout_drv0 {
+	status = "disabled";
+};
+
+&pmap_v4l2_vout0 {
+	status = "disabled";
+};
+
+&vout_drv1 {
+	status = "disabled";
+};
+
+&pmap_v4l2_vout1 {
+	status = "disabled";
+};
+
+&tcc_viqe {
+	status = "disabled";
+};
+
+&pmap_viqe0 {
+	status = "disabled";
+};
+
+&pmap_viqe1 {
+	status = "disabled";
+};

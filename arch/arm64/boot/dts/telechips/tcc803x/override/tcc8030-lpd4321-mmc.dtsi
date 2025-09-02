@@ -1,0 +1,211 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/* eMMC */
+&sdhc0 {
+	status = "okay";
+	bus-width = <8>;
+	max-frequency = <153600000>;
+	clock-frequency = <1536000000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_bus8 &sd0_strb>;
+	pinctrl-1 = <&sd0_clk &sd0_cmd &sd0_bus8 &sd0_strb>;
+
+	no-sdio;
+	no-sd;
+	non-removable;
+	keep-power-in-suspend;
+	disable-wp;
+	cap-mmc-hw-reset;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
+	mmc-hs400-enhanced-strobe;
+
+	tcc-mmc-taps = <15 15 15 15>;
+	tcc-mmc-hs400-pos-tap = <3>;
+	tcc-mmc-hs400-neg-tap = <8>;
+
+	tcc-mmc-reset = <&gpsd0 14 0>;
+
+	vqmmc-supply = <&vqmmc_emmc>;
+};
+
+&vqmmc_emmc {
+	compatible = "regulator-fixed";
+	regulator-name = "vqmmc_emmc";
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-always-on;
+};
+
+/* SD Slot */
+&sdhc1 {
+	/*
+	 * In order to reduce boot time,
+	 * we use the driver as module not built-in.
+	 */
+	compatible = "telechips,tcc803x-sdhci,module-only";
+	status = "okay";
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&sd1_clk &sd1_cmd &sd1_bus4 &sd1_bus4_wp_cd &sd1_pwr>;
+	pinctrl-1 = <&sd1_clk &sd1_cmd &sd1_bus4 &sd1_bus4_wp_cd &sd1_pwr>;
+
+	broken-cd;
+	cd-inverted;
+	keep-power-in-suspend;
+
+	tcc-mmc-taps = <15 15 15 15>;
+
+	wp-gpios = <&gpsd1 7 0>;
+	cd-gpios = <&gpsd1 6 0>;
+
+	vqmmc-supply = <&vdd_ldo3>;
+	mmc-pwrseq = <&sdhc1_pwrseq>;
+};
+
+&sdhc1_pwrseq {
+	compatible = "mmc-pwrseq-simple";
+	reset-gpios = <&gpsd1 8 GPIO_ACTIVE_LOW>;
+};
+
+/* SDIO */
+&sdhc2 {
+	status = "okay";
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_bus4 &out0_clk>;
+	pinctrl-1 = <&sd2_clk &sd2_cmd &sd2_bus4 &out0_clk>;
+
+	keep-power-in-suspend;
+	cap-sdio-irq;
+
+	tcc-mmc-taps = <15 15 15 15>;
+
+	vqmmc-supply = <&vqmmc_sdio>;
+
+	cd-force-presence-change;
+
+	tcm38xx {
+		compatible = "telechips,tcm38xx";
+		wifi_pwr-gpio = <&gpsd2 6 0>; /* BT_WIFI_VBAT_EN */
+		wlreg_on-gpio = <&gpsd2 8 0>; /* WIFI_REG_ON */
+		//wifi_pwr_1p8v-gpio = <&gpsd1 6 0>;
+		//wifi_pwr_3p3v-gpio = <&gpsd1 7 0>;
+	};
+};
+
+&vqmmc_sdio {
+	compatible = "regulator-fixed";
+	regulator-name = "vqmmc_sdio";
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-always-on;
+};
+
+/* GPIO */
+&pinctrl {
+	sd0_clk: sd0_clk {
+		telechips,pins = "gpsd0-0";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd0_cmd: sd0_cmd {
+		telechips,pins = "gpsd0-1";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd0_bus8: sd0_bus8 {
+		telechips,pins = "gpsd0-2", "gpsd0-3", "gpsd0-4", "gpsd0-5",
+		                 "gpsd0-6", "gpsd0-7", "gpsd0-8", "gpsd0-9";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd0_strb: sd0_strb {
+		telechips,pins = "gpsd0-10";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,pull-down;
+		telechips,input_buffer_enable;
+	};
+
+	sd1_clk: sd1_clk {
+		telechips,pins = "gpsd1-0";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd1_cmd: sd1_cmd {
+		telechips,pins = "gpsd1-1";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd1_bus4: sd1_bus4 {
+		telechips,pins = "gpsd1-2", "gpsd1-3", "gpsd1-4", "gpsd1-5";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd1_bus4_wp_cd: sd1_bus4_wp_cd {
+		telechips,pins = "gpsd1-6", "gpsd1-7";
+		telechips,pin-function = <0>;
+		telechips,pull-up;
+		telechips,input-enable;
+		telechips,input_buffer_enable;
+	};
+
+	sd1_pwr: sd1_pwr {
+		telechips,pins = "gpsd1-8";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+
+	sd2_clk: sd2_clk {
+		telechips,pins = "gpsd2-0";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd2_cmd: sd2_cmd {
+		telechips,pins = "gpsd2-1";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	sd2_bus4: sd2_bus4 {
+		telechips,pins = "gpsd2-2", "gpsd2-3", "gpsd2-4", "gpsd2-5";
+		telechips,pin-function = <1>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	out0_clk: out0_clk {
+		telechips,pins = "gpsd2-7";
+		telechips,pin-function = <11>;
+		telechips,drive-strength = <3>;
+	}; // ext32.768 clock
+};

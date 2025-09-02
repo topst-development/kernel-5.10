@@ -1,0 +1,518 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#ifndef TCC_MIPI_CFG_REG_H
+#define TCC_MIPI_CFG_REG_H
+
+#define TCC_MIPI_RESET_RELEASE			(0U)
+#define TCC_MIPI_RESET_RESET			(1U)
+
+/*
+ * MIPI CFG BASE
+ */
+#define CAM_SWRST0				((uint32_t)0x000U)
+#define CAM_SWRST1				((uint32_t)0x004U)
+#define CAM_CLKMSK0				((uint32_t)0x008U)
+#define CAM_CLKMSK1				((uint32_t)0x00CU)
+#define MIPI_DSI_CH_SEL				((uint32_t)0x010U)
+#define MIPI0_CSI_CTL				((uint32_t)0x018U)
+#define MIPI0_DSI_CTL				((uint32_t)0x01CU)
+#define MIPI1_PHY_CTL				((uint32_t)0x020U)
+#define MIPI1_CSI_CTL				((uint32_t)0x028U)
+#define MIPI1_DSI_CTL0				((uint32_t)0x02CU)
+#define MIPI1_DSI_CTL1				((uint32_t)0x030U)
+#define CAM_FRONT_CH_SEL			((uint32_t)0x03CU)
+#define ISP_CTL					((uint32_t)0x078U)
+
+
+/*
+ * CAM_SWRST0 (camera sub-system soft reset 0 register)
+ */
+#define CAM_SWRST0_MIPI0_SWRST_SHIFT		((uint32_t)0U)
+#define CAM_SWRST0_MIPI0_PHY_M_SWRST_SHIFT	((uint32_t)1U)
+#define CAM_SWRST0_MIPI0_PHY_S_SWRST_SHIFT	((uint32_t)2U)
+#define CAM_SWRST0_MIPI0_PHY_APB_SWRST_SHIFT	((uint32_t)3U)
+#define CAM_SWRST0_MIPI0_CSI_SWRST_SHIFT	((uint32_t)4U)
+#define CAM_SWRST0_MIPI0_GDP_PIX_SWRST_SHIFT	((uint32_t)5U)
+#define CAM_SWRST0_MIPI0_GDP_APB_SWRST_SHIFT	((uint32_t)6U)
+#define CAM_SWRST0_MIPI0_DSI_SWRST_SHIFT	((uint32_t)7U)
+#define CAM_SWRST0_MIPI1_SWRST_SHIFT		((uint32_t)8U)
+#define CAM_SWRST0_MIPI1_PHY_M_SWRST_SHIFT	((uint32_t)9U)
+#define CAM_SWRST0_MIPI1_PHY_S_SWRST_SHIFT	((uint32_t)10U)
+#define CAM_SWRST0_MIPI1_PHY_APB_SWRST_SHIFT	((uint32_t)11U)
+#define CAM_SWRST0_MIPI1_CSI_SWRST_SHIFT	((uint32_t)12U)
+#define CAM_SWRST0_MIPI1_GDP_PIX_SWRST_SHIFT	((uint32_t)13U)
+#define CAM_SWRST0_MIPI1_GDP_APB_SWRST_SHIFT	((uint32_t)14U)
+#define CAM_SWRST0_MIPI1_DSI_SWRST_SHIFT	((uint32_t)15U)
+#define CAM_SWRST0_ISP_BUS_SWRST_SHIFT		((uint32_t)16U)
+#define CAM_SWRST0_ISP_RISCV_SWRST_SHIFT	((uint32_t)17U)
+#define CAM_SWRST0_ISP_PIX_SWRST_SHIFT		((uint32_t)18U)
+/* TODO: RGB-IR Sync SWRST index */
+#define CAM_SWRST0_RISYNC0_APB_SWRST_SHIFT	((uint32_t)24U)
+#define CAM_SWRST0_RISYNC0_CORE_SWRST_SHIFT	((uint32_t)25U)
+#define CAM_SWRST0_RISYNC1_APB_SWRST_SHIFT	((uint32_t)26U)
+#define CAM_SWRST0_RISYNC1_CORE_SWRST_SHIFT	((uint32_t)27U)
+
+
+#define CAM_SWRST0_MIPI0_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI0_PHY_M_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_PHY_M_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI0_PHY_S_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_PHY_S_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI0_PHY_APB_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_PHY_APB_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI0_CSI_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_CSI_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI0_GDP_PIX_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_GDP_PIX_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI0_GDP_APB_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_GDP_APB_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI0_DSI_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI0_DSI_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_PHY_M_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_PHY_M_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_PHY_S_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_PHY_S_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_PHY_APB_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_PHY_APB_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_CSI_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_CSI_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_GDP_PIX_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_GDP_PIX_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_GDP_APB_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_GDP_APB_SWRST_SHIFT)
+#define CAM_SWRST0_MIPI1_DSI_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_MIPI1_DSI_SWRST_SHIFT)
+#define CAM_SWRST0_ISP_BUS_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_ISP_BUS_SWRST_SHIFT)
+#define CAM_SWRST0_ISP_RISCV_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_ISP_RISCV_SWRST_SHIFT)
+#define CAM_SWRST0_ISP_PIX_SWRST_MASK		\
+		(((uint32_t)1U) << CAM_SWRST0_ISP_PIX_SWRST_SHIFT)
+#define CAM_SWRST0_RISYNC0_APB_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_RISYNC0_APB_SWRST_SHIFT)
+#define CAM_SWRST0_RISYNC0_CORE_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_RISYNC0_CORE_SWRST_SHIFT)
+#define CAM_SWRST0_RISYNC1_APB_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_RISYNC1_APB_SWRST_SHIFT)
+#define CAM_SWRST0_RISYNC1_CORE_SWRST_MASK	\
+		(((uint32_t)1U) << CAM_SWRST0_RISYNC1_CORE_SWRST_SHIFT)
+
+
+/*
+ * CAM_SWRST1 (camera sub-system soft reset 1 register)
+ */
+/* TODO: */
+
+
+/*
+ * CAM_CLKMSK0 (camera sub-system clock mask 0 register)
+ */
+#define CAM_CLKMSK0_MIPI0_CLK_MASK_SHIFT	((uint32_t)0U)
+#define CAM_CLKMSK0_MIPI0_PHY_APB_MASK_SHIFT	((uint32_t)1U)
+#define CAM_CLKMSK0_MIPI0_CSI_APB_MASK_SHIFT	((uint32_t)2U)
+#define CAM_CLKMSK0_MIPI0_CSI_PIX_MASK_SHIFT	((uint32_t)3U)
+#define CAM_CLKMSK0_MIPI0_GDP_APB_MASK_SHIFT	((uint32_t)4U)
+#define CAM_CLKMSK0_MIPI0_GDP_PIX_MASK_SHIFT	((uint32_t)5U)
+#define CAM_CLKMSK0_MIPI0_DSI_APB_MASK_SHIFT	((uint32_t)6U)
+#define CAM_CLKMSK0_MIPI0_DSI_SYS_MASK_SHIFT	((uint32_t)7U)
+#define CAM_CLKMSK0_MIPI1_CLK_MASK_SHIFT	((uint32_t)8U)
+#define CAM_CLKMSK0_MIPI1_PHY_APB_MASK_SHIFT	((uint32_t)9U)
+#define CAM_CLKMSK0_MIPI1_CSI_APB_MASK_SHIFT	((uint32_t)10U)
+#define CAM_CLKMSK0_MIPI1_CSI_PIX_MASK_SHIFT	((uint32_t)11U)
+#define CAM_CLKMSK0_MIPI1_GDP_APB_MASK_SHIFT	((uint32_t)12U)
+#define CAM_CLKMSK0_MIPI1_GDP_PIX_MASK_SHIFT	((uint32_t)13U)
+#define CAM_CLKMSK0_MIPI1_DSI_APB_MASK_SHIFT	((uint32_t)14U)
+#define CAM_CLKMSK0_MIPI1_DSI_SYS_MASK_SHIFT	((uint32_t)15U)
+#define CAM_CLKMSK0_ISP_BUS_MASK_SHIFT		((uint32_t)16U)
+#define CAM_CLKMSK0_ISP_APB_MASK_SHIFT		((uint32_t)17U)
+#define CAM_CLKMSK0_ISP0_PIX_MASK_SHIFT		((uint32_t)18U)
+#define CAM_CLKMSK0_ISP1_PIX_MASK_SHIFT		((uint32_t)19U)
+#define CAM_CLKMSK0_ISP2_PIX_MASK_SHIFT		((uint32_t)20U)
+#define CAM_CLKMSK0_ISP3_PIX_MASK_SHIFT		((uint32_t)21U)
+#define CAM_CLKMSK0_RISYNC0_APB_MASK_SHIFT	((uint32_t)22U)
+#define CAM_CLKMSK0_RISYNC0_PIX_MASK_SHIFT	((uint32_t)23U)
+#define CAM_CLKMSK0_RISYNC1_APB_MASK_SHIFT	((uint32_t)24U)
+#define CAM_CLKMSK0_RISYNC1_PIX_MASK_SHIFT	((uint32_t)25U)
+#define CAM_CLKMSK0_VIN_APB_MASK_SHIFT		((uint32_t)26U)
+#define CAM_CLKMSK0_VIN_AXI_MASK_SHIFT		((uint32_t)27U)
+#define CAM_CLKMSK0_VIN0_PIX_MASK_SHIFT		((uint32_t)28U)
+#define CAM_CLKMSK0_VIN1_PIX_MASK_SHIFT		((uint32_t)29U)
+#define CAM_CLKMSK0_VIN2_PIX_MASK_SHIFT		((uint32_t)30U)
+#define CAM_CLKMSK0_VIN3_PIX_MASK_SHIFT		((uint32_t)31U)
+
+#define CAM_CLKMSK0_MIPI0_CLK_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_CLK_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI0_PHY_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_PHY_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI0_CSI_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_CSI_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI0_CSI_PIX_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_CSI_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI0_GDP_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_GDP_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI0_GDP_PIX_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_GDP_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI0_DSI_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_DSI_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI0_DSI_SYS_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI0_DSI_SYS_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_CLK_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_CLK_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_PHY_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_PHY_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_CSI_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_CSI_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_CSI_PIX_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_CSI_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_GDP_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_GDP_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_GDP_PIX_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_GDP_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_DSI_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_DSI_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_MIPI1_DSI_SYS_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_MIPI1_DSI_SYS_MASK_SHIFT)
+#define CAM_CLKMSK0_ISP_BUS_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_ISP_BUS_MASK_SHIFT)
+#define CAM_CLKMSK0_ISP_APB_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_ISP_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_ISP0_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_ISP0_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_ISP1_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_ISP1_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_ISP2_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_ISP2_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_ISP3_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_ISP3_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_RISYNC0_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_RISYNC0_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_RISYNC0_PIX_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_RISYNC0_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_RISYNC1_APB_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_RISYNC1_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_RISYNC1_PIX_MASK_MASK	\
+		(((uint32_t)1U) << CAM_CLKMSK0_RISYNC1_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_VIN_APB_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_VIN_APB_MASK_SHIFT)
+#define CAM_CLKMSK0_VIN_AXI_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_VIN_AXI_MASK_SHIFT)
+#define CAM_CLKMSK0_VIN0_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_VIN0_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_VIN1_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_VIN1_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_VIN2_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_VIN2_PIX_MASK_SHIFT)
+#define CAM_CLKMSK0_VIN3_PIX_MASK_MASK		\
+		(((uint32_t)1U) << CAM_CLKMSK0_VIN3_PIX_MASK_SHIFT)
+
+
+/*
+ * CAM_CLKMSK1 (camera sub-system clock mask 1 register)
+ */
+/* TODO: */
+
+
+/*
+ * MIPI_DSI_CH_SEL (mipi dsi channel selection register)
+ */
+/* TODO: */
+
+
+/*
+ * MIPI0_CSI_CTRL (mipi 0 csi control register)
+ */
+/* CSI_CHMUXx */
+#define MIPI0_CSI_CTL_CH0_SHIFT			((uint32_t)0U)
+#define MIPI0_CSI_CTL_CH1_SHIFT			((uint32_t)1U)
+#define MIPI0_CSI_CTL_CH2_SHIFT			((uint32_t)2U)
+#define MIPI0_CSI_CTL_CH3_SHIFT			((uint32_t)3U)
+/* CSI_DATA_ALIGN */
+#define MIPI0_CSI_CTL_DATA_ALIGN_SHIFT		((uint32_t)4U)
+/* CSI_VSYNC_INVx */
+#define MIPI0_CSI_CTL_CVI0_SHIFT		((uint32_t)8U)
+#define MIPI0_CSI_CTL_CVI1_SHIFT		((uint32_t)9U)
+#define MIPI0_CSI_CTL_CVI2_SHIFT		((uint32_t)10U)
+#define MIPI0_CSI_CTL_CVI3_SHIFT		((uint32_t)11U)
+/* CSI_HSYNC_INVx */
+#define MIPI0_CSI_CTL_CHI0_SHIFT		((uint32_t)12U)
+#define MIPI0_CSI_CTL_CHI1_SHIFT		((uint32_t)13U)
+#define MIPI0_CSI_CTL_CHI2_SHIFT		((uint32_t)14U)
+#define MIPI0_CSI_CTL_CHI3_SHIFT		((uint32_t)15U)
+
+#define MIPI0_CSI_CTL_CH0_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CH0_SHIFT)
+#define MIPI0_CSI_CTL_CH1_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CH1_SHIFT)
+#define MIPI0_CSI_CTL_CH2_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CH2_SHIFT)
+#define MIPI0_CSI_CTL_CH3_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CH3_SHIFT)
+#define MIPI0_CSI_CTL_DATA_ALIGN_MASK		\
+		(((uint32_t)3U) << MIPI0_CSI_CTL_DATA_ALIGN_SHIFT)
+#define MIPI0_CSI_CTL_CVI0_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CVI0_SHIFT)
+#define MIPI0_CSI_CTL_CVI1_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CVI1_SHIFT)
+#define MIPI0_CSI_CTL_CVI2_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CVI2_SHIFT)
+#define MIPI0_CSI_CTL_CVI3_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CVI3_SHIFT)
+#define MIPI0_CSI_CTL_CHI0_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CHI0_SHIFT)
+#define MIPI0_CSI_CTL_CHI1_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CHI1_SHIFT)
+#define MIPI0_CSI_CTL_CHI2_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CHI2_SHIFT)
+#define MIPI0_CSI_CTL_CHI3_MASK			\
+		(((uint32_t)1U) << MIPI0_CSI_CTL_CHI3_SHIFT)
+
+#define CSI_CFG_MIPI_CHMUX_MAX		((uint32_t)8U)
+
+/*
+ * MIPI0_DSI_CTRL (mipi 0 dsi control register)
+ */
+/* TODO: */
+
+
+/*
+ * MIPI1_CSI_CTRL (mipi 1 csi control register)
+ */
+/* CSI_CHMUXx */
+#define MIPI1_CSI_CTL_CH0_SHIFT			((uint32_t)0U)
+#define MIPI1_CSI_CTL_CH1_SHIFT			((uint32_t)1U)
+#define MIPI1_CSI_CTL_CH2_SHIFT			((uint32_t)2U)
+#define MIPI1_CSI_CTL_CH3_SHIFT			((uint32_t)3U)
+/* CSI_DATA_ALIGN */
+#define MIPI1_CSI_CTL_DATA_ALIGN_SHIFT		((uint32_t)4U)
+/* CSI_VSYNC_INVx */
+#define MIPI1_CSI_CTL_CVI0_SHIFT		((uint32_t)8U)
+#define MIPI1_CSI_CTL_CVI1_SHIFT		((uint32_t)9U)
+#define MIPI1_CSI_CTL_CVI2_SHIFT		((uint32_t)10U)
+#define MIPI1_CSI_CTL_CVI3_SHIFT		((uint32_t)11U)
+/* CSI_HSYNC_INVx */
+#define MIPI1_CSI_CTL_CHI0_SHIFT		((uint32_t)12U)
+#define MIPI1_CSI_CTL_CHI1_SHIFT		((uint32_t)13U)
+#define MIPI1_CSI_CTL_CHI2_SHIFT		((uint32_t)14U)
+#define MIPI1_CSI_CTL_CHI3_SHIFT		((uint32_t)15U)
+
+#define MIPI1_CSI_CTL_CH0_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CH0_SHIFT)
+#define MIPI1_CSI_CTL_CH1_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CH1_SHIFT)
+#define MIPI1_CSI_CTL_CH2_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CH2_SHIFT)
+#define MIPI1_CSI_CTL_CH3_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CH3_SHIFT)
+#define MIPI1_CSI_CTL_DATA_ALIGN_MASK		\
+		(((uint32_t)3U) << MIPI1_CSI_CTL_DATA_ALIGN_SHIFT)
+#define MIPI1_CSI_CTL_CVI0_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CVI0_SHIFT)
+#define MIPI1_CSI_CTL_CVI1_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CVI1_SHIFT)
+#define MIPI1_CSI_CTL_CVI2_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CVI2_SHIFT)
+#define MIPI1_CSI_CTL_CVI3_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CVI3_SHIFT)
+#define MIPI1_CSI_CTL_CHI0_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CHI0_SHIFT)
+#define MIPI1_CSI_CTL_CHI1_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CHI1_SHIFT)
+#define MIPI1_CSI_CTL_CHI2_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CHI2_SHIFT)
+#define MIPI1_CSI_CTL_CHI3_MASK			\
+		(((uint32_t)1U) << MIPI1_CSI_CTL_CHI3_SHIFT)
+
+
+/*
+ * MIPI1_DSI_CTRL (mipi 1 dsi control register)
+ */
+/* TODO: */
+
+
+/*
+ * CAM_FRONT_CH_SEL (camera sub-system front channel selection register)
+ */
+/* CAM_FRONT_CHMUXx */
+#define CAM_FRONT_CH_SEL_CFCH0_SHIFT		((uint32_t)0U) /* To SVDM 0 */
+#define CAM_FRONT_CH_SEL_CFCH1_SHIFT		((uint32_t)3U) /* To SVDM 1 */
+#define CAM_FRONT_CH_SEL_CFCH2_SHIFT		((uint32_t)6U) /* To SVDM 2 */
+#define CAM_FRONT_CH_SEL_CFCH3_SHIFT		((uint32_t)9U) /* To SVDM 3 */
+#define CAM_FRONT_CH_SEL_CFCH4_SHIFT		((uint32_t)12U) /* To VIN0 */
+#define CAM_FRONT_CH_SEL_CFCH5_SHIFT		((uint32_t)16U) /* To VIN1 */
+#define CAM_FRONT_CH_SEL_CFCH6_SHIFT		((uint32_t)19U) /* To VIN2 */
+#define CAM_FRONT_CH_SEL_CFCH7_SHIFT		((uint32_t)22U) /* To VIN3 */
+#define CAM_FRONT_CH_SEL_CFCH8_SHIFT		((uint32_t)25U) /* To TRVC */
+/* IRx_CH_MX */
+#define CAM_FRONT_CH_SEL_IR0_SHIFT		((uint32_t)28U) /* To VIN0 */
+#define CAM_FRONT_CH_SEL_IR1_SHIFT		((uint32_t)29U) /* To VIN1 */
+
+#define CAM_FRONT_CH_SEL_CFCH0_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH0_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH1_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH1_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH2_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH2_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH3_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH3_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH4_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH4_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH5_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH5_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH6_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH6_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH7_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH7_SHIFT)
+#define CAM_FRONT_CH_SEL_CFCH8_MASK		\
+		(((uint32_t)0x3U) << CAM_FRONT_CH_SEL_CFCH8_SHIFT)
+#define CAM_FRONT_CH_SEL_IR0_MASK		\
+		(((uint32_t)0x1U) << CAM_FRONT_CH_SEL_IR0_SHIFT)
+#define CAM_FRONT_CH_SEL_IR1_MASK		\
+		(((uint32_t)0x1U) << CAM_FRONT_CH_SEL_IR1_SHIFT)
+
+
+/*
+ * ISP_CTL (isp control register)
+ */
+/* ISP_SLEEP_MODE */
+#define ISP_CTL_ISM_SHIFT			((uint32_t)0U)
+/* ISP_MEM_PROTECT */
+#define ISP_CTL_IMP_SHIFT			((uint32_t)1U)
+/* ISPx_FMT */
+#define ISP_CTL_I0F_SHIFT			((uint32_t)4U)
+#define ISP_CTL_I1F_SHIFT			((uint32_t)7U)
+#define ISP_CTL_I2F_SHIFT			((uint32_t)10U)
+#define ISP_CTL_I3F_SHIFT			((uint32_t)13U)
+/* ISPx_BYPASS */
+#define ISP_CTL_I0B_SHIFT			((uint32_t)16U)
+#define ISP_CTL_I1B_SHIFT			((uint32_t)17U)
+#define ISP_CTL_I2B_SHIFT			((uint32_t)18U)
+#define ISP_CTL_I3B_SHIFT			((uint32_t)19U)
+/* ISP_BASE_ADDR */
+#define ISP_CTL_IBA_SHIFT			((uint32_t)20U)
+
+#define ISP_CTL_ISM_MASK			\
+		(((uint32_t)0x1U) << ISP_CTL_ISM_SHIFT)
+#define ISP_CTL_IMP_MASK			\
+		(((uint32_t)0x1U) << ISP_CTL_IMP_SHIFT)
+#define ISP_CTL_I0F_MASK			\
+		(((uint32_t)0x7U) << ISP_CTL_I0F_SHIFT)
+#define ISP_CTL_I1F_MASK			\
+		(((uint32_t)0x7U) << ISP_CTL_I1F_SHIFT)
+#define ISP_CTL_I2F_MASK			\
+		(((uint32_t)0x7U) << ISP_CTL_I2F_SHIFT)
+#define ISP_CTL_I3F_MASK			\
+		(((uint32_t)0x7U) << ISP_CTL_I3F_SHIFT)
+#define ISP_CTL_I0B_MASK			\
+		(((uint32_t)0x1U) << ISP_CTL_I0B_SHIFT)
+#define ISP_CTL_I1B_MASK			\
+		(((uint32_t)0x1U) << ISP_CTL_I1B_SHIFT)
+#define ISP_CTL_I2B_MASK			\
+		(((uint32_t)0x1U) << ISP_CTL_I2B_SHIFT)
+#define ISP_CTL_I3B_MASK			\
+		(((uint32_t)0x1U) << ISP_CTL_I3B_SHIFT)
+#define ISP_CTL_IBA_MASK			\
+		(((uint32_t)0xFFFU) << ISP_CTL_IBA_SHIFT)
+
+#define CSI_CFG_ISP_BYPASS_MAX			((uint32_t)4U)
+#define ISP_CTL_IBA				((uint32_t)0x1C0U)
+
+#define ISP_FMT_RAW_RGB_8_TO_10_USING_UPPER_2BIT	((uint32_t)0U)
+#define ISP_FMT_RAW_RGB_8_TO_10_USING_ZERO		((uint32_t)1U)
+#define ISP_FMT_RAW_RGB_10_OR_MORE			((uint32_t)4U)
+
+
+/*
+ * X2X_P_MST_LQCD (X2X Master LPI Q-Channel clock domain)
+ */
+/* TODO: */
+
+
+/*
+ * X2X_SLV_LQCD (X2X Slave LPI Q-Channel clock domain)
+ */
+/* TODO: */
+
+
+/*
+ * X2X_SLV_LQPD (X2X Slave LPI Q-Channel power domain)
+ */
+/* TODO: */
+
+/*
+ * CAM_IREQ_MSK (camera sub-system interrupt mask register)
+ */
+/* MASK_CIED_IREQ */
+#define CAM_IREQ_MSK_MCI_SHIFT		((uint32_t)0U)
+/* MASK_MIPI0_PHY_IREQ */
+#define CAM_IREQ_MSK_MP0I_SHIFT		((uint32_t)4U)
+/* MASK_MIPI1_PHY_IREQ */
+#define CAM_IREQ_MSK_MP1I_SHIFT		((uint32_t)5U)
+/* MASK_SVDM0_IREQ */
+#define CAM_IREQ_MSK_MS0I_SHIFT		((uint32_t)8U)
+/* MASK_SVDM1_IREQ */
+#define CAM_IREQ_MSK_MS1I_SHIFT		((uint32_t)9U)
+/* MASK_SVDM2_IREQ */
+#define CAM_IREQ_MSK_MS2I_SHIFT		((uint32_t)10U)
+/* MASK_SVDM3_IREQ */
+#define CAM_IREQ_MSK_MS3I_SHIFT		((uint32_t)11U)
+/* MASK_SVDM_RDONE_IREQ */
+#define CAM_IREQ_MSK_MSRI_SHIFT		((uint32_t)12U)
+/* MASK_MDW_IREQ */
+#define CAM_IREQ_MSK_MMI_SHIFT		((uint32_t)16U)
+
+
+#define CAM_IREQ_MSK_MCI_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MCI_SHIFT)
+#define CAM_IREQ_MSK_MP0I_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MP0I_SHIFT)
+#define CAM_IREQ_MSK_MP1I_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MP1I_SHIFT)
+#define CAM_IREQ_MSK_MS0I_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MS0I_SHIFT)
+#define CAM_IREQ_MSK_MS1I_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MS1I_SHIFT)
+#define CAM_IREQ_MSK_MS2I_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MS2I_SHIFT)
+#define CAM_IREQ_MSK_MS3I_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MS3I_SHIFT)
+#define CAM_IREQ_MSK_MSRI_MASK		\
+		(((uint32_t)1U) << CAM_IREQ_MSK_MSRI_SHIFT)
+#define CAM_IREQ_MSK_MMI_MASK		\
+		(((uint32_t)16U) << CAM_IREQ_MSK_MMI_SHIFT)
+
+
+/*
+ * CAM_IREQ_CORE_STS (cied interrupt core status register)
+ */
+/* TODO: */
+
+
+/*
+ * IREQ_CIED_STS0 (interrupt cied status 0 register)
+ */
+/* TODO: */
+
+
+/*
+ * IREQ_CIED_STS1 (interrupt cied status 1 register)
+ */
+/* TODO: */
+
+
+/*
+ * IREQ_CIED_STS2 (interrupt cied status 2 register)
+ */
+/* TODO: */
+
+
+/*
+ * MIPI_PHY_CAL (mipi phy analog calibration register)
+ */
+/* TODO: */
+#endif

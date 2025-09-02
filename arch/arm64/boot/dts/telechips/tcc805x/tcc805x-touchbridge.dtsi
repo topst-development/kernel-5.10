@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+/ {
+	tstb: tcc_touch_bridge {
+		compatible = "telechips,tcc_touch_bridge";
+		tcc_ipi = <&tcc_ipi_sub>;
+		share-display = "goodix-ts-0";
+	status = "okay";
+	};
+};

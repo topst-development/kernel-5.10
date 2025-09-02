@@ -1,0 +1,148 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/* PMIC */
+&i2c0 {
+	status = "okay";
+	port-mux = <6>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c6_bus_active>;
+	pinctrl-1 = <&i2c6_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/* PMIC MPQ7920 */
+	MPQ7920_2: pmic@6a {
+		compatible = "mps,mpq7920";
+		reg = <0x6a>;
+
+		regulators {
+
+			MPQ7920_2_BUCK1: buck1 {
+				regulator-name = "cpu_0p9";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <900000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			MPQ7920_2_BUCK3: buck3 {
+				regulator-name = "io_3p3";
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			MPQ7920_2_BUCK4: buck4 {
+				regulator-name = "io_1p8";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			MPQ7920_2_LDO4: ldo4 {
+				regulator-name = "sdio_3p3";
+				regulator-min-microvolt = <2500000>;
+				regulator-max-microvolt = <2500000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+		};
+	};
+};
+
+&i2c6 {
+	status = "disabled";
+	port-mux = <35>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c35_bus_active>;
+	pinctrl-1 = <&i2c35_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+&i2c3 {
+     status = "okay";
+     port-mux = <15>;
+     pinctrl-names = "default", "sleep";
+     pinctrl-0 = <&i2c15_bus_active>;
+     pinctrl-1 = <&i2c15_bus_sleep>;
+ 
+     #address-cells = <1>;
+     #size-cells = <0>;
+};
+
+&i2c7 {
+	status = "disabled";
+	port-mux = <12>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c12_bus_active>;
+	pinctrl-1 = <&i2c12_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+&pinctrl {
+	i2c6_bus_active: i2c6_bus_active {
+		telechips,pins = "gpa-22", "gpa-23";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c6_bus_sleep: i2c6_bus_sleep {
+		telechips,pins = "gpa-22", "gpa-23";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c15_bus_active: i2c15_bus_active {
+        telechips,pins = "gpc-20", "gpc-21";
+        telechips,pin-function = <8>;
+        telechips,input_buffer_enable;
+        telechips,no-pull;
+    };
+
+    i2c15_bus_sleep: i2c15_bus_sleep {
+        telechips,pins = "gpc-20", "gpc-21";
+        telechips,pin-function = <0>;
+        telechips,no-pull;
+    };
+
+	i2c12_bus_active: i2c12_bus_active {
+		telechips,pins = "gpb-21", "gpb-22";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c12_bus_sleep: i2c12_bus_sleep {
+		telechips,pins = "gpb-21", "gpb-22";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c35_bus_active: i2c35_bus_active {
+		telechips,pins = "gpmc-4", "gpmc-5";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c35_bus_sleep: i2c35_bus_sleep {
+		telechips,pins = "gpmc-4", "gpmc-5";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+};

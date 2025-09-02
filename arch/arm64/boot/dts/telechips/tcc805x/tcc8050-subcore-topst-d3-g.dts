@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc805x-subcore.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8050 TOPST D3-G 1.0 Sub-Core";
+	board-id = <BOARD_ID_TCC8050_TOPST>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc805x-subcore-wdt.dtsi"
+#include "override/tcc805x-subcore-dma.dtsi"
+#include "override/tcc805x-subcore-scfw.dtsi"
+#include "override/tcc805x-subcore-mmc.dtsi"
+#include "override/tcc8050-subcore-cpu.dtsi"
+#include "override/topst-d3-g-subcore-uart.dtsi"
+#include "override/topst-d3-g-subcore-usb.dtsi"
+#include "override/topst-d3-g-subcore-vpu.dtsi"

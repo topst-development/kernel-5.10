@@ -1,0 +1,203 @@
+config DRM_TELECHIPS
+	tristate "DRM Support for Telechips SoC Series"
+	depends on OF && DRM && ARCH_TELECHIPS
+	default n
+	select DRM_KMS_HELPER
+	select VIDEOMODE_HELPERS
+	help
+		Choose this option if you want used DRM for Telechips SoC
+		chipset. This config is mandatory to using DRM driver for
+		Telechips SoC.
+
+if DRM_TELECHIPS
+config DRM_TELECIHPS_CTRL_CHROMAKEY
+	bool "DRM controls chromakey on planes"
+	depends on ARCH_TCC805X && DRM_TELECHIPS_VIOC
+	default n
+	help
+		If this config is select then TCCDRM can controls chroma-key of
+		WMIX.
+		Note:
+		Be careful with the overlay prioroty when using this function.
+
+config DRM_TELECHIPS_SKIP_RESTORE_FBDEV
+	bool "DRM skips function to restores fbdev"
+	default y
+	help
+		DRM skips function to restores fbdev.
+		Normally, at runtime drivers should restore the fbdev console
+		by calling drm_fb_helper_restore_fbdev_mode_unlocked() from
+		their &drm_driver.lastclosecallback. This ensures that the user
+		isn't greeted with a black screen when e.g. X dies.
+		But, If you don't need this function, please set this config to
+		y then TCCDRM does not call
+		rm_fb_helper_restore_fbdev_mode_unlocked when
+		&drm_driver.lastclosecallback is called.
+
+comment "CRTCs"
+config DRM_TELECHIPS_VIOC
+	tristate "Telechips drm vioc driver"
+	default n
+	help
+		This option enables telechisp drm vioc driver.
+		This driver controls planes and crtcs for Telechips SoC
+		chipset.
+
+config DRM_TELECHIPS_KEEP_LOGO
+	bool "DRM TELECHIPS KEEP LOGO"
+	default y
+	help
+		If this config is selected to y, DRM driver skips process that
+		fills its plane with block color when it is binded.
+		This is a function to maintain the kernel-logo output by Legacy
+		FBDev. It should be used only when a panel with a fixed resolution
+		such as LVDS is used. If you use HDMI or DP, this config is not
+		available because the output resolution of LCD panel may change
+		depending on the connected device.
+		However, if you use HDMI or DP as a fixed resolution such as
+		LVDS panel, this config is available.
+
+config DRM_TELECHIPS_LCD
+	bool "Telechips Primary CRTC"
+	select DRM_TELECHIPS_VIOC
+	default n
+	help
+		This option enables Primary CRTC.
+		Note:
+		When using multiple display device, this CRTC is set as the
+		primary CRTC.
+
+
+config DRM_TELECHIPS_EXT
+	bool "Telechips Second CRTC"
+	select DRM_TELECHIPS_VIOC
+	default n
+	help
+		This option enables Second CRTC.
+		Note:
+		- if used alone, it becomes the primary CRTC.
+		- If used with DRM_TELECHIPS_LCD, this will set as the second CRTC.
+
+config DRM_TELECHIPS_THIRD
+	bool "Telechips third display"
+	select DRM_TELECHIPS_VIOC
+	depends on (ARCH_TCC803X || ARCH_TCC805X || ARCH_TCC807X)
+	default n
+	help
+		This option enables Third CRTC.
+		Note:
+		- if used alone, it becomes the primary CRTC.
+		- If used with DRM_TELECHIPS_LCD or DRM_TELECHIPS_EXT, this will set as the second CRTC.
+		- If used with DRM_TELECHIPS_LCD and DRM_TELECHIPS_EXT, this will set as the third CRTC.
+
+config DRM_TELECHIPS_FOURTH
+	bool "Telechips fourth display"
+	select DRM_TELECHIPS_VIOC
+	depends on (ARCH_TCC803X || ARCH_TCC805X || ARCH_TCC807X)
+	default n
+	help
+		This option enables Fourth CRTC.
+		Note:
+		- if used alone, it becomes the primary CRTC.
+		- If used with one of the DRM_TELECHIPS_LCD, DRM_TELECHIPS_EXT or DRM_TELECHIPS_THIRD, this will set as the Second CRTC.
+		- If used with DRM_TELECHIPS_LCD and DRM_TELECHIPS_EXT, this will set as the Third CRTC.
+		- If used with DRM_TELECHIPS_LCD and DRM_TELECHIPS_THIRD, this will set as the Third CRTC.
+		- If used with DRM_TELECHIPS_EXT and DRM_TELECHIPS_THIRD, this will set as the Third CRTC.
+		- If used with DRM_TELECHIPS_LCD, DRM_TELECHIPS_EXT and DRM_TELECHIPS_THIRD, this will set as the Fourth CRTC.
+
+config DRM_TELECHIPS_SCREEN_SHARE
+	tristate "Telechips Screen shared CRTC"
+	depends on DRM_TELECHIPS && TELECHIPS_SCREEN_SHARE
+	default n
+	help
+			Choose this option if you want to use Screen shared function.
+			Note:
+			This config provides virtual CRTC, which is used when
+			the main core and sub-core share image data.
+
+comment "Encoders and Bridges"
+
+config DRM_TELECHIPS_DUMMY_DEV
+	tristate "Telechips drm dummy display device driver"
+	default n
+	help
+		This option enables telechisp drm dummy display device driver.
+		This driver is used when there is no display device.
+		For example, It can be used with crtc of screen-share.
+
+config DRM_TELECHIPS_LVDS
+	tristate "Telechips drm lvds device driver"
+	depends on ARCH_TCC805X
+	default n
+	help
+		This option enables telechisp drm lvds driver.
+		This driver controls lvds ip.
+
+config DRM_TELECHIPS_DP
+	tristate "Telechips drm display port driver"
+	depends on (ARCH_TCC805X || ARCH_TCC807X) && TELECHIPS_DP_DRIVER_V1_4
+	default n
+	help
+		This option enables telechisp drm display port driver.
+		This driver controls display port ip.
+		chipset.
+
+config DRM_TELECHIPS_DSI
+	tristate "Telechips drm dsi driver"
+	depends on (ARCH_TCC807X) && (TELECHIPS_DSI_DRIVER_V2)
+	help
+		This option enables telechisp drm dsi driver.
+		This driver controls dsi ip.
+		chipset.
+endif
+
+#
+# Debugging messages
+#
+menuconfig DRM_DRV_DEBUG
+	bool "DRM Debugging messages (DEVELOPMENT)"
+	depends on DRM_TELECHIPS
+	help
+		Choose this option if you want to use debugging messages (DEVELOPMENT).
+		You can choice various debugging messages.
+		Kernel debugging level is 'KERN_DEBUG <7>'. (use "dmesg -n 8")
+
+if DRM_DRV_DEBUG
+config DRM_UT_CORE
+	bool "DRM core messages"
+	help
+		Choose this option if you want to enable DRM core
+		debugging messages.
+		Kernel debugging level is 'KERN_DEBUG <7>'. (use "dmesg -n 8")
+		Note:
+		This config is optional.
+
+config DRM_UT_DRIVER
+	bool "DRM driver messages"
+	help
+		Choose this option if you want to enable DRM driver
+		debugging messages.
+		Kernel debugging level is 'KERN_DEBUG <7>'. (use "dmesg -n 8")
+		Note:
+		This config is optional.
+
+config DRM_UT_KMS
+	bool "DRM KMS messages"
+	help
+		Choose this option if you want to enable DRM KMS
+		debugging messages.
+		Kernel debugging level is 'KERN_DEBUG <7>'. (use "dmesg -n 8")
+		Note:
+		This config is optional.
+
+config DRM_UT_PRIME
+	bool "DRM PRIME messages"
+	help
+		Choose this option if you want to enable DRM PRIME
+		debugging messages.
+		Kernel debugging level is 'KERN_DEBUG <7>'. (use "dmesg -n 8")
+		Note:
+		This config is optional.
+
+endif
+

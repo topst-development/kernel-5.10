@@ -1,0 +1,207 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include "../tcc805x-videoinput.dtsi"
+
+&pinctrl {
+	cam0_8bit_idle: cam0_8bit_idle {
+		telechips,pins = "gpa-0",  "gpa-1",  "gpa-2",  "gpa-11",  "gpa-12",
+				 "gpa-3",  "gpa-4",  "gpa-5",  "gpa-6",  "gpa-7",  "gpa-8",  "gpa-9",  "gpa-10";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+
+	cam0_16bit_idle: cam0_16bit_idle {
+		telechips,pins = "gpa-0",
+				 "gpa-3",  "gpa-4",  "gpa-5",  "gpa-6",  "gpa-7",  "gpa-8",  "gpa-9",  "gpa-10",
+				 "gpa-13", "gpa-14", "gpa-15", "gpa-16", "gpa-17", "gpa-18", "gpa-19", "gpa-20";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+
+	cam0_clk: cam0_clk {
+		telechips,pins = "gpa-0";
+		telechips,pin-function = <3>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+	};
+
+	cam0_hsync: cam0_hsync {
+		telechips,pins = "gpa-1";
+		telechips,pin-function = <3>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+	};
+
+	cam0_vsync: cam0_vsync {
+		telechips,pins = "gpa-2";
+		telechips,pin-function = <3>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+	};
+
+	cam0_fld: cam0_fld {
+		telechips,pins = "gpa-11";
+		telechips,pin-function = <3>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+	};
+
+	cam0_de: cam0_de {
+		telechips,pins = "gpa-12";
+		telechips,pin-function = <3>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+	};
+
+	cam0_data_8bit: cam0_data_8bit {
+		telechips,pins = "gpa-3",  "gpa-4",  "gpa-5",  "gpa-6",  "gpa-7",  "gpa-8",  "gpa-9",  "gpa-10";
+		telechips,pin-function = <3>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+	};
+
+	cam0_data_16bit: cam0_data_16bit {
+		telechips,pins = "gpa-3",  "gpa-4",  "gpa-5",  "gpa-6",  "gpa-7",  "gpa-8",  "gpa-9",  "gpa-10",
+				 "gpa-13", "gpa-14", "gpa-15", "gpa-16", "gpa-17", "gpa-18", "gpa-19", "gpa-20";
+		telechips,pin-function = <3>;
+		telechips,drive-strength = <3>;
+		telechips,input_buffer_enable;
+	};
+};
+
+&i2c7 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/*
+	 * parallel interface(cif)
+	 */
+
+	/* video decoder */
+	adv7182: adv7182@21 {
+		/* video decoder */
+		status		= "disabled";
+		compatible	= "tcc-adi,adv7182";
+		pinctrl-names	= "default";
+		pinctrl-0	= <&cam0_clk &cam0_data_8bit>;
+		rst-gpios	= <&gpb 14 0>;
+		reg		= <0x21>;	// 0x42 >> 1
+	};
+
+	/*
+	 * MIPI CSI2 interface
+	 *
+	 * With ISP
+	 * HD module: MAX96701 - MAX9286
+	 * FHD module: CXD5700 - MAX9275 - MAX96712
+	 *
+	 * Without ISP
+	 * HD module: AR0147 - MAX96701, MAX96712
+	 * QHD module: MAX9295 - MAX96712
+	 */
+	/* sensor */
+	imx424_front: imx424_front@1c {
+		status		= "disabled";
+		compatible	= "tcc-sony,imx424";
+		/* translated by serdes (0x1b -> 0x1c) */
+		reg		= <0x1c>;
+	};
+
+	imx424_rear: imx424_rear@1d {
+		status		= "disabled";
+		compatible	= "tcc-sony,imx424";
+		/* translated by serdes (0x1b -> 0x1d) */
+		reg		= <0x1d>;
+	};
+
+	arxxxx: arxxxx@50 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,arxxxx";
+		reg		= <0x50>;
+	};
+
+	ar0147: ar0147@10 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,ar0147";
+		reg		= <0x10>;
+	};
+
+	ar0820: ar0820@10 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,ar0820";
+		reg		= <0x10>;
+	};
+
+	ar0231: ar0231@10 {
+		status		= "disabled";
+		compatible	= "tcc-onnn,ar0231";
+		reg		= <0x10>;
+	};
+
+	/* external ISP */
+	cxd5700: cxd5700@18 {
+		status		= "disabled";
+		compatible	= "tcc-sony,cxd5700";
+		reg		= <0x18>;
+	};
+
+	/* serializer */
+	max96717: max96717@40 {
+		/* imx424 rear cam */
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96717";
+		reg		= <0x40>;
+	};
+
+	max96701: max96701@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96701";
+		reg		= <0x40>;
+	};
+
+	max9275: max9275@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9275";
+		reg		= <0x40>;
+	};
+
+	max9295: max9295@40 {
+		/* ar0820 */
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9295";
+		reg		= <0x40>;
+	};
+
+	max96705: max96705@40 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96705";
+		reg		= <0x40>;
+	};
+
+	max9295e: max9295e@42 {
+		/* imx424 front cam */
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9295";
+		reg		= <0x42>;
+	};
+
+	/* deserializer */
+	max9286: max9286@48 {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max9286";
+		pwd-gpios	= <&gpg 5 1>;
+		//rst-gpios	= <&gpb 15 1>;  /* mcnex module sensor */
+		reg		= <0x48>;	// 0x90 >> 1
+	};
+
+	max96712: max96712@2a {
+		status		= "disabled";
+		compatible	= "tcc-maxim,max96712";
+		pwd-gpios	= <&gpg 5 1>;
+		rst-gpios	= <&gpb 15 1>;  /* linked to GPIO1 */
+		reg		= <0x2A>;
+	};
+};

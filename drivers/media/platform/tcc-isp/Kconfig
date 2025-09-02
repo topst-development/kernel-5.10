@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) Telechips Inc.
+#
+config TCC_ISP
+	tristate "Telechips ISP driver"
+	default n
+	depends on ARCH_TCC805X || ARCH_TCC750X || ARCH_TCC807X
+	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	select V4L2_FWNODE
+	help
+	  Say Y here to enable ISP (Image Signal Processor) for
+	  Telechips SoC.
+
+	  Supported format
+	  Input: Bayer RGB (RAW) 10/12/14 bits.
+	  Output: YUV422 (16 bits), YUV444 (24 bits), RGB (24 bits)
+
