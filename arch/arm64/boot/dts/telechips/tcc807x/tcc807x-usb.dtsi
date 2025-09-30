@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	usb20drd_vbus: usb20drd_vbus {
+		compatible = "regulator-gpio";
+		regulator-name = "vbus_supply_dwc2";
+		regulator-type = "voltage";
+		regulator-min-microvolt = <0000001>;
+		regulator-max-microvolt = <5000000>;
+		gpios-states = <0x0>;
+		states = <0000001 0x0 5000000 0x1>;
+		status = "okay";
+	};
+
+	usb20drd_phy_host: usb20drd_phy_host@11DA00DC {
+		compatible = "telechips,tcc_ehci_phy";
+		reg = <0x0 0x11DA00DC 0x0 0x20>;
+		interrupts = <GIC_SPI 185 IRQ_TYPE_LEVEL_HIGH>;
+		mux;
+		status = "okay";
+	};
+
+	usb20drd_phy_dev: usb20drd_phy_dev@11DA0100 {
+		compatible = "telechips,tcc_dwc_otg_phy";
+		reg = <0x0 0x11DA0100 0x0 0x30>;
+		vbus-supply = <&usb20drd_vbus>;
+		mux;
+		status = "okay";
+	};
+
+	usb20drd_controller: usb_dwc2@11980000 {
+		compatible = "telechips,dwc2";
+		reg = <0x0 0x11980000 0x0 0xCFFF>,
+			<0x0 0x11900000 0x0 0x108>,
+			<0x0 0x11940000 0x0 0x60>;
+		interrupts = <GIC_SPI 182 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>;
+		usb-phy = <&usb20drd_phy_dev>, <&usb20drd_phy_host>;
+		dr_mode = "host";
+		status = "okay";
+	};
+
+	usb30drd_vbus: usb30drd_vbus {
+		compatible = "regulator-gpio";
+		regulator-name = "vbus_supply_dwc3";
+		regulator-type = "voltage";
+		regulator-min-microvolt = <0000001>;
+		regulator-max-microvolt = <5000000>;
+		gpios-states = <0x0>;
+		states = <0000001 0x0 5000000 0x1>;
+		status = "okay";
+	};
+
+	usb30drd_phy: usb30drd_phy@11D90000 {
+		compatible = "telechips,tcc_dwc3_phy";
+		reg = <0x0 0x11D90000 0x0 0x48>,
+			<0x0 0x11DA00EC 0x0 0x4>;
+		interrupts = <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>;
+		vbus-supply = <&usb30drd_vbus>;
+		vbus-ctrl-able;
+		status = "okay";
+	};
+
+	usb30drd_controller: usb_dwc3@11B00000 {
+		compatible = "telechips,tcc-dwc3";
+		usb-phy = <&usb30drd_phy>;
+		#address-cells = <2>;
+		#size-cells = <2>;
+		status = "okay";
+		ranges;
+		reg = <0x0 0x11B00000 0x0 0xCFFF>;
+
+		dwc3 {
+			compatible = "snps,dwc3";
+			reg = <0x0 0x11B00000 0x0 0xCFFF>;
+			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>;
+			usb-phy = <&usb30drd_phy>;
+			usb-role-switch;
+			role-switch-default-mode = "host";
+		};
+	};
+};

@@ -1,0 +1,82 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc807x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	cpus: cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		A55_0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x0>;
+			enable-method = "psci";
+			next-level-cache = <&L2_0>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&sp_ca55_opp_table>;
+			clocks = <&cpu_sp_ca55_0 FBUS_SP_CA55_0>;
+
+			L2_0: l2-cache {
+				compatible = "cache";
+				next-level-cache = <&L3_0>;
+
+				L3_0: l3-cache {
+					compatible = "cache";
+				};
+			};
+		};
+
+		A55_1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x100>;
+			enable-method = "psci";
+			next-level-cache = <&L2_100>;
+			#cooling-cells = <2>;
+			operating-points-v2 = <&sp_ca55_opp_table>;
+			clocks = <&cpu_sp_ca55_1 FBUS_SP_CA55_1>;
+
+			L2_100: l2-cache {
+				compatible = "cache";
+				next-level-cache = <&L3_0>;
+			};
+		};
+
+		sp_ca55_opp_table: sp_ca55_opp_table {
+			compatible = "operating-points-v2";
+		};
+	};
+
+	gic: interrupt-controller@17800000 {
+		compatible = "arm,gic-v3";
+		#interrupt-cells = <3>;
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		interrupt-controller;
+		reg = <0x0 0x17800000 0x0 0x10000>,
+		      <0x0 0x17880000 0x0 0x40000>;
+		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	timer: timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+
+		arm,no-tick-in-suspend;
+	};
+
+	pmu: arm_pmu {
+		compatible = "arm,armv8-pmuv3";
+		interrupts = <GIC_SPI 288 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-affinity = <&A55_0>;
+	};
+};

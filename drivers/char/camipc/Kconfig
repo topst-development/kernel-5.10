@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2023 Telechips Inc.
+#
+config TELECHIPS_CAMIPC
+	tristate "CAMIPC Driver"
+	default n
+  depends on TCC_IPI_PROTOCOL || TCC_MULTI_MAILBOX || TCC_MAILBOX_CLIENT
+	help
+          Choose this option if you wish to utilize the camipc driver.
+          The camipc driver utilizes a mailbox for communication, including
+          communication between the main and subcore for OVP changes and
+          communication between the subcore and mcu for TRVC.

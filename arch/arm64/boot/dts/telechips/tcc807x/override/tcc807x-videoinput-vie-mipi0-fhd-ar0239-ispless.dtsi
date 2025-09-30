@@ -1,0 +1,245 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&i2c12 {
+	status = "okay";
+};
+
+&ar0239 {
+	/* Camera Image Sensor */
+	status		= "okay";
+	port {
+		ar0239_out: endpoint {
+			remote-endpoint = <&max96717_in>;
+			io-direction	= "output";
+		};
+	};
+};
+
+&max96717 {
+	/* serializer */
+	reg		= <0x42>; /* override slave addr */
+	status		= "okay";
+	pvd-name	= "fhd_ar0239";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			max96717_in: endpoint {
+				remote-endpoint = <&ar0239_out>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			max96717_out: endpoint {
+				remote-endpoint = <&max96712_in0>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&max96712 {
+	/* deserializer */
+	status		= "okay";
+	pvd-name	= "fhd_ar0239";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		/*
+		 * 0 ~ 3
+		 * input ports. The number is matched with VC
+		 *
+		 * 4
+		 * output port.
+		 */
+		port@0 {
+			reg = <0>;
+			max96712_in0: endpoint {
+				remote-endpoint = <&max96717_out>;
+				io-direction	= "input";
+				channel		= <0>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			max96712_in1: endpoint {
+				io-direction	= "input";
+				channel		= <1>;
+			};
+		};
+		port@2 {
+			reg = <2>;
+			max96712_in2: endpoint {
+				io-direction	= "input";
+				channel		= <2>;
+			};
+		};
+		port@3 {
+			reg = <3>;
+			max96712_in3: endpoint {
+				io-direction	= "input";
+				channel		= <3>;
+			};
+		};
+		port@4 {
+			reg = <4>;
+			max96712_out: endpoint {
+				remote-endpoint = <&mipi_csi2_0_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&mipi_csi2_0 {
+	status = "okay";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		/*
+		 * 0
+		 * input port.
+		 *
+		 * 1 ~ 4
+		 * output ports. (1: VC0 ~ 4: VC3)
+		 */
+		port@0 {
+			reg = <0>;
+			mipi_csi2_0_in: endpoint {
+				remote-endpoint	= <&max96712_out>;
+				io-direction	= "input";
+				num-channel	= <4>;
+
+				/*
+				 * 0: CH0 only, no data interleave
+				 * 1: DT only
+				 * 2: VC only
+				 * 3: VC and DT
+				 */
+				interleave-mode = <3>;
+				/* datarate is clock lane's frequency x 2 */
+				datarate = <1800>; /* Mbps */
+				hs-settle = <9>;
+				data-lanes = <1 2 3 4>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			mipi_csi2_0_out0: endpoint {
+				io-direction	= "output";
+				channel		= <1>;
+				/*
+				 * 0: Single pixel mode
+				 * 1: Dual pixel mode (RAW8/10/12, YUV422)
+				 * 2: Quad pixel mode (RAW8/10/12)
+				 * 3: Invalid
+				 */
+				pixel-mode = <0>;
+			};
+		};
+		port@2 {
+			reg = <2>;
+			mipi_csi2_0_out1: endpoint {
+				remote-endpoint = <&isp1_in>;
+				io-direction	= "output";
+				channel		= <0>;
+				pixel-mode = <0>;
+			};
+		};
+		port@3 {
+			reg = <3>;
+			mipi_csi2_0_out2: endpoint {
+				io-direction	= "output";
+				channel		= <2>;
+				pixel-mode = <0>;
+			};
+		};
+		port@4 {
+			reg = <4>;
+			mipi_csi2_0_out3: endpoint {
+				io-direction	= "output";
+				channel		= <3>;
+				pixel-mode = <0>;
+			};
+		};
+	};
+};
+
+&isp1 {
+	status = "okay";
+	/*
+	 * 0: RGGB
+	 * 1: NOT used
+	 * 2: NOT used
+	 * 3: RGBIR (ISP1, 3 only)
+	 */
+	cfa = <3>;
+
+	/*
+	 * 0: GBIRG
+	 * 1: BGGIR
+	 * 2: IRGGB
+	 * 3: GIRBG
+	 * 4: GRIRG
+	 * 5: RGGIR
+	 * 6: IRGGR
+	 * 7: GIRRG
+	 */
+	rgbir-order = <0>;
+
+	/*
+	 * Crop output image (X, Y)
+	 * X: The number of left pixel. It will also crop X pixels of right.
+	 * Y: The number of top pixel. It will also crop Y pixels of bottom.
+	 * The default value is (8, 8).
+	 */
+	out_win_crop = <6 8>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			isp1_in: endpoint {
+				remote-endpoint = <&mipi_csi2_0_out1>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			isp1_out: endpoint {
+				remote-endpoint	= <&videoinput4_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&videoinput4 {
+	status		= "okay";
+	cam-ch		= <1>;
+	/* memory-region
+	 *  - [0]: parking guideline
+	 *  - [1]: deinterlacing by viqe
+	 *  - [2]: preview
+	 *  - [3]: last frame
+	 */
+	memory-region	= <0
+			   0
+			   &pmap_rearcamera4
+			   0>;
+	port {
+		videoinput4_in: endpoint {
+			remote-endpoint	= <&isp1_out>;
+			io-direction	= "input";
+			stream-enable	= <1>;	// VIN_CTRL.SE
+			flush-vsync	= <1>;	// VIN_MISC.FVS
+		};
+	};
+};

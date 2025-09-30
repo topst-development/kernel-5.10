@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) Telechips Inc.
+#
+
+if ARCH_TCC807X
+source "drivers/video/fbdev/telechips/vioc_tcc807x/Kconfig"
+endif
+if !ARCH_TCC807X
+source "drivers/video/fbdev/telechips/vioc/Kconfig"
+endif
+
+source "drivers/video/fbdev/telechips/panel/Kconfig"
+
+config TELECHIPS_SIMPLE_FB
+	tristate "Telechips Simple VIOC Frame buffer support"
+	depends on FB && ARCH_TELECHIPS && TELECHIPS_VIOC_LOW_API
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	default n
+	help
+		This is Simple Frame buffer driver for Telechips Soc.
+		It is complex and difficult to use TVFB because additional functions other
+		than UI control function are provided. Therefore, in this frame buffer driver,
+		unnecessary functions other than the UI control function are removed.
+
+config TELECHIPS_OVERLAY
+	tristate "Overlay driver for camera/video"
+	depends on ARCH_TELECHIPS
+	default n
+	help
+		This is the Overlay driver for video or camera output.
+
+# config TELECHIPS_VOUT_BOOTING_ANIMATION
+#	bool"support vout dual display for booting animation (only 3840x720)"
+#	depends on (!TELECHIPS_DUAL_DISPLAY)
+#	default n
+#	help
+#		This is support vout dual display for booting animation
+
+config VIDEO_DISPLAY_DEINTERLACE_MODE
+	bool "Support Interlaced Video"
+	depends on VIOC_DEINTERLACER && !(ARCH_TCC750X)
+	default y
+	help
+		It makes the interlaced video can be displayed smoothly.
+
+if VIDEO_DISPLAY_DEINTERLACE_MODE
+config VIOC_VIQE
+	tristate "Telechips VIQE interface APIs driver"
+	default n
+	help
+		Telechips VIQE interface APIs module.
+
+config TELECHIPS_VIQE
+	tristate "Telechips VIQE M2M driver"
+	depends on VIOC_VIQE
+	default n
+	help
+		Telechips VIQE De-interlacing M2M (Memory-to-memory) driver.
+endif
+
+config VIDEO_DISPLAY_BY_VSYNC_INT
+	tristate "Displaying video frame by hw vsync interrupt"
+	default n
+	help
+		Video frame is displayed by hw vsync interrupt.
+
+config LCD_VIDEO_DISPLAY_BY_VSYNC_INT
+	bool "LCD display video by hw vsync interrupt"
+	depends on VIDEO_DISPLAY_BY_VSYNC_INT
+	default n
+	help
+		It makes LCD use on-the-fly and vsync routine.
+
+config VIDEO_DISPLAY_SWAP_VPU_FRAME
+	bool "SWAP VPU FRAME"
+	depends on VIDEO_DISPLAY_BY_VSYNC_INT
+	default n

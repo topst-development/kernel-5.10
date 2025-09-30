@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/soc/tcc805x,boot-mode.h>
+
+/ {
+	reboot_mode: reboot-mode {
+		compatible = "telechips,reboot-mode";
+		mode-normal = <BOOT_NORMAL>;
+		mode-bootloader = <BOOT_FASTBOOT>;
+		mode-recovery = <BOOT_RECOVERY>;
+		mode-ddrcheck = <BOOT_DDR_CHECK>;
+		mode-secureboot = <BOOT_SECUREBOOT_ENABLE>;
+		record-panic = <BOOT_PANIC>;
+	};
+};

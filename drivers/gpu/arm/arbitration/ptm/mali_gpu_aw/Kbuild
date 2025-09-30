@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT
+#
+# (C) COPYRIGHT 2020-2023 Arm Limited or its affiliates. All rights reserved.
+#
+#
+
+src:=$(if $(patsubst /%,,$(src)),$(srctree)/$(src),$(src))
+ccflags-y += \
+    -I$(src)/../include \
+    -I$(src)/../common \
+    -I$(src)/../../../midgard/arbiter \
+    -I$(src)/../../include
+
+obj-$(CONFIG_MALI_PARTITION_MANAGER) := mali_gpu_aw.o
+mali_gpu_aw-y := mali_gpu_aw_main.o

@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&gmac {
+	phyrst-gpio = <&gpc 15 0>; /* Marvell phy 88Q212x phy reset gpio */
+};

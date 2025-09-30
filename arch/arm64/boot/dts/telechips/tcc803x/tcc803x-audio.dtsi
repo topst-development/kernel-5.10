@@ -1,0 +1,1365 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/clock/telechips,tcc803x-clks.h>
+
+/ {
+	aliases: aliases {
+		adma0  = &adma0;
+		adma1  = &adma1;
+		adma2  = &adma2;
+		adma3  = &adma3;
+		adma4  = &adma4;
+		adma5  = &adma5;
+		adma6  = &adma6;
+		i2s0 = &i2s0;
+		i2s1 = &i2s1;
+		i2s2 = &i2s2;
+		i2s3 = &i2s3;
+		i2s4 = &i2s4;
+		i2s5 = &i2s5;
+		i2s6 = &i2s6;
+		spdif0 = &spdif0;
+		spdif1 = &spdif1;
+		spdif2 = &spdif2;
+		spdif3 = &spdif3;
+		spdif4 = &spdif4;
+		spdif5 = &spdif5;
+		spdif6 = &spdif6;
+		asrc0  = &asrc0;
+	};
+
+	audio_chmux: audio_chmux@16051000 {
+		compatible = "telechips,audio-chmux-803x";
+		reg = <0x0 0x16051000 0x0 0x98>;
+		dai = <99 99 99 99 99 99 99>; // i2s0(x) ...  i2s6(x)
+		spdif = <99 99 99 99 99 99 99>; // spdif0(x) ...  spdif6(x)
+		status = "disabled";
+	};
+
+	adma0: adma@16100000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x16100000 0x0 0x200>,
+			<0x0 0x16051000 0x0 0x100>;
+		clocks = <&clk_io IOBUS_ADMA0>;
+		interrupts = <GIC_SPI 80 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		hrsten-reg-offset = <0xC>;
+		hrsten-bit-offset = <21>;
+		status = "disabled";
+	};
+
+	adma1: adma@16700000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x16700000 0x0 0x200>,
+			<0x0 0x16051000 0x0 0x100>;
+		clocks = <&clk_io IOBUS_ADMA1>;
+		interrupts = <GIC_SPI 92 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		hrsten-reg-offset = <0x88>;
+		hrsten-bit-offset = <0>;
+		status = "disabled";
+	};
+
+	adma2: adma@16800000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x16800000 0x0 0x200>,
+			<0x0 0x16051000 0x0 0x100>;
+		clocks = <&clk_io IOBUS_ADMA2>;
+		interrupts = <GIC_SPI 94 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		hrsten-reg-offset = <0x88>;
+		hrsten-bit-offset = <4>;
+		status = "disabled";
+	};
+
+	adma3: adma@16200000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x16200000 0x0 0x200>;
+		clocks = <&clk_io IOBUS_SR_ADMA0>;
+		interrupts = <GIC_SPI 82 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	adma4: adma@16A00000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x16A00000 0x0 0x200>;
+		clocks = <&clk_io IOBUS_SR_ADMA1>;
+		interrupts = <GIC_SPI 100 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	adma5: adma@16B00000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x16B00000 0x0 0x200>;
+		clocks = <&clk_io IOBUS_SR_ADMA2>;
+		interrupts = <GIC_SPI 102 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	adma6: adma@16C00000 {
+		compatible = "telechips,adma";
+		reg = <0x0 0x16C00000 0x0 0x200>;
+		clocks = <&clk_io IOBUS_SR_ADMA3>;
+		interrupts = <GIC_SPI 104 IRQ_TYPE_EDGE_RISING>;
+		have-hopcnt-clear = <1>;
+		adrcnt-mode = <1>;
+		status = "disabled";
+	};
+
+	i2s0: i2s@16101000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x16101000 0x0 0x50>,
+		      <0x0 0x16100080 0x0 0x8>;
+		clocks = <&clk_peri PERI_MDAI0 &clk_io IOBUS_DAI0
+				&clk_peri PERI_MFLT0_DAI>;
+		clock-frequency = <48000>;	// Default LRCK
+		interrupts = <GIC_SPI 81 IRQ_TYPE_EDGE_RISING>;
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma0>;
+		status = "disabled";
+	};
+
+	i2s1: i2s@16701000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x16701000 0x0 0x50>,
+		      <0x0 0x16700080 0x0 0x8>;
+		clocks = <&clk_peri PERI_MDAI1 &clk_io IOBUS_DAI1
+				&clk_peri PERI_MFLT1_DAI>;
+		clock-frequency = <48000>;	// Default LRCK
+		interrupts = <GIC_SPI 93 IRQ_TYPE_EDGE_RISING>;
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma1>;
+		status = "disabled";
+	};
+
+	i2s2: i2s@16801000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x16801000 0x0 0x50>,
+		      <0x0 0x16800080 0x0 0x8>;
+		clocks = <&clk_peri PERI_MDAI2 &clk_io IOBUS_DAI2
+				&clk_peri PERI_MFLT2_DAI>;
+		clock-frequency = <48000>;	// Default LRCK
+		interrupts = <GIC_SPI 95 IRQ_TYPE_EDGE_RISING>;
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only
+		block-type = <1>; // 0: SI2S 1: MI2S
+		adma = <&adma2>;
+		status = "disabled";
+	};
+
+	i2s3: i2s@16201000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x16201000 0x0 0x50>,
+		      <0x0 0x16200080 0x0 0x8>;
+		clocks = <&clk_peri PERI_SRCH0_CORE &clk_io IOBUS_SR_DAI0
+				&clk_peri PERI_SRCH0_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		interrupts = <GIC_SPI 83 IRQ_TYPE_EDGE_RISING>;
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only
+		block-type = <0>; // 0: SI2S 1: MI2S
+		adma = <&adma3>;
+		status = "disabled";
+	};
+
+	i2s4: i2s@16A01000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x16A01000 0x0 0x50>,
+		      <0x0 0x16A00080 0x0 0x8>;
+		clocks = <&clk_peri PERI_SRCH1_CORE &clk_io IOBUS_SR_DAI1
+				&clk_peri PERI_SRCH1_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		interrupts = <GIC_SPI 101 IRQ_TYPE_EDGE_RISING>;
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only
+		block-type = <0>; // 0: SI2S 1: MI2S
+		adma = <&adma4>;
+		status = "disabled";
+	};
+
+	i2s5: i2s@16B01000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x16B01000 0x0 0x50>,
+		      <0x0 0x16B00080 0x0 0x8>;
+		clocks = <&clk_peri PERI_SRCH2_CORE &clk_io IOBUS_SR_DAI2
+				&clk_peri PERI_SRCH2_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		interrupts = <GIC_SPI 103 IRQ_TYPE_EDGE_RISING>;
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only
+		block-type = <0>; // 0: SI2S 1: MI2S
+		adma = <&adma5>;
+		status = "disabled";
+	};
+
+	i2s6: i2s@16C01000 {
+		compatible = "telechips,i2s";
+		reg = <0x0 0x16C01000 0x0 0x50>,
+		      <0x0 0x16C00080 0x0 0x8>;
+		clocks = <&clk_peri PERI_SRCH3_CORE &clk_io IOBUS_SR_DAI3
+				&clk_peri PERI_SRCH3_FILTER>;
+		clock-frequency = <48000>;	// Default LRCK
+		interrupts = <GIC_SPI 105 IRQ_TYPE_EDGE_RISING>;
+		have-fifo-clear = <1>;
+		audio-filter = <0>;
+		// 0: disable, 1: clock only
+		block-type = <0>; // 0: SI2S 1: MI2S
+		adma = <&adma6>;
+		status = "disabled";
+	};
+
+	spdif0: spdif@16102000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x16102000 0x0 0x1000>;
+		clocks = <&clk_peri PERI_MSPDIF0 &clk_io IOBUS_SPDIF0>;
+		clock-frequency = <44100>;
+		adma = <&adma0>;
+		status = "disabled";
+	};
+
+	spdif1: spdif@16702000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x16702000 0x0 0x1000>;
+		clocks = <&clk_peri PERI_MSPDIF1 &clk_io IOBUS_SPDIF1>;
+		clock-frequency = <44100>;
+		adma = <&adma1>;
+		status = "disabled";
+	};
+
+	spdif2: spdif@16802000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x16802000 0x0 0x1000>;
+		clocks = <&clk_peri PERI_MSPDIF2 &clk_io IOBUS_SPDIF2>;
+		clock-frequency = <44100>;
+		adma = <&adma2>;
+		status = "disabled";
+	};
+
+	spdif3: spdif@16202000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x16202000 0x0 0x1000>;
+		clocks = <&clk_peri PERI_SRCH0_SPDIF &clk_io IOBUS_SR_SPDIF0>;
+		clock-frequency = <44100>;
+		adma = <&adma3>;
+		status = "disabled";
+	};
+
+	spdif4: spdif@16A02000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x16A02000 0x0 0x1000>;
+		clocks = <&clk_peri PERI_SRCH1_SPDIF &clk_io IOBUS_SR_SPDIF1>;
+		clock-frequency = <44100>;
+		adma = <&adma4>;
+		status = "disabled";
+	};
+
+	spdif5: spdif@16B02000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x16B02000 0x0 0x1000>;
+		clocks = <&clk_peri PERI_SRCH2_SPDIF &clk_io IOBUS_SR_SPDIF2>;
+		clock-frequency = <44100>;
+		adma = <&adma5>;
+		status = "disabled";
+	};
+
+	spdif6: spdif@16C02000 {
+		compatible = "telechips,spdif";
+		reg = <0x0 0x16C02000 0x0 0x1000>;
+		clocks = <&clk_peri PERI_SRCH3_SPDIF &clk_io IOBUS_SR_SPDIF3>;
+		clock-frequency = <44100>;
+		adma = <&adma6>;
+		status = "disabled";
+	};
+
+	pl080_0: pl080@16010000 {
+		compatible = "telechips,pl080";
+		reg = <0x0 0x16060000 0x0 0x1000>;
+		interrupts = <GIC_SPI 99 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_io IOBUS_ASRC_DMA>;
+		clock-names = "pl080_hclk";
+	};
+
+	asrc0: asrc@16500000 {
+		compatible = "telechips,asrc";
+		reg = <0x0 0x16500000 0x0 0x1000>;
+		interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk_peri PERI_AUX0_INPUT
+				&clk_peri PERI_AUX1_INPUT
+				&clk_peri PERI_AUX0_OUTPUT
+				&clk_peri PERI_AUX1_OUTPUT
+				&clk_io IOBUS_ASRC>;
+		clock-names = "aux_in0", "aux_in1",
+					"aux_out0", "aux_out1", "asrc_hclk";
+		dma = <&pl080_0>;
+		mcaudio = <&i2s0 &i2s3 &i2s4 &i2s5>;
+		max-ch-per-pair= <8 2 2 2>;
+		path-type = <0 0 0 0>; // 0:m2m, 1:m2p, 2:p2m
+		sync-mode = <1 1 1 1>; // 0:async, 1:sync
+		async-refclk = <99 99 99 99>;
+		//0:DAI0_LRCK, 1:DAI1_LRCK, 2:DAI2_LRCK, 3:DAI3_LRCK, 99:AUXCLK
+		status = "disabled";
+	};
+
+	sound0: sound0 {};
+	sound1: sound1 {};
+};
+
+&pinctrl {
+	/******************************************************
+	 * Audio PinCtrl Start
+	 ******************************************************/
+	/******************************************************
+	 * Multi DAI Port_0 m1:multi, dai0:port0
+	 ******************************************************/
+
+	m1dai0_mclk: m1dai0_mclk{
+		telechips,pins = "gpa-25";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_mclk_idle: m1dai0_mclk_idle{
+		telechips,pins = "gpa-25";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_bclk: m1dai0_bclk{
+		telechips,pins = "gpa-26";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_bclk_idle: m1dai0_bclk_idle{
+		telechips,pins = "gpa-26";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_lrck: m1dai0_lrck{
+		telechips,pins = "gpa-27";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_lrck_idle: m1dai0_lrck_idle{
+		telechips,pins = "gpa-27";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dao0: m1dai0_dao0{
+		telechips,pins = "gpa-24";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dao0_idle: m1dai0_dao0_idle{
+		telechips,pins = "gpa-24";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dai0: m1dai0_dai0{
+		telechips,pins = "gpa-28";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dai0_idle: m1dai0_dai0_idle{
+		telechips,pins = "gpa-28";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dao1: m1dai0_dao1{
+		telechips,pins = "gpa-23";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dao1_idle: m1dai0_dao1_idle{
+		telechips,pins = "gpa-23";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dai1: m1dai0_dai1{
+		telechips,pins = "gpa-29";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dai1_idle: m1dai0_dai1_idle{
+		telechips,pins = "gpa-29";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dao2: m1dai0_dao2{
+		telechips,pins = "gpa-22";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dao2_idle: m1dai0_dao2_idle{
+		telechips,pins = "gpa-22";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dai2: m1dai0_dai2{
+		telechips,pins = "gpa-30";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dai2_idle: m1dai0_dai2_idle{
+		telechips,pins = "gpa-30";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dao3: m1dai0_dao3{
+		telechips,pins = "gpa-21";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dao3_idle: m1dai0_dao3_idle{
+		telechips,pins = "gpa-21";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai0_dai3: m1dai0_dai3{
+		telechips,pins = "gpa-31";
+		telechips,pin-function = <5>;
+	};
+
+	m1dai0_dai3_idle: m1dai0_dai3_idle{
+		telechips,pins = "gpa-31";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Multi DAI Port_1 m1:multi, dai1:port1
+	 ******************************************************/
+
+	m1dai1_mclk: m1dai1_mclk{
+		telechips,pins = "gpc-19";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_mclk_idle: m1dai1_mclk_idle{
+		telechips,pins = "gpc-19";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_bclk: m1dai1_bclk{
+		telechips,pins = "gpc-20";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_bclk_idle: m1dai1_bclk_idle{
+		telechips,pins = "gpc-20";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_lrck: m1dai1_lrck{
+		telechips,pins = "gpc-21";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_lrck_idle: m1dai1_lrck_idle{
+		telechips,pins = "gpc-21";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dao0: m1dai1_dao0{
+		telechips,pins = "gpc-26";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dao0_idle: m1dai1_dao0_idle{
+		telechips,pins = "gpc-26";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dai0: m1dai1_dai0{
+		telechips,pins = "gpc-22";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dai0_idle: m1dai1_dai0_idle{
+		telechips,pins = "gpc-22";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dao1: m1dai1_dao1{
+		telechips,pins = "gpc-27";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dao1_idle: m1dai1_dao1_idle{
+		telechips,pins = "gpc-27";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dai1: m1dai1_dai1{
+		telechips,pins = "gpc-23";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dai1_idle: m1dai1_dai1_idle{
+		telechips,pins = "gpc-23";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dao2: m1dai1_dao2{
+		telechips,pins = "gpc-28";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dao2_idle: m1dai1_dao2_idle{
+		telechips,pins = "gpc-28";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dai2: m1dai1_dai2{
+		telechips,pins = "gpc-24";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dai2_idle: m1dai1_dai2_idle{
+		telechips,pins = "gpc-24";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dao3: m1dai1_dao3{
+		telechips,pins = "gpc-29";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dao3_idle: m1dai1_dao3_idle{
+		telechips,pins = "gpc-29";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai1_dai3: m1dai1_dai3{
+		telechips,pins = "gpc-25";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai1_dai3_idle: m1dai1_dai3_idle{
+		telechips,pins = "gpc-25";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Multi DAI Port_2 m1:multi, dai2:port2
+	 ******************************************************/
+
+	m1dai2_mclk: m1dai2_mclk{
+		telechips,pins = "gpg-0";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_mclk_idle: m1dai2_mclk_idle{
+		telechips,pins = "gpg-0";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_bclk: m1dai2_bclk{
+		telechips,pins = "gpg-1";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_bclk_idle: m1dai2_bclk_idle {
+		telechips,pins = "gpg-1";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	switch_c13: switch_c13 {
+		telechips,pins = "gpc-13";
+		telechips,pin-function = <0>;
+		telechips,input-enable;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	switch_ma15: switch_ma15 {
+		telechips,pins = "gpma-15";
+		telechips,pin-function = <0>;
+		telechips,input-enable;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	m1dai2_lrck: m1dai2_lrck{
+		telechips,pins = "gpg-2";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_lrck_idle: m1dai2_lrck_idle{
+		telechips,pins = "gpg-2";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dao0: m1dai2_dao0{
+		telechips,pins = "gpg-3";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dao0_idle: m1dai2_dao0_idle{
+		telechips,pins = "gpg-3";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dai0: m1dai2_dai0{
+		telechips,pins = "gpg-4";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dai0_idle: m1dai2_dai0_idle{
+		telechips,pins = "gpg-4";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dao1: m1dai2_dao1{
+		telechips,pins = "gpg-5";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dao1_idle: m1dai2_dao1_idle{
+		telechips,pins = "gpg-5";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dai1: m1dai2_dai1{
+		telechips,pins = "gpg-6";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dai1_idle: m1dai2_dai1_idle{
+		telechips,pins = "gpg-6";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dao2: m1dai2_dao2{
+		telechips,pins = "gpg-7";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dao2_idle: m1dai2_dao2_idle{
+		telechips,pins = "gpg-7";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dai2: m1dai2_dai2{
+		telechips,pins = "gpg-8";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dai2_idle: m1dai2_dai2_idle{
+		telechips,pins = "gpg-8";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dao3: m1dai2_dao3{
+		telechips,pins = "gpg-9";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dao3_idle: m1dai2_dao3_idle{
+		telechips,pins = "gpg-9";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai2_dai3: m1dai2_dai3{
+		telechips,pins = "gpg-10";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai2_dai3_idle: m1dai2_dai3_idle{
+		telechips,pins = "gpg-10";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Multi DAI Port_3 m1:multi, dai3:port3
+	 ******************************************************/
+
+	m1dai3_mclk: m1dai3_mclk{
+		telechips,pins = "gpe-0";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_mclk_idle: m1dai3_mclk_idle{
+		telechips,pins = "gpe-0";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_bclk: m1dai3_bclk{
+		telechips,pins = "gpe-1";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_bclk_idle: m1dai3_bclk_idle{
+		telechips,pins = "gpe-1";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_lrck: m1dai3_lrck{
+		telechips,pins = "gpe-2";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_lrck_idle: m1dai3_lrck_idle{
+		telechips,pins = "gpe-2";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dao0: m1dai3_dao0{
+		telechips,pins = "gpe-3";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dao0_idle: m1dai3_dao0_idle{
+		telechips,pins = "gpe-3";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dai0: m1dai3_dai0{
+		telechips,pins = "gpe-4";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dai0_idle: m1dai3_dai0_idle{
+		telechips,pins = "gpe-4";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dao1: m1dai3_dao1{
+		telechips,pins = "gpe-5";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dao1_idle: m1dai3_dao1_idle{
+		telechips,pins = "gpe-5";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dai1: m1dai3_dai1{
+		telechips,pins = "gpe-6";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dai1_idle: m1dai3_dai1_idle{
+		telechips,pins = "gpe-6";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dao2: m1dai3_dao2{
+		telechips,pins = "gpe-7";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dao2_idle: m1dai3_dao2_idle{
+		telechips,pins = "gpe-7";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dai2: m1dai3_dai2{
+		telechips,pins = "gpe-8";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dai2_idle: m1dai3_dai2_idle{
+		telechips,pins = "gpe-8";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dao3: m1dai3_dao3{
+		telechips,pins = "gpe-9";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dao3_idle: m1dai3_dao3_idle{
+		telechips,pins = "gpe-9";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m1dai3_dai3: m1dai3_dai3{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <1>;
+	};
+
+	m1dai3_dai3_idle: m1dai3_dai3_idle{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Stereo DAI Port_0 m0:Stereo, dai0:port0
+	 ******************************************************/
+
+	m0dai0_mclk: m0dai0_mclk{
+		telechips,pins = "gpc-25";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai0_mclk_idle: m0dai0_mclk_idle{
+		telechips,pins = "gpc-25";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai0_bclk: m0dai0_bclk{
+		telechips,pins = "gpc-26";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai0_bclk_idle: m0dai0_bclk_idle{
+		telechips,pins = "gpc-26";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai0_lrck: m0dai0_lrck{
+		telechips,pins = "gpc-27";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai0_lrck_idle: m0dai0_lrck_idle{
+		telechips,pins = "gpc-27";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai0_dao0: m0dai0_dao0{
+		telechips,pins = "gpc-28";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai0_dao0_idle: m0dai0_dao0_idle{
+		telechips,pins = "gpc-28";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai0_dai0: m0dai0_dai0{
+		telechips,pins = "gpc-29";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai0_dai0_idle: m0dai0_dai0_idle{
+		telechips,pins = "gpc-29";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Stereo DAI Port_1 m0:Stereo, dai1:port1
+	 ******************************************************/
+
+	m0dai1_mclk: m0dai1_mclk{
+		telechips,pins = "gpg-0";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai1_mclk_idle: m0dai1_mclk_idle{
+		telechips,pins = "gpg-0";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai1_bclk: m0dai1_bclk{
+		telechips,pins = "gpg-1";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai1_bclk_idle: m0dai1_bclk_idle{
+		telechips,pins = "gpg-1";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai1_lrck: m0dai1_lrck{
+		telechips,pins = "gpg-2";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai1_lrck_idle: m0dai1_lrck_idle{
+		telechips,pins = "gpg-2";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai1_dao0: m0dai1_dao0{
+		telechips,pins = "gpg-3";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai1_dao0_idle: m0dai1_dao0_idle{
+		telechips,pins = "gpg-3";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai1_dai0: m0dai1_dai0{
+		telechips,pins = "gpg-4";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai1_dai0_idle: m0dai1_dai0_idle{
+		telechips,pins = "gpg-4";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Stereo DAI Port_2 m0:Stereo, dai2:port2
+	 ******************************************************/
+
+	m0dai2_mclk: m0dai2_mclk{
+		telechips,pins = "gpg-6";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai2_mclk_idle: m0dai2_mclk_idle{
+		telechips,pins = "gpg-6";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai2_bclk: m0dai2_bclk{
+		telechips,pins = "gpg-7";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai2_bclk_idle: m0dai2_bclk_idle{
+		telechips,pins = "gpg-7";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai2_lrck: m0dai2_lrck{
+		telechips,pins = "gpg-8";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai2_lrck_idle: m0dai2_lrck_idle{
+		telechips,pins = "gpg-8";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai2_dao0: m0dai2_dao0{
+		telechips,pins = "gpg-9";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai2_dao0_idle: m0dai2_dao0_idle{
+		telechips,pins = "gpg-9";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai2_dai0: m0dai2_dai0{
+		telechips,pins = "gpg-10";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai2_dai0_idle: m0dai2_dai0_idle{
+		telechips,pins = "gpg-10";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Stereo DAI Port_3 m0:Stereo, dai3:port3
+	 ******************************************************/
+
+	m0dai3_mclk: m0dai3_mclk{
+		telechips,pins = "gpe-0";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai3_mclk_idle: m0dai3_mclk_idle{
+		telechips,pins = "gpe-0";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai3_bclk: m0dai3_bclk{
+		telechips,pins = "gpe-1";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai3_bclk_idle: m0dai3_bclk_idle{
+		telechips,pins = "gpe-1";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai3_lrck: m0dai3_lrck{
+		telechips,pins = "gpe-2";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai3_lrck_idle: m0dai3_lrck_idle{
+		telechips,pins = "gpe-2";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai3_dao0: m0dai3_dao0{
+		telechips,pins = "gpe-3";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai3_dao0_idle: m0dai3_dao0_idle{
+		telechips,pins = "gpe-3";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai3_dai0: m0dai3_dai0{
+		telechips,pins = "gpe-4";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai3_dai0_idle: m0dai3_dai0_idle{
+		telechips,pins = "gpe-4";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Stereo DAI Port_4 m0:Stereo, dai4:port4
+	 ******************************************************/
+
+	m0dai4_mclk: m0dai4_mclk{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai4_mclk_idle: m0dai4_mclk_idle{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai4_bclk: m0dai4_bclk{
+		telechips,pins = "gpe-11";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai4_bclk_idle: m0dai4_bclk_idle{
+		telechips,pins = "gpe-11";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai4_lrck: m0dai4_lrck{
+		telechips,pins = "gpe-12";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai4_lrck_idle: m0dai4_lrck_idle{
+		telechips,pins = "gpe-12";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai4_dao0: m0dai4_dao0{
+		telechips,pins = "gpe-13";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai4_dao0_idle: m0dai4_dao0_idle{
+		telechips,pins = "gpe-13";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai4_dai0: m0dai4_dai0{
+		telechips,pins = "gpe-14";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai4_dai0_idle: m0dai4_dai0_idle{
+		telechips,pins = "gpe-14";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Stereo DAI Port_5 m0:Stereo, dai5:port5
+	 ******************************************************/
+
+	m0dai5_mclk: m0dai5_mclk{
+		telechips,pins = "gpe-15";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai5_mclk_idle: m0dai5_mclk_idle{
+		telechips,pins = "gpe-15";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai5_bclk: m0dai5_bclk{
+		telechips,pins = "gpe-16";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai5_bclk_idle: m0dai5_bclk_idle{
+		telechips,pins = "gpe-16";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai5_lrck: m0dai5_lrck{
+		telechips,pins = "gpe-17";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai5_lrck_idle: m0dai5_lrck_idle{
+		telechips,pins = "gpe-17";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai5_dao0: m0dai5_dao0{
+		telechips,pins = "gpe-18";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai5_dao0_idle: m0dai5_dao0_idle{
+		telechips,pins = "gpe-18";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	m0dai5_dai0: m0dai5_dai0{
+		telechips,pins = "gpe-19";
+		telechips,pin-function = <2>;
+	};
+
+	m0dai5_dai0_idle: m0dai5_dai0_idle{
+		telechips,pins = "gpe-19";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * SPDIF Port spdif0:port0
+	 ******************************************************/
+
+	spdif0_tx: spdif0_tx{
+		telechips,pins = "gpe-5";
+		telechips,pin-function = <3>;
+	};
+
+	spdif0_tx_idle: spdif0_tx_idle{
+		telechips,pins = "gpe-5";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif0_rx: spdif0_rx{
+		telechips,pins = "gpe-5";
+		telechips,pin-function = <4>;
+	};
+
+	spdif0_rx_idle: spdif0_rx_idle{
+		telechips,pins = "gpe-5";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif1_tx: spdif1_tx{
+		telechips,pins = "gpe-6";
+		telechips,pin-function = <3>;
+	};
+
+	spdif1_tx_idle: spdif1_tx_idle{
+		telechips,pins = "gpe-6";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif1_rx: spdif1_rx{
+		telechips,pins = "gpe-6";
+		telechips,pin-function = <4>;
+	};
+
+	spdif1_rx_idle: spdif1_rx_idle{
+		telechips,pins = "gpe-6";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif2_tx: spdif2_tx{
+		telechips,pins = "gpe-7";
+		telechips,pin-function = <3>;
+	};
+
+	spdif2_tx_idle: spdif2_tx_idle{
+		telechips,pins = "gpe-7";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif2_rx: spdif2_rx{
+		telechips,pins = "gpe-7";
+		telechips,pin-function = <4>;
+	};
+
+	spdif2_rx_idle: spdif2_rx_idle{
+		telechips,pins = "gpe-7";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif3_tx: spdif3_tx{
+		telechips,pins = "gpe-8";
+		telechips,pin-function = <3>;
+	};
+
+	spdif3_tx_idle: spdif3_tx_idle{
+		telechips,pins = "gpe-8";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif3_rx: spdif3_rx{
+		telechips,pins = "gpe-8";
+		telechips,pin-function = <4>;
+	};
+
+	spdif3_rx_idle: spdif3_rx_idle{
+		telechips,pins = "gpe-8";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif4_tx: spdif4_tx{
+		telechips,pins = "gpe-9";
+		telechips,pin-function = <3>;
+	};
+
+	spdif4_tx_idle: spdif4_tx_idle{
+		telechips,pins = "gpe-9";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif4_rx: spdif4_rx{
+		telechips,pins = "gpe-9";
+		telechips,pin-function = <4>;
+	};
+
+	spdif4_rx_idle: spdif4_rx_idle{
+		telechips,pins = "gpe-9";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif5_tx: spdif5_tx{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <3>;
+	};
+
+	spdif5_tx_idle: spdif5_tx_idle{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif5_rx: spdif5_rx{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <4>;
+	};
+
+	spdif5_rx_idle: spdif5_rx_idle{
+		telechips,pins = "gpe-10";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif6_tx: spdif6_tx{
+		telechips,pins = "gpe-15";
+		telechips,pin-function = <3>;
+	};
+
+	spdif6_tx_idle: spdif6_tx_idle{
+		telechips,pins = "gpe-15";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	spdif6_rx: spdif6_rx{
+		telechips,pins = "gpe-15";
+		telechips,pin-function = <4>;
+	};
+
+	spdif6_rx_idle: spdif6_rx_idle{
+		telechips,pins = "gpe-15";
+		telechips,pin-function = <0>;
+		telechips,output-low = <0>;
+	};
+
+	/******************************************************
+	 * Audio PinCtrl END
+	 ******************************************************/
+};

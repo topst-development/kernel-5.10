@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: (GPL-2.0-or-later OR MIT) */
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc807x-clks.h>
+
+/ {
+	aliases: aliases {
+		adc = &adc;
+	};
+
+	adc: adc@16700000 {
+		compatible = "telechips,tcc807x-adc";
+		reg = <0x00 0x16700000 0x00 0xAC>;
+		clocks = <&clk_peri PERI_ADC &clk_io IOBUS_ADC>;
+		#io-channel-cells = <1>;
+		status = "disabled";
+	};
+};

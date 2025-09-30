@@ -1,0 +1,126 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/pmap/tcc805x/pmap-tcc805x-linux-subcore-display.h>
+
+/*=======================================================================================
+ * TCC805x_Linux_Subcore VIOC PATH
+ * -------------------------------
+ *
+ *       tcc_overlay: GRDMA01 --------- SC7(2K) - WMIX0 - DISP0                [sub-core]
+ *        vout0_disp: VRDMA03 ------------------+                              [sub-core]
+ *
+ *  tcc_overlay_drv1: GRDMA05 ------------------- WMIX1 - DISP1                [sub-core]
+ *
+ *     tcc_scrshare0: GRDMA09 ------------------- WMIX2 - DISP2                [sub-core]
+ *
+ *         vout0_m2m: VRDMA12 - VIQE0 - SC1(4K) - WMIX3 - WDMA03               [sub-core]
+ *
+ *=======================================================================================
+ */
+&tcc_overlay {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03
+						VIOC_RDMA04 VIOC_RDMA05 VIOC_RDMA06 VIOC_RDMA07
+						VIOC_RDMA08 VIOC_RDMA09 VIOC_RDMA10 VIOC_RDMA11>;
+	wmixs = <&vioc_wmix VIOC_WMIX0 VIOC_WMIX1 VIOC_WMIX2>;
+	scalers = <&vioc_scaler VIOC_SCALER7>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+
+	display_num = <0>;
+	rdma_init_layer = <1>;
+
+	status = "okay";
+};
+
+&tcc_overlay_drv1 {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03
+						VIOC_RDMA04 VIOC_RDMA05 VIOC_RDMA06 VIOC_RDMA07
+						VIOC_RDMA08 VIOC_RDMA09 VIOC_RDMA10 VIOC_RDMA11>;
+	wmixs = <&vioc_wmix VIOC_WMIX0 VIOC_WMIX1 VIOC_WMIX2>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+
+	display_num = <1>;
+	rdma_init_layer = <2>;
+
+	status = "disabled";
+};
+
+/* Only for boot animation */
+&vout_drv0 {
+	rdma = <&vioc_rdma VIOC_RDMA03>;
+	wmix = <&vioc_wmix VIOC_WMIX0>;
+	disp = <&vioc_disp VIOC_DISP0>;
+
+	subplane_rdma = <&vioc_rdma VIOC_RDMA02>;
+	m2m_subplane_rdma = <&vioc_rdma VIOC_RDMA12>;
+	m2m_rdma = <&vioc_rdma VIOC_RDMA13>;
+	m2m_wmix = <&vioc_wmix VIOC_WMIX3>;
+	m2m_wdma = <&vioc_wdma VIOC_WDMA03>;
+
+	rdma_bootani = <&vioc_rdma VIOC_RDMA07>;
+	wmix_bootani = <&vioc_wmix VIOC_WMIX1>;
+	disp_bootani = <&vioc_disp VIOC_DISP1>;
+
+	deintl_block = <&vioc_viqe VIOC_VIQE0>;
+	scaler = <&vioc_scaler VIOC_SCALER1>;
+	mc = <&vioc_mc VIOC_MC1>;
+
+	status = "okay";
+};
+
+/*-----------------------------------------------------------
+ * VIOC PMAP
+ *-----------------------------------------------------------
+ */
+&pmap_fb1_video {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "fb1_video";
+	size = <0x0 PMAP_SIZE_FB1_VIDEO>;
+	no-map;
+	status = "disabled";
+};
+
+&pmap_fb2_video {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "fb2_video";
+	size = <0x0 PMAP_SIZE_FB2_VIDEO>;
+	no-map;
+	status = "disabled";
+};
+
+&pmap_fb3_video {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "fb3_video";
+	size = <0x0 PMAP_SIZE_FB3_VIDEO>;
+	no-map;
+	status = "disabled";
+};
+
+&pmap_v4l2_vout0 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "v4l2_vout0";
+	size = <0x0 PMAP_SIZE_V4L2_VOUT0>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_overlay_rot {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay_rot";
+	size = <0x0 PMAP_SIZE_OVERLAY_ROT>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_viqe0 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "viqe";
+	size = <0x0 PMAP_SIZE_VIQE0>;
+	no-map;
+	status = "okay";
+};
+
+/* end of file */

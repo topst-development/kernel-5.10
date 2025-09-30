@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+
+/ {
+	compatible = "telechips,tcc807x";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen: chosen {
+		bootargs = "vmalloc=480M console=ttyAMA4,115200n8";
+		stdout-path = "serial4:115200n8,mmio32,0x16640000";
+	};
+
+	aliases: aliases {};
+
+	memory: memory@40000000 {
+		device_type = "memory";
+		reg = <0x0 0x40000000 0x0 0x40000000>;
+	};
+
+	psci: psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		optee_os {
+			compatible = "optee.os";
+			reg = <0x0 0x4e000000 0x0 0x02000000>;
+			no-map;
+			status = "disabled"; /* enabled by U-Boot if needed */
+		};
+	};
+};
+
+#include "tcc807x-subcore-cpu.dtsi"
+#include "tcc807x-subcore-clk.dtsi"
+#include "tcc807x-reboot-mode.dtsi"
+#include "tcc807x-reset.dtsi"
+#include "tcc807x-subcore-mbox.dtsi"
+#include "tcc807x-smmu.dtsi"
+#include "tcc807x-scfw.dtsi"
+#include "tcc807x-gpio.dtsi"
+#include "tcc807x-uart.dtsi"
+#include "tcc807x-wdt.dtsi"
+#include "tcc807x-dma.dtsi"
+#include "tcc807x-mmc.dtsi"
+#include "tcc807x-ufs.dtsi"
+#include "tcc807x-adc.dtsi"
+#include "tcc807x-i2c.dtsi"
+#include "tcc807x-spi.dtsi"
+#include "tcc807x-subcore-thermal.dtsi"
+#include "tcc807x-subcore-ipi.dtsi"
+#include "tcc807x-pwm.dtsi"
+#include "tcc807x-subcore-usb.dtsi"
+#include "tcc807x-subcore-hsm.dtsi"
+#include "tcc807x-rng.dtsi"
+#include "tcc807x-vpu.dtsi"
+#include "tcc807x-touchreceiver.dtsi"
+#include "tcc807x-subcore-tccipc.dtsi"
+#include "tcc807x-subcore-gpu.dtsi"
+#include "tcc807x-subcore-ethosn.dtsi"

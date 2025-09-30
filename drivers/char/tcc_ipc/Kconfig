@@ -1,0 +1,10 @@
+config TELECHIPS_IPC
+	tristate "TCC IPC Driver for TCC803x/TCC805x/TCC807X"
+	default n
+	depends on TCC_IPI_PROTOCOL
+	help
+		TCC IPC only supports TCC803x/TCC805x/TCC807x.
+		TCC IPC is a driver that communicates between cores.
+		Supprot Core :
+		Main core <-> Subcore (TCC807x)
+		Main core <-> Subcore, Main Core <-> MICOM, Sub Core <-> MICOM (TCC803x, TCC805x)

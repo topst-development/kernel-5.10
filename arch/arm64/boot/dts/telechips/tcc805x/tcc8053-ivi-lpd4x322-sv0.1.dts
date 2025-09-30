@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc805x.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8053 LPD4X322 0.1 Main Core";
+	board-id = <BOARD_ID_TCC8053_EVB>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc805x-wdt.dtsi"
+#include "override/tcc805x-dma.dtsi"
+#include "override/tcc805x-scfw.dtsi"
+#include "override/tcc805x-ufs.dtsi"
+#include "override/tcc805x-gmac.dtsi"
+#include "override/tcc805x-audio.dtsi"
+#include "override/tcc805x-vpu.dtsi"
+#include "override/tcc8053-cpu.dtsi"
+#include "override/tcc8050_53-lpd4x322-sv0.1-gpio.dtsi"
+#include "override/tcc8050_53-lpd4x322-uart.dtsi"
+#include "override/tcc8050_53-lpd4x322-mmc.dtsi"
+#include "override/tcc8050_53-lpd4x322-sv0.1-i2c.dtsi"
+#include "override/tcc8050_53-lpd4x322-spi.dtsi"
+#include "override/tcc8050_53-lpd4x322-timer.dtsi"
+#include "override/tcc8050_53-lpd4x322-sv0.1-usb.dtsi"
+#include "override/tcc8050_53-lpd4x322-sv0.1-gmac.dtsi"
+#include "override/tcc8050_53-lpd4x322-sv0.1-pcie.dtsi"
+#include "override/tcc8053-lpd4x322-sv0.1-display.dtsi"
+#include "override/tcc8050_53-lpd4x322-sv0.1-camera.dtsi"

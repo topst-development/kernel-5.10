@@ -1,0 +1,289 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&i2c3 {
+	status = "okay";
+};
+
+&ar0231 {
+	/* Camera Image Sensor */
+	status		= "okay";
+	port {
+		ar0231_out: endpoint {
+			remote-endpoint = <&max96705_in>;
+			io-direction	= "output";
+		};
+	};
+};
+
+&max96705 {
+	/* serializer */
+	status		= "okay";
+	pvd-name	= "fhd_ar0231";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			max96705_in: endpoint {
+				remote-endpoint = <&ar0231_out>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			max96705_out: endpoint {
+				remote-endpoint = <&max96712_in0>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&max96712 {
+	/* deserializer */
+	status		= "okay";
+	pvd-name	= "fhd_ar0231";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		/*
+		 * 0 ~ 3
+		 * input ports. The number is matched with VC
+		 *
+		 * 4
+		 * output port.
+		 */
+		port@0 {
+			reg = <0>;
+			max96712_in0: endpoint {
+				remote-endpoint = <&max96705_out>;
+				io-direction	= "input";
+				channel		= <0>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			max96712_in1: endpoint {
+				remote-endpoint = <&max96705_out>;
+				io-direction	= "input";
+				channel		= <1>;
+			};
+		};
+		port@2 {
+			reg = <2>;
+			max96712_in2: endpoint {
+				io-direction	= "input";
+				channel		= <2>;
+			};
+		};
+		port@3 {
+			reg = <3>;
+			max96712_in3: endpoint {
+				io-direction	= "input";
+				channel		= <3>;
+			};
+		};
+		port@4 {
+			reg = <4>;
+			max96712_out: endpoint {
+				remote-endpoint = <&mipi_csi2_0_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&mipi_csi2_0 {
+	status = "okay";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		/*
+		 * 0
+		 * input port.
+		 *
+		 * 1 ~ 4
+		 * output ports. (1: VC0 ~ 4: VC3)
+		 */
+		port@0 {
+			reg = <0>;
+			mipi_csi2_0_in: endpoint {
+				remote-endpoint	= <&max96712_out>;
+				io-direction	= "input";
+				num-channel	= <4>;
+
+				/*
+				 * 0: CH0 only, no data interleave
+				 * 1: DT only
+				 * 2: VC only
+				 * 3: VC and DT
+				 */
+				interleave-mode = <3>;
+				hs-settle = <33>;
+				data-lanes = <1 2 3 4>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			mipi_csi2_0_out0: endpoint {
+				remote-endpoint = <&isp0_in>;
+				io-direction	= "output";
+				channel		= <0>;
+				/*
+				 * 0: Single pixel mode
+				 * 1: Dual pixel mode (RAW8/10/12, YUV422)
+				 * 2: Quad pixel mode (RAW8/10/12)
+				 * 3: Invalid
+				 */
+				pixel-mode = <0>;
+			};
+		};
+		port@2 {
+			reg = <2>;
+			mipi_csi2_0_out1: endpoint {
+				io-direction	= "output";
+				channel		= <2>;
+				pixel-mode = <0>;
+			};
+		};
+		port@3 {
+			reg = <3>;
+			mipi_csi2_0_out2: endpoint {
+				remote-endpoint = <&isp2_in>;
+				io-direction	= "output";
+				channel		= <1>;
+				pixel-mode = <0>;
+			};
+		};
+		port@4 {
+			reg = <4>;
+			mipi_csi2_0_out3: endpoint {
+				io-direction	= "output";
+				channel		= <3>;
+				pixel-mode = <0>;
+			};
+		};
+	};
+};
+
+&isp0 {
+	status = "okay";
+	mem_share = <1>;
+	/*
+	 * 0: RGGB
+	 * 1: RCCB (ISP0 only)
+	 * 2: RCCC (ISP0 only)
+	 * 3: RGBIR (ISP0 only)
+	 */
+	cfa = <0>;
+
+	/* buffer for 3DNR */
+	//memory-region	= <&pmap_isp0_3dnr>;
+
+	/*
+	 * Crop output image (X, Y)
+	 * X: The number of left pixel. It will also crop X pixels of right.
+	 * Y: The number of top pixel. It will also crop Y pixels of bottom.
+	 * The default value is (8, 8).
+	 */
+	out_win_crop = <4 8>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			isp0_in: endpoint {
+				remote-endpoint = <&mipi_csi2_0_out0>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			isp0_out: endpoint {
+				remote-endpoint	= <&videoinput0_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&isp2 {
+	status = "okay";
+	mem_share = <1>;
+	/*
+	 * 0: RGGB
+	 * 1: RCCB (ISP0 only)
+	 * 2: RCCC (ISP0 only)
+	 * 3: RGBIR (ISP0 only)
+	 */
+	cfa = <0>;
+
+	/*
+	 * Crop output image (X, Y)
+	 * X: The number of left pixel. It will also crop X pixels of right.
+	 * Y: The number of top pixel. It will also crop Y pixels of bottom.
+	 * The default value is (8, 8).
+	 */
+	out_win_crop = <4 8>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			isp2_in: endpoint {
+				remote-endpoint = <&mipi_csi2_0_out2>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			isp2_out: endpoint {
+				remote-endpoint	= <&videoinput1_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&videoinput0 {
+	status		= "okay";
+	cam-ch		= <0>;
+	interrupt-delay = <0x1800>;
+	/* memory-region
+	 *  - [0]: parking guideline
+	 *  - [1]: preview
+	 */
+	memory-region	= <0
+			   &pmap_rearcamera>;
+	port {
+		videoinput0_in: endpoint {
+			remote-endpoint	= <&isp0_out>;
+			io-direction	= "input";
+		};
+	};
+};
+
+&videoinput1 {
+	status		= "okay";
+	cam-ch		= <2>;
+	interrupt-delay = <0x1800>;
+	/* memory-region
+	 *  - [0]: parking guideline
+	 *  - [1]: preview
+	 */
+	memory-region	= <0
+			   &pmap_rearcamera1>;
+	port {
+		videoinput1_in: endpoint {
+			remote-endpoint	= <&isp2_out>;
+			io-direction	= "input";
+		};
+	};
+};
+

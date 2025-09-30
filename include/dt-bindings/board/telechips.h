@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ * Copyright (C) 2024 Telechips Inc.
+ */
+
+#ifndef DT_BINDINGS_BOARD_TELECHIPS_H
+#define DT_BINDINGS_BOARD_TELECHIPS_H
+
+#define BOARD_ID_TCC8030_EVB	(0x2000)
+
+#define BOARD_ID_TCC8050_EVB	(0x4000)
+#define BOARD_ID_TCC8053_EVB	(0x4001)
+#define BOARD_ID_TCC8059_EVB	(0x4002)
+#define BOARD_ID_TCC8050_TOPST	(0x4100)
+
+#define BOARD_ID_TCC7500_EVB	(0x5000)
+
+#define BOARD_ID_TCC8070_EVB	(0x6000)
+
+#endif /* DT_BINDINGS_BOARD_TELECHIPS_H */

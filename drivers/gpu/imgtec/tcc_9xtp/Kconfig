@@ -1,0 +1,11 @@
+config POWERVR_TCC9XTP
+	bool "PowerVR Telechips support"
+	default y
+	depends on POWERVR_ROGUE
+	depends on ARCH_TELECHIPS
+
+
+config PVR_TCC9XTP_DFS_SUPPORT
+	bool "PowerVR Telechips DFS (Dynamic Frequency Scaling) support"
+	default n
+	depends on POWERVR_TCC9XTP

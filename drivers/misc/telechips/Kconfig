@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Telechips Misc devices
+#
+
+menu "Telechips Misc devices"
+	depends on ARCH_TELECHIPS
+
+config ICTC
+	tristate "ICTC driver"
+	depends on ARCH_TCC803X=y || ARCH_TCC805X=y || ARCH_TCC807X=y
+	default n
+
+config TELECHIPS_SDR
+	tristate "Telechips Digital I/Q Driver for SDR"
+	depends on (ARCH_TCC803X || ARCH_TCC805X || ARCH_TCC807X || ARCH_TCC899X || ARCH_TCC901X)
+	default n
+	help
+		This driver supports receiving I/Q data and PCM data from tuner chip.
+
+config OPENEDGES_NPU
+		tristate "OPENEDGES NPU driver"
+		depends on (ARCH_TCC750X)
+		default y
+		help
+			OPENEDGES NPU driver for tcc750x (N-Dolphin)
+
+#
+# Display part drivers
+#
+config TELECHIPS_WMIXER
+  tristate "Telechips Wmixer driver"
+  depends on ARCH_TELECHIPS
+  default n
+  help
+    Telechips Windows Mixer driver.
+
+config TELECHIPS_SCALER
+	tristate "Telechips Scaler driver"
+	depends on ARCH_TELECHIPS
+	default n
+	help
+		Telechips Scaler driver.
+
+config TELECHIPS_G2D
+	tristate "Telechips Graphic 2D controller driver"
+	depends on VIOC_G2D
+	default n
+	help
+		TCC Graphic 2D Controller driver.
+
+config TELECHIPS_MISC
+	tristate "Telechips misc driver"
+	depends on ARCH_TELECHIPS
+	default n
+	help
+		Telechips miscellaneous driver.
+
+endmenu

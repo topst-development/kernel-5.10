@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+&cpu_opp_table {
+	opp0 {
+		opp-hz = /bits/ 64 <1450000000>;
+		opp-microvolt = <900000>;
+		clock-latency-ns = <300000>;
+	};
+
+	opp1 {
+		opp-hz = /bits/ 64 <1400000000>;
+		opp-microvolt = <900000>;
+		clock-latency-ns = <300000>;
+	};
+
+	opp2 {
+		opp-hz = /bits/ 64 <1100000000>;
+		opp-microvolt = <800000>;
+		clock-latency-ns = <300000>;
+	};
+
+	opp3 {
+		opp-hz = /bits/ 64 <1000000000>;
+		opp-microvolt = <800000>;
+		clock-latency-ns = <300000>;
+	};
+};
+
+#ifndef DT_OVERLAY
+// XXX: /delete-node/ is a directive for dtc, hence doesn't work for dt-overlay.
+/delete-node/ &A53_2;
+/delete-node/ &A53_3;
+#endif
+
+&pmu {
+	interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_HIGH>,
+		     <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>;
+	interrupt-affinity = <&A53_0>,
+			     <&A53_1>;
+};

@@ -1,0 +1,199 @@
+/ {
+	ov5647_vdddo_1: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "ov5647_vdddo";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	ov5647_vdda_1: fixedregulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "ov5647_vdda";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	ov5647_vddd_1: fixedregulator@2 {
+		compatible = "regulator-fixed";
+		regulator-name = "ov5647_vddd";
+		regulator-min-microvolt = <1500000>;
+		regulator-max-microvolt = <1500000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	ov5647_clk_1: ov5647_clk {
+		compatible = "fixed-clock";
+		#clock-cells = <1>;
+		clock-frequency = <25000000>;
+	};
+};
+
+&i2c7 {
+	status = "okay";
+	ov5647_1@36 {
+		compatible = "ovti,ov5647";
+		status = "okay";
+		reg = <0x36>;
+
+		clocks = <&ov5647_clk_1 200>;
+		clock-names = "xclk";
+		clock-frequency = <25000000>;
+
+		dovdd-supply = <&ov5647_vdddo_1>;		// 1.8v
+		avdd-supply = <&ov5647_vdda_1>;			// 2.8v
+		dvdd-supply = <&ov5647_vddd_1>;			// 1.5v
+
+		pwdn-gpios = <&gpmc 0 GPIO_ACTIVE_LOW>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				ov5647_1_out0: endpoint@0 {
+					remote-endpoint = <&mipi_csi2_1_in>;
+					io-direction = "output";
+					channel = <1>;
+
+					clock-lanes = <0>;
+					data-lanes = <1 2>;
+					clock-noncontinuous;
+					link-frequencies =
+						/bits/ 64 <297000000>;
+				};
+			};
+		};
+	};
+};
+
+&mipi_csi2_1 {
+	status = "okay";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		
+		port@0 {
+			reg = <0>;
+			mipi_csi2_1_in: endpoint {
+				remote-endpoint = <&ov5647_1_out0>;
+				io-direction    = "input";
+				num-channel     = <4>;
+				/*
+				* 0: CH0 only, no data interleave
+				* 1: DT only
+				* 2: VC only
+				* 3: VC and DT
+				*/
+				interleave-mode = <3>;
+				hs-settle = <13>;
+				data-lanes = <1 2>;
+				};
+		};
+		port@1 {
+			reg = <1>;
+			mipi_csi2_1_out0: endpoint {
+				remote-endpoint = <&isp1_in>;
+				io-direction	= "output";
+				channel		= <1>;
+				/*
+				 * 0: Single pixel mode
+				 * 1: Dual pixel mode (RAW8/10/12, YUV422)
+				 * 2: Quad pixel mode (RAW8/10/12)
+				 * 3: Invalid
+				 */
+				pixel-mode = <0>;
+			};
+		};
+		port@2 {
+			reg = <2>;
+			mipi_csi2_1_out1: endpoint {
+				io-direction	= "output";
+				channel		= <0>;
+				pixel-mode = <0>;
+			};
+		};
+		port@3 {
+			reg = <3>;
+			mipi_csi2_1_out2: endpoint {
+				io-direction	= "output";
+				channel		= <2>;
+				pixel-mode = <0>;
+			};
+		};
+		port@4 {
+			reg = <4>;
+			mipi_csi2_1_out3: endpoint {
+				io-direction	= "output";
+				channel		= <3>;
+				pixel-mode = <0>;
+			};
+		};
+    };
+};
+
+&isp1 {
+	status = "okay";
+	mem_share = <1>;
+	/*
+	 * 0: RGGB
+	 * 1: RCCB (ISP1 only)
+	 * 2: RCCC (ISP1 only)
+	 * 3: RGBIR (ISP1 only)
+	 */
+	cfa = <0>;
+
+	/*
+	 * Crop output image (X, Y)
+	 * X: The number of left pixel. It will also crop X pixels of right.
+	 * Y: The number of top pixel. It will also crop Y pixels of bottom.
+	 * The default value is (8, 8).
+	 */
+	out_win_crop = <4 8>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			isp1_in: endpoint {
+				remote-endpoint = <&mipi_csi2_1_out0>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			isp1_out: endpoint {
+				remote-endpoint	= <&videoinput1_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&videoinput1 {
+	status		= "okay";
+	cifport		= <&cifport		6>;
+	/* memory-region
+	 *  - [0]: parking guideline
+	 *  - [1]: deinterlacing by viqe
+	 *  - [2]: preview
+	 *  - [3]: last frame
+	 */
+	memory-region	= <0
+			   0
+			   &pmap_rearcamera1
+			   0>;
+	port {
+		videoinput1_in: endpoint {
+			remote-endpoint	= <&isp1_out>;
+			io-direction	= "input";
+			stream-enable	= <1>;	// VIN_CTRL.SE
+			flush-vsync	= <1>;	// VIN_MISC.FVS
+		};
+	};
+};

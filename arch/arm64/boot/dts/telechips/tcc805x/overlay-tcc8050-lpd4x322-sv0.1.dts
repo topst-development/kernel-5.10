@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#define DT_OVERLAY
+
+#include "tcc8050-lpd4x322-sv0.1.dts"

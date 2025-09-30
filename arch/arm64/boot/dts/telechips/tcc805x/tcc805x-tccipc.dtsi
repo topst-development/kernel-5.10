@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+/{
+	ipc0: tcc_ipc0 {
+		compatible = "telechips,tcc_ipc";
+		device-name = "tcc_ipc_micom";
+		tcc_ipi = <&tcc_ipi_micom>;
+		status = "okay";
+	};
+
+	ipc1: tcc_ipc1 {
+		compatible = "telechips,tcc_ipc";
+		device-name = "tcc_ipc_ap";
+		tcc_ipi = <&tcc_ipi_sub>;
+		status = "okay";
+	};
+};

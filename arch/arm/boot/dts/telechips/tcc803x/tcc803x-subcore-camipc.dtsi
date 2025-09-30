@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) Telechips Inc.
+ */
+
+&aliases {
+	camipc0 = &camipc0;
+	camipc1 = &camipc1;
+};
+
+/ {
+	camipc0: camipc0 {
+		compatible = "telechips,camipc";
+		status = "okay";
+		device-name = "camipc_main";
+		protocol = "CAM0";
+		tcc_ipi = <&tcc_ipi_main>;
+	};
+
+	camipc1: camipc1 {
+		compatible = "telechips,camipc";
+		status = "okay";
+		device-name = "camipc_micom";
+		protocol = "CAM1";
+		tcc_ipi = <&tcc_ipi_micom>;
+	};
+};

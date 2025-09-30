@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/pmap/tcc803x/pmap-tcc803x-linux-ivi-subcore-display.h>
+
+/*=======================================================================================
+ * TCC803x_Subcore_Linux_IVI VIOC PATH
+ * -----------------------------------
+ *
+ *
+ *=======================================================================================
+ */
+
+&tcc_overlay {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03
+						VIOC_RDMA04 VIOC_RDMA05 VIOC_RDMA06 VIOC_RDMA07
+						VIOC_RDMA08 VIOC_RDMA09 VIOC_RDMA10 VIOC_RDMA11>;
+	wmixs = <&vioc_wmix VIOC_WMIX0 VIOC_WMIX1 VIOC_WMIX2>;
+	scalers = <&vioc_scaler VIOC_SCALER7>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+
+	display_num = <0>;
+	rdma_init_layer = <1>;
+
+	status = "okay";
+};
+
+&tcc_overlay_drv1 {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03
+						VIOC_RDMA04 VIOC_RDMA05 VIOC_RDMA06 VIOC_RDMA07
+						VIOC_RDMA08 VIOC_RDMA09 VIOC_RDMA10 VIOC_RDMA11>;
+	wmixs = <&vioc_wmix VIOC_WMIX0 VIOC_WMIX1 VIOC_WMIX2>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	mc = <&vioc_mc VIOC_NO_COMPONENT>;
+
+	display_num = <1>;
+	rdma_init_layer = <2>;
+
+	status = "disabled";
+};
+
+/* Only for boot animation */
+&vout_drv0 {
+	rdma = <&vioc_rdma VIOC_RDMA03>;
+	wmix = <&vioc_wmix VIOC_WMIX0>;
+	disp = <&vioc_disp VIOC_DISP0>;
+
+	subplane_rdma = <&vioc_rdma VIOC_RDMA02>;
+	m2m_subplane_rdma = <&vioc_rdma VIOC_NO_COMPONENT>;
+	m2m_rdma = <&vioc_rdma VIOC_RDMA11>;
+	m2m_wmix = <&vioc_wmix VIOC_WMIX2>;
+	m2m_wdma = <&vioc_wdma VIOC_WDMA02>;
+
+	rdma_bootani = <&vioc_rdma VIOC_RDMA07>;
+	wmix_bootani = <&vioc_wmix VIOC_WMIX1>;
+	disp_bootani = <&vioc_disp VIOC_DISP1>;
+
+	deintl_block = <&vioc_viqe VIOC_VIQE0>;
+	scaler = <&vioc_scaler VIOC_SCALER1>;
+	mc = <&vioc_mc VIOC_MC1>;
+
+	status = "okay";
+};
+
+/*------------------------------------------------------------------------------
+ * pmap
+ *------------------------------------------------------------------------------
+ */
+
+&pmap_viqe0 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "viqe";
+	size = <0x0 PMAP_SIZE_VIQE0>;
+	alignment = <0x1000>;
+	no-map;
+	status = "okay";
+};
+
+/* end of file */

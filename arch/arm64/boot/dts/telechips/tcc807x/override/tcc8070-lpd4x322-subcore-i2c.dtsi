@@ -1,0 +1,151 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+/* TUNER, MIPI1_0 */
+&i2c2 {
+	status = "disabled";
+	port-mux = <34>;
+	retry-count = <100>;
+	cmd-timeout = <2000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c34_bus_active>;
+	pinctrl-1 = <&i2c34_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+/* DISP4_TSC, C_SEN0, MIPI0_0 */
+&i2c3 {
+	status = "disabled";
+	port-mux = <29>;
+	retry-count = <100>;
+	cmd-timeout = <2000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c29_bus_active>;
+	pinctrl-1 = <&i2c29_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+/* DSI SER, MIPI0_2 */
+&i2c7 {
+	status = "okay";
+	port-mux = <35>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c35_bus_active>;
+	pinctrl-1 = <&i2c35_bus_sleep>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	dsi_serializer: max96789@40 {
+		compatible = "maxim,max9XXXX";
+		reg = <0x40>;
+	};
+
+	dsi_deserializer: max96878@6a {
+		compatible = "maxim,max9XXXX";
+		reg = <0x6a>;
+	};
+};
+
+/* dedicated I2C in Camera : MIPI 0 */
+&i2c12 {
+ 	status = "disabled";
+	port-mux = <1>;
+	retry-count = <100>;
+	cmd-timeout = <2000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c_cam1_bus_active>;
+	pinctrl-1 = <&i2c_cam1_bus_sleep>;
+
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+};
+
+/* dedicated I2C in Camera : MIPI 1 */
+&i2c13 {
+ 	status = "disabled";
+	port-mux = <2>;
+	retry-count = <100>;
+	cmd-timeout = <2000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c_cam2_bus_active>;
+	pinctrl-1 = <&i2c_cam2_bus_sleep>;
+
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+};
+
+
+&pinctrl {
+	i2c34_bus_active: i2c34_bus_active {
+		telechips,pins = "gpmb-30", "gpmb-31";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c29_bus_active: i2c29_bus_active {
+		telechips,pins = "gpmb-4", "gpmb-5";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c35_bus_active: i2c35_bus_active {
+		telechips,pins = "gpmc-4", "gpmc-5";
+		telechips,pin-function = <8>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c34_bus_sleep: i2c34_bus_sleep {
+		telechips,pins = "gpmb-30", "gpmb-31";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c29_bus_sleep: i2c29_bus_sleep {
+		telechips,pins = "gpmb-4", "gpmb-5";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c35_bus_sleep: i2c35_bus_sleep {
+		telechips,pins = "gpmc-4", "gpmc-5";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c_cam1_bus_active: i2c_cam1_bus_active {
+		telechips,pins = "gpmb-4", "gpmb-5";
+		telechips,pin-function = <9>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c_cam1_bus_sleep: i2c_cam1_bus_sleep {
+		telechips,pins = "gpmb-4", "gpmb-5";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+	i2c_cam2_bus_active: i2c_cam2_bus_active {
+		telechips,pins = "gpmb-30", "gpmb-31";
+		telechips,pin-function = <9>;
+		telechips,input_buffer_enable;
+		telechips,no-pull;
+	};
+
+	i2c_cam2_bus_sleep: i2c_cam2_bus_sleep {
+		telechips,pins = "gpmb-30", "gpmb-30";
+		telechips,pin-function = <0>;
+		telechips,no-pull;
+	};
+
+};

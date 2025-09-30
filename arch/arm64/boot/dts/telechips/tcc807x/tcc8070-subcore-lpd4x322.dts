@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc807x-subcore.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8070 LPD4X322 Sub-Core";
+	board-id = <BOARD_ID_TCC8070_EVB>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc807x-subcore-wdt.dtsi"
+#include "override/tcc807x-subcore-dma.dtsi"
+#include "override/tcc807x-subcore-smmu.dtsi"
+#include "override/tcc807x-subcore-scfw.dtsi"
+#include "override/tcc807x-subcore-ufs.dtsi"
+#include "override/tcc807x-subcore-vpu.dtsi"
+#include "override/tcc807x-subcore-gpu.dtsi"
+#include "override/tcc807x-subcore-ethosn.dtsi"
+#include "override/tcc8070-subcore-cpu.dtsi"
+#include "override/tcc8070-lpd4x322-subcore-uart.dtsi"
+#include "override/tcc8070-lpd4x322-subcore-mmc.dtsi"
+#include "override/tcc8070-lpd4x322-subcore-i2c.dtsi"
+#include "override/tcc8070-lpd4x322-subcore-usb.dtsi"
+#include "override/tcc8070-lpd4x322-subcore-spi.dtsi"
+#include "override/tcc8070-lpd4x322-subcore-display.dtsi"
+#include "override/tcc8070-lpd4x322-subcore-camera.dtsi"

@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&gpsb3 {
+	status = "okay";
+	pinctrl-names = "idle", "active", "sleep";
+	pinctrl-0 = <&gpsb_ipc_bus_idle>;
+	pinctrl-1 = <&gpsb_ipc_bus_spi>;
+	pinctrl-2 = <&gpsb_ipc_bus_idle>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	spidev@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <20000000>;
+	};
+};
+
+&gpsb4 {
+	status = "okay";
+	pinctrl-names = "idle", "active", "sleep";
+	pinctrl-0 = <&gpsb_rvc_bus_idle>;
+	pinctrl-1 = <&gpsb_rvc_bus_spi>;
+	pinctrl-2 = <&gpsb_rvc_bus_idle>;
+	spi-srvc;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	spidev@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <20000000>;
+	};
+};
+
+&pinctrl {
+	gpsb_rvc_bus_idle: gpsb_rvc_bus_idle {
+		telechips,pins = "gph-0", "gph-1", "gph-3", "gph-2";
+		telechips,pin-function = <0>;
+		telechips,input_buffer_enable;
+	};
+
+	gpsb_rvc_bus_spi: gpsb_rvc_bus_spi {
+		telechips,pins = "gph-0", "gph-1", "gph-3", "gph-2";
+		telechips,pin-function = <1>;
+		telechips,input_buffer_enable;
+	};
+
+	gpsb_ipc_bus_idle: gpsb_ipc_bus_idle {
+		telechips,pins = "gpf-4", "gpf-5", "gpf-6", "gpf-7";
+		telechips,pin-function = <0>;
+		telechips,input_buffer_enable;
+	};
+
+	gpsb_ipc_bus_spi: gpsb_ipc_bus_spi {
+		telechips,pins = "gpf-4", "gpf-5", "gpf-6", "gpf-7";
+		telechips,pin-function = <2>;
+		telechips,input_buffer_enable;
+	};
+};

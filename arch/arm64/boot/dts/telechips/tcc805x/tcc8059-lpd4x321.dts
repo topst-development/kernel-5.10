@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/board/telechips.h>
+
+#ifndef DT_OVERLAY
+#include "tcc805x.dts"
+#endif
+
+/ {
+	model = "Telechips TCC8059 LPD4X321 Main Core";
+	board-id = <BOARD_ID_TCC8059_EVB>;
+	board-rev = <0x0>;
+};
+
+#include "override/tcc805x-wdt.dtsi"
+#include "override/tcc805x-dma.dtsi"
+#include "override/tcc805x-scfw.dtsi"
+#include "override/tcc805x-gmac.dtsi"
+#include "override/tcc805x-vpu.dtsi"
+#include "override/tcc8059-cpu.dtsi"
+#include "override/tcc8059-gpio.dtsi"
+#include "override/tcc8059-audio.dtsi"
+#include "override/tcc8059-lpd4x321-gpio.dtsi"
+#include "override/tcc8059-lpd4x321-uart.dtsi"
+#include "override/tcc8059-lpd4x321-mmc.dtsi"
+#include "override/tcc8059-lpd4x321-i2c.dtsi"
+#include "override/tcc8059-lpd4x321-spi.dtsi"
+#include "override/tcc8059-lpd4x321-ictc.dtsi"
+#include "override/tcc8059-lpd4x321-timer.dtsi"
+#include "override/tcc8059-lpd4x321-usb.dtsi"
+#include "override/tcc8059-lpd4x321-gmac.dtsi"
+#include "override/tcc8059-lpd4x321-pcie.dtsi"
+#include "override/tcc8059-lpd4x321-display.dtsi"
+#include "override/tcc8059-lpd4x321-camera.dtsi"

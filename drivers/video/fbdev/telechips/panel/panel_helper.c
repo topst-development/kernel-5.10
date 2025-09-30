@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright (C) Telechips Inc.
+ */
+#include <linux/err.h>
+#include <linux/module.h>
+
+
+#ifdef CONFIG_PM
+#include <linux/pm.h>
+#include <linux/pm_runtime.h>
+#endif
+
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#endif
+
+#include <video/display_timing.h>
+#include <video/videomode.h>
+#include <panel_helper.h>
+
+static DEFINE_MUTEX(panel_lock);
+static LIST_HEAD(panel_list);
+
+void fb_panel_init(struct fb_panel *panel)
+{
+	INIT_LIST_HEAD(&panel->list);
+}
+EXPORT_SYMBOL(fb_panel_init);
+
+int fb_panel_add(struct fb_panel *panel)
+{
+	mutex_lock(&panel_lock);
+	list_add_tail(&panel->list, &panel_list);
+	mutex_unlock(&panel_lock);
+
+	return 0;
+}
+EXPORT_SYMBOL(fb_panel_add);
+
+void fb_panel_remove(struct fb_panel *panel)
+{
+	mutex_lock(&panel_lock);
+	list_del_init(&panel->list);
+	mutex_unlock(&panel_lock);
+}
+EXPORT_SYMBOL(fb_panel_remove);
+
+struct fb_panel *of_fb_find_panel(const struct device_node *np)
+{
+	struct fb_panel *panel;
+
+	mutex_lock(&panel_lock);
+
+	list_for_each_entry(panel, &panel_list, list) {
+		if (panel->dev->of_node == np) {
+			mutex_unlock(&panel_lock);
+			return panel;
+		}
+	}
+
+	mutex_unlock(&panel_lock);
+	return NULL;
+}
+EXPORT_SYMBOL(of_fb_find_panel);
+
+int fb_panel_prepare(struct fb_panel *panel)
+{
+	int ret = -ENODEV;
+
+	if ((panel  != NULL) && (panel->funcs != NULL) &&
+	    (panel->funcs->prepare != NULL)) {
+		ret = panel->funcs->prepare(panel);
+		/* prevetn KCS warning */
+	}
+	return ret;
+}
+EXPORT_SYMBOL(fb_panel_prepare);
+
+int fb_panel_enable(struct fb_panel *panel)
+{
+	int ret = -ENODEV;
+
+	if ((panel  != NULL) && (panel->funcs != NULL) &&
+	    (panel->funcs->enable != NULL)) {
+		ret = panel->funcs->enable(panel);
+		/* prevetn KCS warning */
+	}
+	return ret;
+}
+EXPORT_SYMBOL(fb_panel_enable);
+
+int fb_panel_disable(struct fb_panel *panel)
+{
+	int ret = -ENODEV;
+
+	if ((panel  != NULL) && (panel->funcs != NULL) &&
+	    (panel->funcs->disable != NULL)) {
+		ret = panel->funcs->disable(panel);
+		/* prevetn KCS warning */
+	}
+	return ret;
+}
+EXPORT_SYMBOL(fb_panel_disable);
+
+int fb_panel_unprepare(struct fb_panel *panel)
+{
+	int ret = -ENODEV;
+
+	if ((panel  != NULL) && (panel->funcs != NULL) &&
+	    (panel->funcs->unprepare != NULL)) {
+		ret = panel->funcs->unprepare(panel);
+		/* prevetn KCS warning */
+	}
+	return ret;
+}
+EXPORT_SYMBOL(fb_panel_unprepare);
+
+int fb_panel_get_mode(struct fb_panel *panel, struct videomode *vm)
+{
+	int ret = -ENODEV;
+
+	if ((panel  != NULL) && (panel->funcs != NULL) &&
+	    (panel->funcs->get_videomode != NULL)) {
+		ret = panel->funcs->get_videomode(panel, vm);
+		/* prevetn KCS warning */
+	}
+	return ret;
+}
+EXPORT_SYMBOL(fb_panel_get_mode);
+
+int fb_panel_set_pclk(struct fb_panel *panel, unsigned long pclk)
+{
+	int ret = 0;
+
+	if ((panel  != NULL) && (panel->funcs != NULL) &&
+	    (panel->funcs->set_pclk != NULL)) {
+		ret = panel->funcs->set_pclk(panel, pclk);
+		/* prevetn KCS warning */
+	}
+	return ret;
+}
+
+MODULE_AUTHOR("Jayden Kim <kimdy@telechips.com>");
+MODULE_DESCRIPTION("FB panel infrastructure");
+MODULE_LICENSE("GPL and additional rights");

@@ -1,0 +1,82 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+#include <dt-bindings/display/tcc8059-lpd4x321-panel.h>
+#include "tcc805x-subcore-disp-target-config.dtsi"
+#include "tcc805x-subcore-vioc.dtsi"
+#include "tcc805x-subcore-disp.dtsi"
+
+#include "tcc805x-linux-ivi-subcore-vioc.dtsi"
+/*==============================================================================
+ * TCC805x_Linux_IVI SUB-CORE DISPLAY PATH
+ * ---------------------------
+ * VIOC2 : fb0<fb0_display_out> -> <fb_lvds0_in>fb_tm123xdhp90
+ =============================================================================*/
+
+#if defined(LCD_PORT3_BLK_GPIO) && defined(LCD_PORT3_BLK_NUM)
+&lcd_port3_bl {
+	status = "okay";
+};
+#endif
+
+&pmap_fb_video {
+	reg = <0x0 FB_VIDEO_BASE 0x0 PMAP_SIZE_FB_VIDEO>;
+	alignment = <0x1000>;
+	no-map;
+	status = "okay";
+};
+
+/* FB0 */
+&fb0 {
+	status = "okay";
+	memory-region = <&pmap_fb_video>;
+};
+
+/* FB0 -> FB TM123XDHP90 */
+&fb0_display_out {
+	#if (FB_LVDS_PANEL_INDEX == LVDS_PANEL_AUO)
+	remote-endpoint = <&panel_fb_auo_in>;
+	#else
+	remote-endpoint = <&panel_fb_boe_in>;
+	#endif
+};
+
+/* FB TM123XDHP90 */
+FB_LVDS_PANEL {
+	status = "okay";
+	#if defined(LCD_PORT2_PWR) && defined(LCD_PORT2_RST) && \
+	    defined(LCD_PORT2_BLK)
+	pinctrl-0 = <&lcd_port_default2>;
+	pinctrl-1 = <&lcd_port_default2>;
+	pinctrl-2 = <&lcd_port_power_on2>;
+	pinctrl-3 = <&lcd_port_reset_off2>;
+	pinctrl-4 = <&lcd_port_blk_on2>;
+	pinctrl-5 = <&lcd_port_blk_off2>;
+	pinctrl-6 = <&lcd_port_reset_on2 &lcd_port_power_off2>;
+	#endif
+	#if defined(LCD_PORT2_BLK_GPIO) && defined(LCD_PORT2_BLK_NUM)
+	backlight = <&lcd_port2_bl>;
+	#endif
+};
+
+/* FB0 -> FB TM123XDHP90 */
+FB_LVDS_PANEL_IN {
+	remote-endpoint = <&fb0_display_out>;
+};
+
+&dpv14_tx {
+	status = "disabled";
+};
+
+&fb_dptx_v14 {
+	status = "disabled";
+};
+
+&fb_dptx_in {
+	fb_dpv14_0_input_0: endpoint@0 {
+		reg = <0>;
+		//remote-endpoint = <&fb0_display_out>;
+	};
+};
+/* end of file */

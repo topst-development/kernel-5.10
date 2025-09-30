@@ -1,0 +1,128 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/pmap/tcc750x/pmap-tcc750x-linux-display.h>
+
+/*=======================================================================================
+ * TCC750x_Linux VIOC PATH
+ * -----------------------
+ *
+ *               fb0: GRDMA00 ------------------- WMIX0 - DISP0
+ *      tcc_overlay2: GRDMA01 ------------------+
+ *      tcc_overlay1: VRDMA02 ------------------+
+ *       tcc_overlay: VRDMA03 ------------------+
+ *
+ *       scaler_drv1: GRDMA04 --------- SC1(4K) --------- WDMA01
+ *       scaler_drv3: GRDMA05 --------- SC0(4K) - WMIX1 - WDMA02
+ *
+ *=======================================================================================
+ */
+
+&tcc_overlay {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03>;
+	wmixs = <&vioc_wmix VIOC_WMIX0>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+
+	display_num = <0>;
+	rdma_init_layer = <3>;
+
+	status = "okay";
+};
+
+&tcc_overlay_drv1 {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03>;
+	wmixs = <&vioc_wmix VIOC_WMIX0>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+
+	display_num = <0>;
+	rdma_init_layer = <2>;
+
+	status = "okay";
+};
+
+&tcc_overlay_drv2 {
+	rdmas = <&vioc_rdma VIOC_RDMA00 VIOC_RDMA01 VIOC_RDMA02 VIOC_RDMA03>;
+	wmixs = <&vioc_wmix VIOC_WMIX0>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+
+	display_num = <0>;
+	rdma_init_layer = <1>;
+
+	status = "okay";
+};
+
+&scaler_drv3 {
+	rdmas = <&vioc_rdma VIOC_RDMA05>;
+	wmixs = <&vioc_wmix VIOC_WMIX1>;
+	wdmas = <&vioc_wdma VIOC_WDMA02>;
+	scalers = <&vioc_scaler VIOC_SCALER0>;
+	wmix_bypass = <0>;
+	status = "okay";
+};
+
+&scaler_drv1 {
+	rdmas = <&vioc_rdma VIOC_RDMA04>;
+	wmixs = <&vioc_wmix VIOC_WMIX1>;
+	wdmas = <&vioc_wdma VIOC_WDMA01>;
+	scalers = <&vioc_scaler VIOC_SCALER1>;
+	wmix_bypass = <1>;
+	status = "okay";
+};
+
+&scaler_drv2 {
+	rdmas = <&vioc_rdma VIOC_RDMA06>;
+	wmixs = <&vioc_wmix VIOC_NO_COMPONENT>;
+	wdmas = <&vioc_wdma VIOC_WDMA03>;
+	scalers = <&vioc_scaler VIOC_SCALER2>;
+	wmix_bypass = <0>;
+	status = "disabled";
+};
+
+&wmixer_drv0 {
+	rdmas = <&vioc_rdma VIOC_RDMA04 VIOC_RDMA05>;
+	wmixs = <&vioc_wmix VIOC_WMIX1>;
+	wdmas = <&vioc_wdma VIOC_WDMA02>;
+	scalers = <&vioc_scaler VIOC_NO_COMPONENT>;
+	status = "disabled";
+};
+
+/*-----------------------------------------------------------
+ * VIOC PMAP
+ *-----------------------------------------------------------
+ */
+
+&pmap_overlay {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay";
+	size = <0x0 PMAP_SIZE_OVERLAY>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_overlay1 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay1";
+	size = <0x0 PMAP_SIZE_OVERLAY1>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_overlay2 {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "overlay2";
+	size = <0x0 PMAP_SIZE_OVERLAY2>;
+	no-map;
+	status = "okay";
+};
+
+&pmap_fb_wmixer {
+	compatible = "telechips,pmap";
+	telechips,pmap-name = "fb_wmixer";
+	size = <0x0 PMAP_SIZE_FB_WMIXER>;
+	no-map;
+	status = "okay";
+};
+
+/* end of file */

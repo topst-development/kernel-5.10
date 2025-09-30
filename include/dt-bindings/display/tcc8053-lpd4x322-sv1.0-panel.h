@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#ifndef DT_BIND_TCC8053_LPD4X322_SV1_0_DISP_H
+#define DT_BIND_TCC8053_LPD4X322_SV1_0_DISP_H
+
+/* Definition for H/W LCD ports */
+#define LCD_PORT1_PWR "gpa-21"
+#define LCD_PORT1_RST "gpg-6"
+
+#define LCD_PORT1_BLK_GPIO gph
+#define LCD_PORT1_BLK_NUM  6
+#define LCD_PORT1_BLK PANEL_GPIO_TO_PINCTRL(LCD_PORT1_BLK_GPIO, LCD_PORT1_BLK_NUM)
+
+#define LCD_PORT2_PWR "gpmb-28"
+#define LCD_PORT2_RST "gpc-12"
+#define LCD_PORT2_BLK_GPIO gph
+#define LCD_PORT2_BLK_NUM  7
+#define LCD_PORT2_BLK PANEL_GPIO_TO_PINCTRL(LCD_PORT2_BLK_GPIO, LCD_PORT2_BLK_NUM)
+
+#define LCD_PORT3_PWR "gpc-9"
+#define LCD_PORT3_RST "gpc-8"
+#define LCD_PORT3_BLK_GPIO gpmb
+#define LCD_PORT3_BLK_NUM  29
+#define LCD_PORT3_BLK PANEL_GPIO_TO_PINCTRL(LCD_PORT3_BLK_GPIO, LCD_PORT3_BLK_NUM)
+
+#define LCD_PORT4_PWR "gpmc-23"
+#define LCD_PORT4_RST "gpmc-25"
+#define LCD_PORT4_BLK_GPIO gpmc
+#define LCD_PORT4_BLK_NUM  21
+#define LCD_PORT4_BLK PANEL_GPIO_TO_PINCTRL(LCD_PORT4_BLK_GPIO, LCD_PORT4_BLK_NUM)
+
+#define DP_HPD_GPIO "gpc-14"
+#define DP_SERDES_INTB "gpsd0-11"
+#define DP_SERDES_LOCK "gpmc-0"
+
+#endif

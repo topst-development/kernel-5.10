@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include "tcc805x-subcore-videoinput-reserved-memory.dtsi"
+#include "tcc8050_53-lpd4x322-sv1.0-videoinput.dtsi"
+#include "tcc805x-subcore-videoinput-camera-module.dtsi"
+#include "../tcc805x-subcore-camipc.dtsi"

@@ -1,0 +1,104 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+#include <dt-bindings/clock/telechips,tcc807x-clks.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	dma0_ac: access_control@16050000 {
+		 reg = <0x0 0x16050000 0x0 0x20>; /* GDMA0_0_AC */
+		 access-control0 = <0x20000000 0xC0000000>; /* DRAM */
+		 access-control1 = <0x00000000 0x00000000>;
+		 access-control2 = <0x00000000 0x00000000>;
+		 access-control3 = <0x00000000 0x00000000>;
+	 };
+
+	dma1_ac: access_control@16050020 {
+		reg = <0x0 0x16050020 0x0 0x20>; /* GDMA0_1_AC */
+		access-control0 = <0x20000000 0xC0000000>; /* DRAM */
+		access-control1 = <0x00000000 0x00000000>;
+		access-control2 = <0x00000000 0x00000000>;
+		access-control3 = <0x00000000 0x00000000>;
+	};
+
+	dma2_ac: access_control@16050040 {
+		reg = <0x0 0x16050040 0x0 0x20>; /* GDMA0_2_AC */
+		access-control0 = <0x20000000 0xC0000000>; /* DRAM */
+		access-control1 = <0x00000000 0x00000000>;
+		access-control2 = <0x00000000 0x00000000>;
+		access-control3 = <0x00000000 0x00000000>;
+	};
+
+	dma3_ac: access_control@16498000 {
+		 reg = <0x0 0x16498000 0x0 0x20>; /* GDMA1_0_AC */
+		 access-control0 = <0x20000000 0xC0000000>; /* DRAM */
+		 access-control1 = <0x00000000 0x00000000>;
+		 access-control2 = <0x00000000 0x00000000>;
+		 access-control3 = <0x00000000 0x00000000>;
+	};
+
+	dma0: dma@16020000 {
+		compatible = "telechips,tcc807x-dma";
+		reg = <0x0 0x16020000 0x0 0x94>, /* base address */
+		      <0x0 0x1605101C 0x0 0x04>; /* DMAREQSEL0 */
+		interrupts = <GIC_SPI 42 IRQ_TYPE_LEVEL_HIGH>;
+		#dma-cells = <2>;
+		dma-channels = <3>;
+		dma-requests = <32>;
+		channel-priority = <0>;
+		clocks = <&clk_io IOBUS_DMA_G0>;
+		clock-names = "dmac0";
+		status = "disabled";
+
+		//access-control = <&dma0_ac>;
+	};
+
+	dma1: dma@16021000 {
+		compatible = "telechips,tcc807x-dma";
+		reg = <0x0 0x16021000 0x0 0x94>, /* base address */
+		      <0x0 0x16051020 0x0 0x04>; /* DMAREQSEL1 */
+		interrupts = <GIC_SPI 43 IRQ_TYPE_LEVEL_HIGH>;
+		#dma-cells = <2>;
+		dma-channels = <3>;
+		dma-requests = <32>;
+		channel-priority = <0>;
+		clocks = <&clk_io IOBUS_DMA_G1>;
+		clock-names = "dmac1";
+		status = "disabled";
+
+		//access-control = <&dma1_ac>;
+	};
+
+	dma2: dma@16022000 {
+		compatible = "telechips,tcc807x-dma";
+		reg = <0x0 0x16022000 0x0 0x94>, /* base address */
+		      <0x0 0x16051024 0x0 0x04>; /* DMAREQSEL2 */
+		interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
+		#dma-cells = <2>;
+		dma-channels = <3>;
+		dma-requests = <32>;
+		channel-priority = <0>;
+		clocks = <&clk_io IOBUS_DMA_G2>;
+		clock-names = "dmac2";
+		status = "disabled";
+
+		//access-control = <&dma2_ac>;
+	};
+
+	dma3: dma@16490000 {
+		compatible = "telechips,tcc807x-dma";
+		reg = <0x0 0x16490000 0x0 0x94>; /* base address */
+		interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
+		#dma-cells = <2>;
+		dma-channels = <3>;
+		dma-requests = <32>;
+		channel-priority = <0>;
+		clocks = <&clk_io IOBUS_DMA_G3>;
+		clock-names = "dmac3";
+		status = "disabled";
+
+		//access-control = <&dma3_ac>;
+	};
+};

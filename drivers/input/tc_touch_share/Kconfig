@@ -1,0 +1,53 @@
+menuconfig TELECHIPS_TOUCH_SHARE
+	bool "Telechips Touch Share"
+	default n
+	help
+		The Share Touch between Main-core and Sub-core.
+		When this option is activated, the RECEIVE and BRIDGE menus are created
+		you must select the CONFIG suitable for the core
+		Main-Core - TELECHIPS_TOUCH_BRIDGE / Sub-Core - TELECHIPS_TOUCH_RECEIVE
+
+if TELECHIPS_TOUCH_SHARE
+
+choice
+	prompt "Telechips Touch Share Driver Select"
+	default TELECHIPS_TOUCH_RECEIVE if (TCC805X_CA53Q || TCC803X_CA7S || TCC807X_CA55_SUB)
+	default TELECHIPS_TOUCH_BRIDGE
+	help
+		This options touch share driver select.//
+
+		Telechips Touch Bridge shares touch data to other core.
+		Touch Receive receives touch data from Touch Bridge
+		and generates touch event.
+
+config TELECHIPS_TOUCH_BRIDGE
+	tristate "Telechips Touch Bridge Driver"
+	depends on TCC_IPI_PROTOCOL
+	help
+		This driver acts as an input handler
+		It sends touch data to the Sub-core through the mbox.
+		In order for this driver to work, the touch driver must be registered.
+		Because it operates Mbox communication and touch data,
+		It has a dependency on the touch driver and tcc multi mailbox driver
+
+config TELECHIPS_TOUCH_RECEIVE
+	tristate "Telechips Touch Receiver Driver"
+	depends on TCC_IPI_PROTOCOL
+	help
+		This driver generates touch data of Main-core.
+		When the driver is registered, the input device and sysfs are created.
+		Controls the transmission of touches based on the state of the sysfs.
+		The name of sysfs is touch_state.
+
+endchoice
+
+config TELECHIPS_MULTI_TOUCH_SHARE
+	bool "Support Multi Touch"
+	depends on TELECHIPS_TOUCH_SHARE
+	default y
+	help
+		The Share Touch can support multi touch.
+		If you want to support multi touch in Share Touch, 
+		you must select the CONFIG TELECHIPS_MULTI_TOUCH_SHARE at main-core and sub-core
+
+endif

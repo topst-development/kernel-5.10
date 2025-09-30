@@ -1,0 +1,88 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2023 Telechips Inc.
+ */
+
+&reserved_m_can_0 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_1 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_2 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_3 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_4 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_5 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_6 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_7 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_8 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_9 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_10 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};
+
+&reserved_m_can_11 {
+	compatible = "can_mram";
+	reg = <0x0 0x0 0x0 0x0>;
+	no-map;
+	status = "disabled";
+};

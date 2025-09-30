@@ -1,0 +1,16 @@
+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT */
+
+/*
+ * (C) COPYRIGHT 2019-2022 ARM Limited or its affiliates. All rights reserved.
+ */
+
+/* Default settings shared among Arbitration modules */
+bob_defaults {
+    name: "mali_arbitration_shared_config_defaults",
+    local_include_dirs: [
+        "include",
+    ],
+    defaults: [
+        "mali_kbase_shared_config_defaults",
+    ],
+}
