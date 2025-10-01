@@ -255,7 +255,7 @@ static int vmgr_hevc_enc_init(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd_info, vpu_drv_i
 		vetc_memset(&ip_param->fw_info, 0x00, sizeof(vpu_hevc_enc_set_fw_addr_t), 0);
 		ip_param->fw_info.m_FWBaseAddr = mgr_ctx->fw_addr;
 
-		err_henc("[id:%u] VPU_HEVC_ENC_SET_FW_ADDRESS addr 0x%x", drv_id, mgr_ctx->fw_addr);
+		dlog_henc("[id:%u] VPU_HEVC_ENC_SET_FW_ADDRESS addr 0x%x", drv_id, mgr_ctx->fw_addr);
 		ret = tcc_vpu_hevc_enc_l(vpu_ap, VPU_HEVC_ENC_SET_FW_ADDRESS,
 				NULL, (void *)(&ip_param->fw_info), (void *)NULL);
 	}

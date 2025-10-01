@@ -4,56 +4,55 @@
  * Contact: shkim@telechips.com
  */
 
-#ifndef TCC_VPU_4K_D2__H
-#define TCC_VPU_4K_D2__H
+#ifndef TCC_VPU4K_D2__H
+#define TCC_VPU4K_D2__H
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
-#define VPU_4KD2_API_VERSION "3.0"
+#define VPU4K_D2_API_VERSION "3.0"
 //specific operation code
-#define VPU_4KD2_GET_VERSION        0x1000 /**< Command to get the version of the VPU 4K D2 decoder. */
-#define VPU_4KD2_SET_OPTIONS        0x1001 /**< Command to set various options for the VPU 4K D2 decoder. */
-#define VPU_4KD2_CTRL_LOG_STATUS    0x1002 /**< Command to control the log status using the vpu_4K_D2_dec_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
-#define VPU_4KD2_SET_FW_ADDRESS     0x1003 /**< Command to set firmware base address of the VPU 4K D2 decoder. */
+#define VPU4K_D2_GET_VERSION        0x1000 /**< Command to get the version of the VPU 4K D2 decoder. */
+#define VPU4K_D2_SET_OPTIONS        0x1001 /**< Command to set various options for the VPU 4K D2 decoder. */
+#define VPU4K_D2_CTRL_LOG_STATUS    0x1002 /**< Command to control the log status using the vpu4k_dec_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
+#define VPU4K_D2_SET_FW_ADDRESS     0x1003 /**< Command to set firmware base address of the VPU 4K D2 decoder. */
+#define VPU4K_MAX_NUM_INSTANCE      4
 
-#define WAVE5_MAX_NUM_INSTANCE		4
-
-#define RETCODE_VPUERR_SEQ_HEADER_NOT_FOUND	31
-#define RETCODE_VPUERR_STRIDE_ZERO_OR_ALIGN8	100
-#define RETCODE_VPUERR_MIN_RESOLUTION		101
-#define RETCODE_VPUERR_MAX_RESOLUTION		102
-#define RETCODE_VPUERR_SEQ_INIT_HANGUP		103
-#define RETCODE_VPUERR_CHROMA_FORMAT		104
-#define RETCODE_VPUERR_PROFILE			110
+#define RETCODE_VPUERR_SEQ_HEADER_NOT_FOUND     31
+#define RETCODE_VPUERR_STRIDE_ZERO_OR_ALIGN8    100
+#define RETCODE_VPUERR_MIN_RESOLUTION           101
+#define RETCODE_VPUERR_MAX_RESOLUTION           102
+#define RETCODE_VPUERR_SEQ_INIT_HANGUP          103
+#define RETCODE_VPUERR_CHROMA_FORMAT            104
+#define RETCODE_VPUERR_PROFILE                  110
 
 #ifndef RETCODE_WRAP_AROUND
 #define RETCODE_WRAP_AROUND		(-10)
 #endif
 
-#define WAVE5_MAX_CODE_BUF_SIZE		(1024*1024)
-#define WAVE5_WORKBUF_SIZE		(2*1024*1024)
-#define WAVE5_TEMPBUF_SIZE		(1024*1024)
-#define WAVE5_SEC_AXI_BUF_SIZE		(256*1024)
+#define VPU4K_MAX_CODE_BUF_SIZE		(1024*1024)
+#define VPU4K_WORKBUF_SIZE		(2*1024*1024)
+#define VPU4K_TEMPBUF_SIZE		(1024*1024)
+#define VPU4K_SEC_AXI_BUF_SIZE		(256*1024)
 
-#define WAVE5_MAX_NUM_COMMAND_QUEUE	15
-#define WAVE5_COMMAND_QUEUE_DEPTH       2
-#define WAVE5_ONE_TASKBUF_SIZE_FOR_CQ	(8*1024*1024)
-#define WAVE5_TASKBUF_SIZE_FOR_CQ	(WAVE5_COMMAND_QUEUE_DEPTH * \
-					 WAVE5_ONE_TASKBUF_SIZE_FOR_CQ)
+#define VPU4K_MAX_NUM_COMMAND_QUEUE	15
+#define VPU4K_COMMAND_QUEUE_DEPTH       2
+#define VPU4K_ONE_TASKBUF_SIZE_FOR_CQ	(8*1024*1024)
+#define VPU4K_TASKBUF_SIZE_FOR_CQ	(VPU4K_COMMAND_QUEUE_DEPTH * \
+					VPU4K_ONE_TASKBUF_SIZE_FOR_CQ)
 
-#define WAVE5_SIZE_BIT_WORK		(WAVE5_MAX_CODE_BUF_SIZE + \
-					 WAVE5_TEMPBUF_SIZE + \
-					 WAVE5_SEC_AXI_BUF_SIZE + \
-					 WAVE5_TASKBUF_SIZE_FOR_CQ)
-#define WAVE5_WORK_CODE_BUF_SIZE	(WAVE5_SIZE_BIT_WORK + \
-					 (WAVE5_WORKBUF_SIZE * \
-					  WAVE5_MAX_NUM_INSTANCE))
+#define VPU4K_SIZE_BIT_WORK		(VPU4K_MAX_CODE_BUF_SIZE + \
+					VPU4K_TEMPBUF_SIZE + \
+					VPU4K_SEC_AXI_BUF_SIZE + \
+					VPU4K_TASKBUF_SIZE_FOR_CQ)
+#define VPU4K_WORK_CODE_BUF_SIZE	(VPU4K_SIZE_BIT_WORK + \
+					(VPU4K_WORKBUF_SIZE * \
+					VPU4K_MAX_NUM_INSTANCE))
 
-#define WAVE5_STREAM_BUF_SIZE		0x1400000
-#define WAVE5_USERDATA_BUF_SIZE		(512*1024)
+#define VPU4K_STREAM_BUF_SIZE		0x1400000
+#define VPU4K_USERDATA_BUF_SIZE		(512*1024)
 
-#define VPU_WAVE5_HEVC_MIN_BUF_START_ADDR_ALIGN	(4*1024)	//VPU_MIM_BUF_SIZE_ALIGN
-#define VPU_WAVE5_HEVC_MIN_BUF_SIZE_ALIGN	(4*1024)	//VPU_MIM_BUF_START_ADD_ALIGN
+#define VPU4K_MIN_BUF_START_ADDR_ALIGN	(4*1024)	//VPU_MIM_BUF_SIZE_ALIGN
+#define VPU4K_MIN_BUF_SIZE_ALIGN	(4*1024)	//VPU_MIM_BUF_START_ADD_ALIGN
 
 #ifndef INC_DEVICE_TREE_PMAP
 
@@ -64,40 +63,40 @@
 /*!
  * represents rectangular window information in a frame
  */
-typedef struct wave5_pic_crop_t {
+typedef struct vpu4k_pic_crop_t {
 	unsigned int m_iCropLeft;
 	unsigned int m_iCropTop;
 	unsigned int m_iCropRight;
 	unsigned int m_iCropBottom;
-} wave5_pic_crop_t;
+} vpu4k_pic_crop_t;
 
 /**
- @brief Structure for VPU_4KD2_GET_VERSION command
+ @brief Structure for VPU4K_D2_GET_VERSION command
  */
-typedef struct vpu_4K_D2_dec_get_version_t {
-	char *pszHeaderApiVersion; /**< [inp] Set the value to VPU_4KD2_API_VERSION to check API compatibility, or NULL to skip */
-	char szGetVersion[32];	   /**< [out] Returns TCC_VPU_4K_D2 version */
-	char szGetBuildDate[32];   /**< [out] Returns TCC_VPU_4K_D2 build date */
-} vpu_4K_D2_dec_get_version_t;
+typedef struct vpu4k_dec_get_version_t {
+	char *pszHeaderApiVersion; /**< [inp] Set the value to VPU4K_D2_API_VERSION to check API compatibility, or NULL to skip */
+	char szGetVersion[32];	   /**< [out] Returns TCC_VPU4K_D2 version */
+	char szGetBuildDate[32];   /**< [out] Returns TCC_VPU4K_D2 build date */
+} vpu4k_dec_get_version_t;
 /**
- @brief Structure for VPU_4KD2_SET_OPTIONS command
+ @brief Structure for VPU4K_D2_SET_OPTIONS command
  */
-typedef struct vpu_4K_D2_dec_set_options_t {
-	int iUseBitstreamOffset;				/**< not tested [inp] Indicates the offset from the start pointer of the bitstream. This only works if the variable 'vpu_4K_D2_dec_init_t::m_iFilePlayEnable' is zero. */
-	int iMeasureDecPerf; 					/**< [inp] Measure decoder performance and show profiling data through the pfPrintCb callback. */
+typedef struct vpu4k_dec_set_options_t {
+	int iUseBitstreamOffset;		/**< not tested [inp] Indicates the offset from the start pointer of the bitstream. This only works if the variable 'vpu4k_dec_init_t::m_iFilePlayEnable' is zero. */
+	int iMeasureDecPerf; 			/**< [inp] Measure decoder performance and show profiling data through the pfPrintCb callback. */
 	void (*pfPrintCb)(const char *, ...); 	/**< [inp] A pointer to the printk callback function used to display decoded information. */
 	int iReserved[16];
-} vpu_4K_D2_dec_set_options_t;
+} vpu4k_dec_set_options_t;
 
 /**
- * @struct vpu_4K_D2_dec_ctrl_log_status_t
+ * @struct vpu4k_dec_ctrl_log_status_t
  * @brief Structure for controlling logging status within the VPU 4K D2 decoder library.
  *
  * This structure is used to set the logging levels and conditions for the VPU 4K D2 decoder.
  * It allows fine-grained control over the types of logs that are printed, as well as specific
  * conditions under which logs should be generated.
  */
-typedef struct vpu_4K_D2_dec_ctrl_log_status_t {
+typedef struct vpu4k_dec_ctrl_log_status_t {
 	/**
 	 * @brief A pointer to the callback function for logging prints to be used internally within the library.
 	 *
@@ -136,15 +135,15 @@ typedef struct vpu_4K_D2_dec_ctrl_log_status_t {
 	struct {
 		int bDecodeSuccess; /**< Log when decoding is successful (on=1, off=0) */
 	} stLogCondition;
-} vpu_4K_D2_dec_ctrl_log_status_t;
+} vpu4k_dec_ctrl_log_status_t;
 
 /**
-  @brief Structure for VPU_4KD2_SET_FW_ADDRESS command
-  */
+ @brief Structure for VPU_4KD2_SET_FW_ADDRESS command
+ */
 typedef struct vpu_4K_D2_dec_set_fw_addr_t {
 	codec_addr_t m_FWBaseAddr; /**< Address of VPU4K D2 firmware. */
 	int iReserved[6];
-} vpu_4K_D2_dec_set_fw_addr_t;
+} vpu4K_dec_set_fw_addr_t;
 
 //------------------------------------------------------------------------------
 // user data struct and definition
@@ -330,20 +329,20 @@ typedef struct hevc_colour_remapping_info_t {
 	unsigned char	colour_remap_bit_depth;
 	unsigned char	pre_lut_num_val_minus1[HEVC_MAX_LUT_NUM_VAL];
 	unsigned short	pre_lut_coded_value[HEVC_MAX_LUT_NUM_VAL]
-					   [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+					[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 	unsigned short	pre_lut_target_value[HEVC_MAX_LUT_NUM_VAL]
-					    [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+						[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 
 	unsigned char	colour_remap_matrix_present_flag;
 	unsigned char	log2_matrix_denom;
 	unsigned char	colour_remap_coeffs[HEVC_MAX_COLOUR_REMAP_COEFFS]
-					   [HEVC_MAX_COLOUR_REMAP_COEFFS];
+					[HEVC_MAX_COLOUR_REMAP_COEFFS];
 
 	unsigned char	post_lut_num_val_minus1[HEVC_MAX_LUT_NUM_VAL];
 	unsigned short	post_lut_coded_value[HEVC_MAX_LUT_NUM_VAL]
-					    [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+						[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 	unsigned short	post_lut_target_value[HEVC_MAX_LUT_NUM_VAL]
-					     [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+						[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 } hevc_colour_remapping_info_t;
 
 typedef struct hevc_film_grain_characteristics_t {
@@ -420,7 +419,7 @@ typedef struct hevc_alternative_transfer_characteristics_info_t {
 	unsigned int	preferred_transfer_characteristics;
 } hevc_alternative_transfer_characteristics_info_t;
 
-typedef struct vpu_4K_D2_dec_UserData_info_t {
+typedef struct vpu4k_dec_userdata_info_t {
 	hevc_sei_pic_timing_t	m_SeiPicTiming;
 	hevc_vui_param_t	m_VuiParam;
 
@@ -439,7 +438,7 @@ typedef struct vpu_4K_D2_dec_UserData_info_t {
 				m_AlternativeTransferCharacteristicsInfo;
 
 	unsigned int m_Reserved[22];
-} vpu_4K_D2_dec_UserData_info_t;
+} vpu4k_dec_userdata_info_t;
 
 //-----------------------------------------------------
 // data structure to get vp9 color information
@@ -454,13 +453,13 @@ typedef struct vp9_color_info_t {
 	 * 5	BT.2020 (UHDTV, HDR)
 	 * 6	Reserved
 	 * 7	sRGB
-	 */
+	*/
 	unsigned int color_space;
 	/*
 	 * this syntax is meaningful if color_spage is one of 0, 1, 2, 3, 4.
 	 * 0	Limited Range (TV Range, MPEG Range)
 	 * 1	Full Range (PC Range, JPEG Range)
-	 */
+	*/
 	unsigned int color_range;
 } vp9_color_info_t;
 
@@ -469,7 +468,7 @@ typedef struct vp9_color_info_t {
 // start decoding from the decoder (this is an output parameter)
 //-----------------------------------------------------
 
-typedef struct vpu_4K_D2_dec_initial_info_t {
+typedef struct vpu4k_dec_initial_info_t {
 
 	// {(PicX+15)/16} * 16
 	//  (this width  will be used while allocating decoder frame buffers.
@@ -496,10 +495,10 @@ typedef struct vpu_4K_D2_dec_initial_info_t {
 	int m_iFrameBufDelay;
 
 	// represents rectangular window information in a frame
-	wave5_pic_crop_t m_PicCrop;
+	vpu4k_pic_crop_t m_PicCrop;
 
 	unsigned int m_uiUserData;
-	vpu_4K_D2_dec_UserData_info_t m_UserDataInfo;
+	vpu4k_dec_userdata_info_t m_UserDataInfo;
 
 	int m_iProfile;	// profile of the decoded stream
 	int m_iLevel;	// level of the decoded stream
@@ -535,12 +534,12 @@ typedef struct vpu_4K_D2_dec_initial_info_t {
 	vp9_color_info_t m_VP9ColorInfo;
 
 	unsigned int m_Reserved[3];
-} vpu_4K_D2_dec_initial_info_t;
+} vpu4k_dec_initial_info_t;
 
 /*!
  * data structure for initializing Video unit
  */
-typedef struct vpu_4K_D2_dec_init_t {
+typedef struct vpu4k_dec_init_t {
 	codec_addr_t m_BitWorkAddr[2];
 	// physical[0] and virtual[1] address of a working space of the decoder.
 	//  This working buffer space consists of work buffer, code buffer,
@@ -556,10 +555,10 @@ typedef struct vpu_4K_D2_dec_init_t {
 
 	//////// Decoding Options ////////
 
-#define WAVE5_WTL_ENABLE		(1<<0) // WTL Enable
-#define SEC_AXI_BUS_DISABLE_SDRAM	(1<<1) // Disable SDRAM for sec. AXI bus
-#define WAVE5_10BITS_DISABLE		(1<<3) // 10 to 8 bits Output Enable
-#define WAVE5_AFBC_ENABLE		(1<<5) // AFBC Enable
+#define VPU4K_WTL_ENABLE				(1<<0) // WTL Enable
+#define VPU4K_SEC_AXI_BUS_DISABLE_SDRAM	(1<<1) // Disable SDRAM for sec. AXI bus
+#define VPU4K_10BITS_DISABLE			(1<<3) // 10 to 8 bits Output Enable
+#define VPU4K_AFBC_ENABLE				(1<<5) // AFBC Enable
 
 	unsigned int m_uiDecOptFlags;
 
@@ -592,12 +591,12 @@ typedef struct vpu_4K_D2_dec_init_t {
 	void  (*m_Usleep)(unsigned int min, unsigned int max);	//usleep_range( )
 
 	unsigned int m_Reserved[30];
-} vpu_4K_D2_dec_init_t;
+} vpu4k_dec_init_t;
 
 /*!
- * [32 bit user-space bearer for |vpu_4K_D2_dec_init_t|]
+ * [32 bit user-space bearer for |vpu4k_dec_init_t|]
  */
-typedef struct vpu_4K_D2_dec_init_64bit_t {
+typedef struct vpu4k_dec_init_64bit_t {
 	codec_addr_t m_BitWorkAddr[2];
 	codec_addr_t m_CodeAddr[2];
 	codec_addr_t m_RegBaseVirtualAddr;
@@ -626,9 +625,9 @@ typedef struct vpu_4K_D2_dec_init_64bit_t {
 	unsigned long long cb_dummy_usleep;
 
 	unsigned int m_Reserved[30];
-} vpu_4K_D2_dec_init_64bit_t;
+} vpu4k_dec_init_64bit_t;
 
-typedef struct vpu_4K_D2_dec_input_t {
+typedef struct vpu4k_dec_input_t {
 	// bitstream data address
 	codec_addr_t	m_BitstreamDataAddr[2];
 	// bitstream data size
@@ -642,47 +641,47 @@ typedef struct vpu_4K_D2_dec_input_t {
 	//  1: skip non-RAP pictures,
 	//  2: skip non-reference pictures
 	int		m_iSkipFrameMode;
-	// This only works if the variable 'vpu_4K_D2_dec_set_options_t::iUseBitstreamOffset' is 1.
+	// This only works if the variable 'vpu4k_dec_set_options_t::iUseBitstreamOffset' is 1.
 	int             m_iBitstreamDataOffset;
 	unsigned int	m_Reserved[24];
-} vpu_4K_D2_dec_input_t;
+} vpu4k_dec_input_t;
 
-typedef struct vpu_4K_D2_dec_buffer_t {
+typedef struct vpu4k_dec_buffer_t {
 	// physical[0] and virtual[1] address of a frame buffer of the decoder.
 	codec_addr_t	m_FrameBufferStartAddr[2];
 	int		m_iFrameBufferCount;	// allocated frame buffer count
 	unsigned int	m_Reserved[29];
-} vpu_4K_D2_dec_buffer_t;
+} vpu4k_dec_buffer_t;
 
-typedef struct vpu_4K_D2_dec_buffer2_t {
+typedef struct vpu4k_dec_buffer2_t {
 	// physical[0] and virtual[1] address of a frame buffer of the decoder.
 	codec_addr_t	m_addrFrameBuffer[2][32];
 	unsigned int	m_ulFrameBufferCount;	// allocated frame buffer count
 	unsigned int	m_Reserved[31];
-} vpu_4K_D2_dec_buffer2_t;
+} vpu4k_dec_buffer2_t;
 
-typedef struct vpu_4K_D2_dec_buffer3_t {
+typedef struct vpu4k_dec_buffer3_t {
 	// physical[0] and virtual[1] address of a frame buffer of the decoder.
 	codec_addr_t	m_addrFrameBuffer[2][64][9]; //if the output is linear, the required number of buffers doubles
 	unsigned int	m_iFrameBufferCount;
 	codec_addr_t	m_addrFrameBufferExt[2];
 	unsigned int	m_Reserved[31];
-} vpu_4K_D2_dec_buffer3_t;
+} vpu4k_dec_buffer3_t;
 
-typedef struct vpu_4K_D2_dec_ring_buffer_setting_in_t {
+typedef struct vpu4k_dec_ring_buffer_setting_in_t {
 	unsigned int	m_OnePacketBufferAddr;
 	unsigned int	m_iOnePacketBufferSize;
 	unsigned int	m_Reserved[30];
-} vpu_4K_D2_dec_ring_buffer_setting_in_t;
+} vpu4k_dec_ring_buffer_setting_in_t;
 
-typedef struct vpu_4K_D2_dec_ring_buffer_status_out_t {
+typedef struct vpu4k_dec_ring_buffer_status_out_t {
 	unsigned int	m_ulAvailableSpaceInRingBuffer;
 	unsigned int	m_ptrReadAddr_PA;
 	unsigned int	m_ptrWriteAddr_PA;
 	unsigned int	m_Reserved[29];
-} vpu_4K_D2_dec_ring_buffer_status_out_t;
+} vpu4k_dec_ring_buffer_status_out_t;
 
-typedef struct vpu_4K_D2_dec_MapConv_info_t {
+typedef struct vpu4k_dec_map_conv_info_t {
 	codec_addr_t	m_CompressedY[2];
 	codec_addr_t	m_CompressedCb[2];
 
@@ -701,9 +700,9 @@ typedef struct vpu_4K_D2_dec_MapConv_info_t {
 	unsigned int	m_uiFrameEndian;
 
 	unsigned int	m_Reserved[17];
-} vpu_4K_D2_dec_MapConv_info_t;
+} vpu4k_dec_map_conv_info_t;
 
-typedef struct vpu_4K_D2_dec_AfbcFrame_info_t {
+typedef struct vpu4k_dec_afbc_frame_info_t {
 	// total frame size
 	unsigned long long m_ullFrame_size;
 	// subsampling modes
@@ -761,28 +760,28 @@ typedef struct vpu_4K_D2_dec_AfbcFrame_info_t {
 	// the subblock order lookup table
 	char m_Subblock_order[20][4];
 	unsigned int m_Reserved[22];
-} vpu_4K_D2_dec_AfbcFrame_info_t;
+} vpu4k_dec_afbc_frame_info_t;
 
-typedef struct vpu_4K_D2_dec_AfbcDec_info_t {
+typedef struct vpu4k_dec_afbc_info_t {
 	codec_addr_t	m_AfbcCompressedY[2];
 	codec_addr_t	m_AfbcCompressedCb[2];
 
-	vpu_4K_D2_dec_AfbcFrame_info_t m_AfbcFrameInfo;
+	vpu4k_dec_afbc_frame_info_t m_AfbcFrameInfo;
 
 	unsigned int	m_Reserved[27];
-} vpu_4K_D2_dec_AfbcDec_info_t;
+} vpu4k_dec_afbc_info_t;
 
-#define WAVE5_VP9_MAX_SUBFRAMES 8
+#define VPU4K_VP9_MAX_SUBFRAMES 8
 typedef struct vp9_superframe_info_t {
 	unsigned int	m_uiNframes;
-	unsigned int	m_uiFrameSize[WAVE5_VP9_MAX_SUBFRAMES];
-	unsigned int	m_uiFrames[WAVE5_VP9_MAX_SUBFRAMES];
+	unsigned int	m_uiFrameSize[VPU4K_VP9_MAX_SUBFRAMES];
+	unsigned int	m_uiFrames[VPU4K_VP9_MAX_SUBFRAMES];
 	unsigned int	m_uiCurrentIdx;
 	unsigned int	m_uiDoneIdx;
 	unsigned int	m_Reserved[13];
 } vp9_superframe_info_t;
 
-typedef struct vpu_4K_D2_dec_output_info_t {
+typedef struct vpu4k_dec_output_info_t {
 	// 0: I-picture, 1: P-picture, 2: B-picture
 	int m_iPicType;
 
@@ -809,14 +808,14 @@ typedef struct vpu_4K_D2_dec_output_info_t {
 	int m_iDisplayWidth;
 
 	// Cropping information of decoded frame.
-	wave5_pic_crop_t m_DecodedCropInfo;
+	vpu4k_pic_crop_t m_DecodedCropInfo;
 	// Cropping information of output frame.
-	wave5_pic_crop_t m_DisplayCropInfo;
+	vpu4k_pic_crop_t m_DisplayCropInfo;
 
 	//////// User Data Buffer Address ////////
 
 	unsigned int m_uiUserData;
-	vpu_4K_D2_dec_UserData_info_t m_UserDataInfo;
+	vpu4k_dec_userdata_info_t m_UserDataInfo;
 	// If contents have picture-layer user-data, return it.
 	codec_addr_t m_UserDataAddress[2];
 
@@ -837,24 +836,24 @@ typedef struct vpu_4K_D2_dec_output_info_t {
 	vp9_color_info_t m_VP9ColorInfo;
 
 	// display compressed frame info. for map converter
-	vpu_4K_D2_dec_MapConv_info_t m_DispMapConvInfo;
+	vpu4k_dec_map_conv_info_t m_DispMapConvInfo;
 	// current compressed frame info. for map converter
-	vpu_4K_D2_dec_MapConv_info_t m_CurrMapConvInfo;
+	vpu4k_dec_map_conv_info_t m_CurrMapConvInfo;
 	// previous compressed frame info. for map converter
-	vpu_4K_D2_dec_MapConv_info_t m_PrevMapConvInfo;
+	vpu4k_dec_map_conv_info_t m_PrevMapConvInfo;
 
 	// display compressed frame info. for afbc decoder
-	vpu_4K_D2_dec_AfbcDec_info_t m_DispAfbcDecInfo;
+	vpu4k_dec_afbc_info_t m_DispAfbcDecInfo;
 	// current compressed frame info. for afbc decoder
-	vpu_4K_D2_dec_AfbcDec_info_t m_CurrAfbcDecInfo;
+	vpu4k_dec_afbc_info_t m_CurrAfbcDecInfo;
 	// previous compressed frame info. for afbc decoder
-	vpu_4K_D2_dec_AfbcDec_info_t m_PrevAfbcDecInfo;
+	vpu4k_dec_afbc_info_t m_PrevAfbcDecInfo;
 
 	unsigned int m_Reserved[35];
-} vpu_4K_D2_dec_output_info_t;
+} vpu4k_dec_output_info_t;
 
-typedef struct vpu_4K_D2_dec_output_t {
-	vpu_4K_D2_dec_output_info_t	m_DecOutInfo;
+typedef struct vpu4k_dec_output_t {
+	vpu4k_dec_output_info_t	m_DecOutInfo;
 
 	// physical[0] and virtual[1] display  address of Y, Cb, Cr component
 	unsigned char *m_pDispOut[2][3];
@@ -864,24 +863,24 @@ typedef struct vpu_4K_D2_dec_output_t {
 	unsigned char *m_pPrevOut[2][3];
 
 	unsigned int	m_Reserved[13];
-} vpu_4K_D2_dec_output_t;
+} vpu4k_dec_output_t;
 
 /*!
- * [32 bit user-space bearer for |vpu_4K_D2_dec_output_t|]
+ * [32 bit user-space bearer for |vpu4k_dec_output_t|]
  */
-typedef struct vpu_4K_D2_dec_output_64bit_t {
-	vpu_4K_D2_dec_output_info_t m_DecOutInfo;
+typedef struct vpu4k_dec_output_64bit_t {
+	vpu4k_dec_output_info_t m_DecOutInfo;
 	unsigned long long m_nDispOut[2][3];
 	unsigned long long m_nCurrOut[2][3];
 	unsigned long long m_nPrevOut[2][3];
 	unsigned int       m_Reserved[13];
-} vpu_4K_D2_dec_output_64bit_t;
+} vpu4k_dec_output_64bit_t;
 
 
 /*!
  ***********************************************************************
  * \brief
- *	TCC_VPU_4K_D2_DEC	: main api function of libvpu4KD2dec
+ *	TCC_VPU4K_D2_DEC	: main api function of libvpu4KD2dec
  * \param
  *	[in]Op			: decoder operation
  * \param
@@ -891,20 +890,77 @@ typedef struct vpu_4K_D2_dec_output_64bit_t {
  * \param
  *	[in]pParam2		: output or info parameter
  * \return
- *	If successful, TCC_VPU_4K_D2_DEC returns 0.
+ *	If successful, TCC_VPU4K_D2_DEC returns 0.
  ***********************************************************************
  */
 codec_result_t
-TCC_VPU_4K_D2_DEC(int Op, codec_handle_t *pHandle,
+TCC_VPU4K_D2_DEC(int Op, codec_handle_t *pHandle,
 			void *pParam1, void *pParam2);
 
 codec_result_t
-TCC_VPU_4K_D2_DEC_ESC(int Op, codec_handle_t *pHandle,
+TCC_VPU4K_D2_DEC_ESC(int Op, codec_handle_t *pHandle,
 			void *pParam1, void *pParam2);
 
 codec_result_t
-TCC_VPU_4K_D2_DEC_EXT(int Op, codec_handle_t *pHandle,
+TCC_VPU4K_D2_DEC_EXT(int Op, codec_handle_t *pHandle,
 			void *pParam1, void *pParam2);
 
-#endif
-#endif//TCC_VPU_4K_D2__H
+#endif//The end of INC_DEVICE_TREE_PMAP
+
+
+//##############################################################
+// For legacy compatibility with older API in TCC_VPU_4K_D2.h
+// #define OLD NEW
+#define VPU_4KD2_API_VERSION 			VPU4K_D2_API_VERSION
+#define VPU_4KD2_GET_VERSION 			VPU4K_D2_GET_VERSION
+#define VPU_4KD2_SET_OPTIONS 			VPU4K_D2_SET_OPTIONS
+#define VPU_4KD2_CTRL_LOG_STATUS 		VPU4K_D2_CTRL_LOG_STATUS
+#define VPU_4KD2_SET_FW_ADDRESS			VPU4K_D2_SET_FW_ADDRESS
+
+#define WAVE5_MAX_NUM_INSTANCE 			VPU4K_MAX_NUM_INSTANCE
+#define WAVE5_MAX_CODE_BUF_SIZE			VPU4K_MAX_CODE_BUF_SIZE
+#define WAVE5_WORKBUF_SIZE			VPU4K_WORKBUF_SIZE
+#define WAVE5_TEMPBUF_SIZE			VPU4K_TEMPBUF_SIZE
+#define WAVE5_SEC_AXI_BUF_SIZE			VPU4K_SEC_AXI_BUF_SIZE
+#define WAVE5_MAX_NUM_COMMAND_QUEUE		VPU4K_MAX_NUM_COMMAND_QUEUE
+#define WAVE5_COMMAND_QUEUE_DEPTH 		VPU4K_COMMAND_QUEUE_DEPTH
+#define WAVE5_ONE_TASKBUF_SIZE_FOR_CQ		VPU4K_ONE_TASKBUF_SIZE_FOR_CQ
+#define WAVE5_TASKBUF_SIZE_FOR_CQ		VPU4K_TASKBUF_SIZE_FOR_CQ
+#define WAVE5_SIZE_BIT_WORK			VPU4K_SIZE_BIT_WORK
+#define WAVE5_WORK_CODE_BUF_SIZE		VPU4K_WORK_CODE_BUF_SIZE
+#define WAVE5_STREAM_BUF_SIZE			VPU4K_STREAM_BUF_SIZE
+#define WAVE5_USERDATA_BUF_SIZE			VPU4K_USERDATA_BUF_SIZE
+
+#define VPU_WAVE5_HEVC_MIN_BUF_START_ADDR_ALIGN	VPU4K_MIN_BUF_START_ADDR_ALIGN
+#define VPU_WAVE5_HEVC_MIN_BUF_SIZE_ALIGN	VPU4K_MIN_BUF_SIZE_ALIGN
+
+#define vpu4k_dec_AfbcDec_info_t 		vpu4k_dec_afbc_info_t
+#define wave5_pic_crop_t 			vpu4k_pic_crop_t
+#define vpu_4K_D2_dec_get_version_t 		vpu4k_dec_get_version_t
+#define vpu_4K_D2_dec_set_options_t 		vpu4k_dec_set_options_t
+#define vpu_4K_D2_dec_ctrl_log_status_t 	vpu4k_dec_ctrl_log_status_t
+#define vpu_4K_D2_dec_set_fw_addr_t		vpu4K_dec_set_fw_addr_t
+
+#define vpu_4K_D2_dec_UserData_info_t	 	vpu4k_dec_userdata_info_t
+#define vpu_4K_D2_dec_initial_info_t	 	vpu4k_dec_initial_info_t
+#define WAVE5_WTL_ENABLE			VPU4K_WTL_ENABLE
+#define SEC_AXI_BUS_DISABLE_SDRAM		VPU4K_SEC_AXI_BUS_DISABLE_SDRAM
+#define WAVE5_10BITS_DISABLE			VPU4K_10BITS_DISABLE
+#define WAVE5_AFBC_ENABLE			VPU4K_AFBC_ENABLE
+#define vpu_4K_D2_dec_init_t	 		vpu4k_dec_init_t
+#define vpu_4K_D2_dec_init_64bit_t	 	vpu4k_dec_init_64bit_t
+#define vpu_4K_D2_dec_input_t	 		vpu4k_dec_input_t
+#define vpu_4K_D2_dec_buffer_t	 		vpu4k_dec_buffer_t
+#define vpu_4K_D2_dec_buffer2_t	 		vpu4k_dec_buffer2_t
+#define vpu_4K_D2_dec_buffer3_t	 		vpu4k_dec_buffer3_t
+#define vpu_4K_D2_dec_ring_buffer_setting_in_t 	vpu4k_dec_ring_buffer_setting_in_t
+#define vpu_4K_D2_dec_ring_buffer_status_out_t 	vpu4k_dec_ring_buffer_status_out_t
+#define vpu_4K_D2_dec_MapConv_info_t 		vpu4k_dec_map_conv_info_t
+#define vpu_4K_D2_dec_AfbcFrame_info_t 		vpu4k_dec_afbc_frame_info_t
+#define vpu_4K_D2_dec_AfbcDec_info_t 		vpu4k_dec_afbc_info_t
+#define WAVE5_VP9_MAX_SUBFRAMES 		VPU4K_VP9_MAX_SUBFRAMES
+#define vpu_4K_D2_dec_output_info_t 		vpu4k_dec_output_info_t
+#define vpu_4K_D2_dec_output_t 			vpu4k_dec_output_t
+#define vpu_4K_D2_dec_output_64bit_t 		vpu4k_dec_output_64bit_t
+
+#endif//TCC_VPU4K_D2__H

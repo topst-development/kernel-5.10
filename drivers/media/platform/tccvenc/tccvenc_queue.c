@@ -1,5 +1,19 @@
 #include "tccvenc_queue.h"
 
+struct res_bitrate_entry {
+	u32 pixels;      // width * height
+	u32 bitrate_kbps;
+};
+
+static const struct res_bitrate_entry bitrate_table[] = {
+	{  720 *  480,  2 * 1024 * 1024 },  // 2 Mbps
+	{ 1280 *  720,  6 * 1024 * 1024 },  // 6 Mbps
+	{ 1920 * 1080, 10 * 1024 * 1024 },  // 10 Mbps
+	{ 7680 * 4320, 10 * 1024 * 1024 },  // 10 Mbps
+};
+
+static u32 get_default_bitrate_kbps(u32 width, u32 height);
+
 int tccvenc_queue_init(void *priv, struct vb2_queue *src_vq,
                                     struct vb2_queue *dst_vq)
 {
@@ -51,7 +65,7 @@ static int tccvenc_queue_setup(struct vb2_queue *vq,
 {
 	struct tcc_venc_ctx *ctx = vb2_get_drv_priv(vq);
 	struct v4l2_pix_format_mplane *fmt;
-
+	int ret;
 	unsigned int i;
     const char *qname = (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) ? "OUTPUT" : "CAPTURE";
 
@@ -84,6 +98,99 @@ static int tccvenc_queue_setup(struct vb2_queue *vq,
                         qname, i, sizes[i],
                         fmt->plane_fmt[i].bytesperline);
 		}
+	}
+
+	if (ctx->venc_handle &&
+	    ctx->src_fmt.width && ctx->src_fmt.height &&
+	    ctx->dst_fmt.pixelformat && 
+		!ctx->initialied_enc) {
+		u32 bandwidth = 0;
+
+		venc_init_t init = { 0 };
+		
+		switch (ctx->dst_fmt.pixelformat) {
+		case V4L2_PIX_FMT_H264:
+			init.codec = VCODEC_ID_AVC;
+			break;
+		case V4L2_PIX_FMT_HEVC:
+			init.codec = VCODEC_ID_HEVC;
+			break;
+		default:
+			tcvenc_err("Unsupported codec format: 0x%08x\n", ctx->dst_fmt.pixelformat);
+			return -EINVAL;
+		}
+
+		switch (ctx->src_fmt.pixelformat) {
+		case V4L2_PIX_FMT_NV12:
+			init.source_format = VENC_SOURCE_NV12;
+			break;
+		case V4L2_PIX_FMT_YUV420:
+			init.source_format = VENC_SOURCE_YUV420P;
+			break;
+		default:
+			tcvenc_err("Unsupported input format: 0x%08x\n", ctx->src_fmt.pixelformat);
+			return -EINVAL;
+		}
+
+		init.pic_width 		= ctx->src_fmt.width;
+		init.pic_height 	= ctx->src_fmt.height;
+		
+		init.framerate 		= ctx->framerate ? ctx->framerate : 30; 
+
+		init.bitrateKbps = ctx->bitrate ?
+                   ctx->bitrate :
+                   get_default_bitrate_kbps(ctx->src_fmt.width, ctx->src_fmt.height);
+		init.bitrateKbps = init.bitrateKbps / 1024; //Convert bps to Kbps
+		init.key_interval 	= ctx->framerate;
+
+		bandwidth = init.pic_width * init.pic_height * init.framerate;
+
+		//tcvenc_info("width: %u, height: %u, framerate: %u, bandwidth: %u", init.pic_width, init.pic_height, init.framerate, bandwidth);
+		
+		switch (ctx->dst_fmt.pixelformat) {
+			case V4L2_PIX_FMT_H264:
+				init.slice_mode = 0;
+				init.slice_size_mode = 0;
+				init.slice_size = 1024 * 4;
+				if (bandwidth > MAX_BANDWIDTH_H264) {
+					tcvenc_err("bandwidth is too high for H264 Max resolution: %ux%u (fps: %u)"
+						, MAX_WIDTH_H264, MAX_HEIGHT_H264, MAX_FRAMERATE_H264);
+					return -EINVAL;
+				}
+				break;
+			case V4L2_PIX_FMT_HEVC:
+				init.slice_mode = 0;
+				init.slice_size_mode = 0;
+				init.slice_size = 0;
+				if (bandwidth > MAX_BANDWIDTH_HEVC) {
+					tcvenc_err("bandwidth is too high for HEVC Max resolution: %ux%u (fps: %u)"
+						, MAX_WIDTH_HEVC, MAX_HEIGHT_HEVC, MAX_FRAMERATE_HEVC);
+					return -EINVAL;
+				}
+				break;
+			default:
+				tcvenc_err("Unsupported input format: 0x%08x\n", ctx->src_fmt.pixelformat);
+				return -EINVAL;
+		}
+		
+		ret = venc_init(ctx->venc_handle, &init);
+
+		if (ret < 0) {
+			tcvenc_err("venc_init failed\n");
+			return -EINVAL;
+		}
+		tcvenc_info("venc_init_t config:");
+		tcvenc_info("  codec         = %d", init.codec);
+		tcvenc_info("  source_format = %d", init.source_format);
+		tcvenc_info("  width x height= %u x %u", init.pic_width, init.pic_height);
+		tcvenc_info("  framerate     = %u", init.framerate);
+		tcvenc_info("  bitrateKbps   = %u", init.bitrateKbps);
+		tcvenc_info("  key_interval  = %u", init.key_interval);
+		tcvenc_info("  slice_mode    = %u", init.slice_mode);
+		tcvenc_info("  slice_size_mode = %u", init.slice_size_mode);
+		tcvenc_info("  slice_size    = %u", init.slice_size);
+
+		ctx->initialied_enc = true;
 	}
 
 	return 0;
@@ -156,6 +263,24 @@ static void tccvenc_stop_streaming(struct vb2_queue *q)
 			vb2_buffer_done(vb, VB2_BUF_STATE_ERROR);
 		}
 	}
+}
+
+static u32 get_default_bitrate_kbps(u32 width, u32 height)
+{
+	u32 pixels = width * height;
+	u32 best_diff = ~0;
+	u32 selected_bps = 4 * 1000000;  // fallback = 4 Mbps
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bitrate_table); i++) {
+		u32 diff = abs((int)pixels - (int)bitrate_table[i].pixels);
+		if (diff < best_diff) {
+			best_diff = diff;
+			selected_bps = bitrate_table[i].bitrate_kbps;
+		}
+	}
+
+	return selected_bps;
 }
 
 const struct vb2_ops tccvenc_vb2_ops = {

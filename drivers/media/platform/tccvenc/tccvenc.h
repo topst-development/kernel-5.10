@@ -17,6 +17,16 @@
 #define TCCVENC_DRIVER_NAME       "tccvenc"
 #define TCCVENC_DRIVER_VERSION    "1.0.0"
 
+#define MAX_WIDTH_H264   1920
+#define MAX_HEIGHT_H264 1088
+#define MAX_FRAMERATE_H264 60
+#define MAX_BANDWIDTH_H264 MAX_WIDTH_H264 * MAX_HEIGHT_H264 * MAX_FRAMERATE_H264
+
+#define MAX_WIDTH_HEVC  3840
+#define MAX_HEIGHT_HEVC 2160
+#define MAX_FRAMERATE_HEVC 30	
+#define MAX_BANDWIDTH_HEVC MAX_WIDTH_HEVC * MAX_HEIGHT_HEVC * MAX_FRAMERATE_HEVC
+
 struct tcc_venc_variant {
 	unsigned int version;
 	unsigned int port_num;
@@ -60,6 +70,7 @@ struct tcc_venc_ctx {
 	u32 hevc_level;
 
 	bool put_header;
+	bool initialied_enc;
 };
 
 

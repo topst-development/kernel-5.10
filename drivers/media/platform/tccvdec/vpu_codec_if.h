@@ -39,6 +39,9 @@ struct tcc_codec_decode_output_t {
 	u32 status;
 	int displayIndex;
 	int decodedIndex;
+	int pic_type;
+	int picture_structure;
+	int top_field_first;
 	u32 width;
 	u32 height;
 	struct tcc_codec_fb_t fb;

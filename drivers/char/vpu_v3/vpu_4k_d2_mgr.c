@@ -1982,6 +1982,7 @@ static vpu_ip_module_t vpu_4kd2_module = {
 	.internal_handler = NULL, //since the 4kd2 internal handler uses different parameters, you should directly invoke the internal handler inside process()
 	//codec id, codec name(string), profile(string), level(string), width(unsigned int), height(unsigned int), fps(unsigned int)
 	.dec_capa = {{VCODEC_ID_HEVC, CODEC_NAME_HEVC, "main/main10", "5.1 high tier", 3840U, 2160U, 60U},
+				{VCODEC_ID_VP9, CODEC_NAME_VP9, NULL, NULL, 3840U, 2160U, 60U},
 				{VCODEC_ID_NONE, NULL, NULL, NULL, 0U, 0U, 0U}},
 	.enc_capa = {{VCODEC_ID_NONE, NULL, NULL, NULL, 0U, 0U, 0U}},
 	.clock_ctrl = &vpu_4kd2_clock,

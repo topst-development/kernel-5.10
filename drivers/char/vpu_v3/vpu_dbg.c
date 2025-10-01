@@ -113,7 +113,7 @@ unsigned int get_vpu_lib_dbg_param(void)
 }
 EXPORT_SYMBOL(get_vpu_lib_dbg_param);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0))
 // Function to log messages into a log file (truncate if it exists)
 void vpu_wprintk(const char *fmt, ...)
 {

@@ -9,8 +9,11 @@
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
+#define HEVC_E3_API_VERSION "2.0"
+
 #define VPU_HEVC_ENC_CTRL_LOG_STATUS    0x1002 /**< Command to control the log status using the vpu_hevc_enc_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
 #define VPU_HEVC_ENC_SET_FW_ADDRESS     0x1003 /**< Command to set firmware base address of the VPU 4K D2 decoder. */
+#define VPU_ENC_GET_VERSION             0x3001
 
 #if !defined(RETCODE_INSUFFICIENT_WORKBUF)
 #define RETCODE_INSUFFICIENT_WORKBUF	32

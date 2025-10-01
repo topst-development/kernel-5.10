@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "vpu_enc_v3.h"
+#include "tccvenc_parser.h"
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -115,6 +116,24 @@ static const char* codec_id_to_string(enum vpu_codec_id codec_id)
 
 	return codec_string;
 }
+
+static int venc_memcpy(char *d, char *s, int size)
+{
+	int cnt = 0;
+	//printf("In %s, [0x%08x] -> [0x%08x], size[%d]", __func__, s, d, size);
+	while (size--)
+	{
+		*d++ = *s++;
+		cnt++;
+	}
+	return cnt;
+}
+struct bs {
+    unsigned char *buf;
+    size_t size;
+    size_t bitpos;
+};
+
 
 static enum vpu_return_code venc_cmd_process(venc_t *pInst, int cmd, unsigned long *args)
 {
@@ -451,7 +470,7 @@ int venc_put_seqheader(venc_handle_h handle, venc_seq_header_t* p_seqhead)
 		pInst->putheader_info.bitstream_buffer_addr[VPU_PA] = pInst->bitstream_buf_addr[VPU_PA];
 		pInst->putheader_info.bitstream_buffer_addr[VPU_KVA] = pInst->bitstream_buf_addr[VPU_KVA];
 		pInst->putheader_info.bitstream_buffer_size = pInst->bitstream_buf_size;
-
+	
 		tcvenc_dbg("[VENC-%d] VENC_V3_PUT_HEADER for H.264 SPS/PPS, dest:%p, prev seq_len:%d", pInst->venc_id, p_dest, pInst->seq_len);
 		vpu_ret = venc_cmd_process(pInst, VENC_V3_PUT_HEADER_KERNEL, (unsigned long *)&pInst->putheader_info);
 		if (vpu_ret != VPU_RETCODE_SUCCESS)
@@ -460,7 +479,20 @@ int venc_put_seqheader(venc_handle_h handle, venc_seq_header_t* p_seqhead)
 			return -1;
 		}
 
-        pInst->seq_len += pInst->putheader_info.bitstream_buffer_size;
+		{
+			u8 *kva = (u8 *)pInst->bitstream_buf_addr[VPU_KVA];
+			int sz  = pInst->putheader_info.bitstream_buffer_size;
+			int rc;
+			rc = tccvenc_h264_strip_vui_in_place_annexb(kva, &sz);
+			if (rc == 0) {
+				pInst->putheader_info.bitstream_buffer_size = sz;
+			} else {
+				tcvenc_err("[VENC-%d] strip VUI failed (rc=%d), keep original", pInst->venc_id, rc);
+			}
+		}
+
+		venc_memcpy((char *)p_dest, (char *)pInst->bitstream_buf_addr[VPU_KVA], pInst->putheader_info.bitstream_buffer_size);
+		pInst->seq_len += pInst->putheader_info.bitstream_buffer_size;
 	}
 	else if (pInst->init_info.input.codec_id == VCODEC_ID_HEVC)
 	{
@@ -476,13 +508,12 @@ int venc_put_seqheader(venc_handle_h handle, venc_seq_header_t* p_seqhead)
 			tcvenc_err("[VENC-%d:Err:0x%x] venc_vpu VENC_V3_PUT_HEADER HEVC VPS/SPS/PPS failed", pInst->venc_id, ret);
 			return -1;
 		}
-
+		venc_memcpy((char *)p_dest, (char *)pInst->bitstream_buf_addr[VPU_KVA], pInst->putheader_info.bitstream_buffer_size + aud_size);
 		pInst->seq_len += pInst->putheader_info.bitstream_buffer_size + aud_size;
 	}
 
-	// output
-	p_seq_param->seq_header_out = p_dest;
-	p_seq_param->seq_header_out_size = pInst->seq_len;
+    p_seq_param->seq_header_out      = pInst->seq_backup;
+    p_seq_param->seq_header_out_size = pInst->seq_len;
 
 	pInst->seq_header_count++;
 
@@ -571,6 +602,7 @@ int venc_encode(venc_handle_h handle, venc_input_t* p_input, venc_output_t* p_ou
 	//H.264 AUD RBSP
 	if (pInst->enc_aud_enable == 1 && pInst->frame_index > 0)
 	{
+		venc_memcpy((char *)pInst->encoded_buf_cur_pos[VPU_KVA], (char *)avcAudData, 8);
 		pInst->encode_info.input.bitstream_buffer_addr[VPU_PA] += 8;
 		pInst->encode_info.input.bitstream_buffer_size -= 8;
 
@@ -615,12 +647,12 @@ int venc_encode(venc_handle_h handle, venc_input_t* p_input, venc_output_t* p_ou
 	pInst->encoded_buf_cur_pos[VPU_PA] += ALIGNED_BUFF(p_output_param->bitstream_out_size + (STABILITY_GAP * 2), ALIGN_LEN);
 	pInst->encoded_buf_cur_pos[VPU_KVA] += ALIGNED_BUFF(p_output_param->bitstream_out_size + (STABILITY_GAP * 2), ALIGN_LEN);
 
-    p_output_param->pic_type = p_output_param->pic_type;
+    p_output_param->pic_type = pInst->encode_info.output.pic_type;
 
 	pInst->frame_index++;
 
 	tcvenc_dbg("[VPU_ENC-%d] size : %d ", pInst->venc_id, p_output_param->bitstream_out_size);
-	if (0)
+	if (1)
 	{
 		unsigned char *ps = (unsigned char *)p_output_param->bitstream_out;
 		tcvenc_dbg("[VPU_ENC-%d] size : %d "

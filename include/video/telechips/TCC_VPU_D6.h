@@ -9,6 +9,8 @@
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
+#define VPU_D6_API_VERSION "2.0"
+
 /**
  @brief Specific operation codes
 */

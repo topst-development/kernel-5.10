@@ -160,7 +160,7 @@ static int vmgr_encode_alloc_framebuffer(vpu_mgr_t *mgr_ctx, vpu_drv_info_t *drv
 			}
 		}
 	} else {
-		dlog_info("don't use framebuffer for encoding %s");
+		dlog_info("don't use framebuffer for encoding");
 	}
 
 	return ret;

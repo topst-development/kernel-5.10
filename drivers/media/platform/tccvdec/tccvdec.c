@@ -40,7 +40,6 @@
 #define to_tcvdec_buffer(ptr)	container_of(ptr, struct tcc_vdec_buffer, m2m_buf.vb)
 static int tcc_vdec_open(struct file *file);
 static int tcc_vdec_release(struct file *file);
-static void tcc_vdec_m2m_job_abort(void *ctx);
 static void tcc_vdec_m2m_device_run(void *priv);
 static int tcc_vdec_probe(struct platform_device *pdev);
 static int tcc_vdec_remove(struct platform_device *pdev);
@@ -50,9 +49,7 @@ static int tcc_vdec_queue_setup(struct vb2_queue *vq,
 static int tcc_vdec_start_streaming(struct vb2_queue *q, unsigned int count);
 static void tcc_vdec_stop_streaming(struct vb2_queue *q);
 static void tcc_vb2_buf_queue(struct vb2_buffer *vb);
-static int tcc_vdec_vb2_buf_prepare(struct vb2_buffer *vb);
 static int tcc_vdec_vb2_buf_init(struct vb2_buffer *vb);
-static void tcc_vdec_buf_cleanup(struct vb2_buffer *vb);
 
 static int tcc_vdec_querycap(struct file *file, void *priv, struct v4l2_capability *cap);
 static int tcc_vdec_enum_fmt(struct file *file, void *pirv, struct v4l2_fmtdesc *f);
@@ -65,6 +62,7 @@ static int tcc_vdec_g_parm(struct file *file, void *fh, struct v4l2_streamparm *
 static int tcc_vdec_enum_framesizes(struct file *file, void *fh, struct v4l2_frmsizeenum *fsize);
 static int tcc_vdec_subscribe_event(struct v4l2_fh *fh, const struct v4l2_event_subscription *sub);
 static int tcc_vdec_decoder_cmd(struct file *file, void *fh, struct v4l2_decoder_cmd *cmd);
+static void tcc_vdec_force_stop(struct tcc_vdec_ctx *ctx);
 
 static uint32_t tcc_vdec_get_framesize_raw(struct tcc_vdec_ctx *ctx, uint32_t v4l2_fmt, uint32_t width,
 	uint32_t height, uint32_t plane_idx, uint32_t planes);
@@ -81,17 +79,29 @@ static inline struct tcc_vdec_ctx *to_ctx(struct file *filp)
 
 static const struct tcc_vdec_fmt tcc_vdec_formats[] = {
 	{
+        .pixfmt = V4L2_PIX_FMT_RGB565,
+        .num_planes = 1,
+        .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+    },
+	/*
+	{
         .pixfmt = V4L2_PIX_FMT_ABGR32,
         .num_planes = 1,
         .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-    },/* {
+    },*/ {
 		.pixfmt = V4L2_PIX_FMT_H264,
 		.num_planes = 1,
 		.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
 		.flags = V4L2_FMT_FLAG_DYN_RESOLUTION,
-	},*/
+	},
 	{
 		.pixfmt = V4L2_PIX_FMT_HEVC,
+		.num_planes = 1,
+		.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+		.flags = V4L2_FMT_FLAG_DYN_RESOLUTION,
+	},
+	{
+		.pixfmt = V4L2_PIX_FMT_VP9,
 		.num_planes = 1,
 		.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
 		.flags = V4L2_FMT_FLAG_DYN_RESOLUTION,
@@ -99,19 +109,23 @@ static const struct tcc_vdec_fmt tcc_vdec_formats[] = {
 };
 
 static const struct tcc_vdec_framesizes tcc_vdec_framesizes[] = {
-	/*
 	{
 		.pixfmt	= V4L2_PIX_FMT_H264,
 		.stepwise = {
 			TCC_VPU_DEC_H264_MIN_W, TCC_VPU_DEC_H264_MAX_W, TCC_VPU_DEC_H264_STEPSIZE_W,
 			TCC_VPU_DEC_H264_MIN_H, TCC_VPU_DEC_H264_MAX_H, TCC_VPU_DEC_H264_STEPSIZE_H },
 	},
-	*/
 	{
 		.pixfmt = V4L2_PIX_FMT_HEVC,
 		.stepwise = {
 			TCC_VPU_DEC_HEVC_MIN_W, TCC_VPU_DEC_HEVC_MAX_W, TCC_VPU_DEC_HEVC_STEPSIZE_W,
 			TCC_VPU_DEC_HEVC_MIN_H, TCC_VPU_DEC_HEVC_MAX_H, TCC_VPU_DEC_HEVC_STEPSIZE_H },
+	},
+	{
+		.pixfmt = V4L2_PIX_FMT_VP9,
+		.stepwise = {
+			TCC_VPU_DEC_VP9_MIN_W, TCC_VPU_DEC_VP9_MAX_W, TCC_VPU_DEC_VP9_STEPSIZE_W,
+			TCC_VPU_DEC_VP9_MIN_H, TCC_VPU_DEC_VP9_MAX_H, TCC_VPU_DEC_VP9_STEPSIZE_H },
 	},
 };
 
@@ -122,7 +136,6 @@ static struct of_device_id tccvdec_of_match[] = {
 
 static const struct v4l2_m2m_ops tcc_vdec_m2m_ops = {
 	.device_run = tcc_vdec_m2m_device_run,
-	.job_abort = tcc_vdec_m2m_job_abort,
 };
 
 static const struct v4l2_file_operations tcc_vdec_fops = {
@@ -190,8 +203,6 @@ static struct platform_driver tcc_vdec_driver = {
 static const struct vb2_ops tcc_vdec_vb2_ops = {
 	.queue_setup = tcc_vdec_queue_setup,
 	.buf_init = tcc_vdec_vb2_buf_init,
-	.buf_cleanup = tcc_vdec_buf_cleanup,
-	.buf_prepare = tcc_vdec_vb2_buf_prepare,
 	.start_streaming = tcc_vdec_start_streaming,
 	.stop_streaming = tcc_vdec_stop_streaming,
 	.buf_queue = tcc_vb2_buf_queue,
@@ -268,6 +279,8 @@ static void tcc_vdec_ctx_init(struct tcc_vdec_ctx *ctx)
 	ctx->width = TCCVDEC_DEFAULT_WIDTH;
 	ctx->height = TCCVDEC_DEFAULT_HEIGHT;
 	ctx->fps = 30;
+	ctx->align_width = 16;
+	ctx->align_height = 16;
 	ctx->cap_buf_count = 0;
 	ctx->num_output_bufs = 0;
 	ctx->used_buf_cnt = 0;
@@ -358,7 +371,7 @@ static const struct tcc_vdec_fmt *tcc_vdec_try_fmt_common(struct tcc_vdec_ctx *c
 	fmt = find_format(pixmp->pixelformat, f->type);
 	if (!fmt) {
 		if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-			pixmp->pixelformat = V4L2_PIX_FMT_ABGR32;
+			pixmp->pixelformat = V4L2_PIX_FMT_RGB565;
 		} else if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
 			pixmp->pixelformat = V4L2_PIX_FMT_HEVC;
 		} else {
@@ -400,6 +413,11 @@ static const struct tcc_vdec_fmt *tcc_vdec_try_fmt_common(struct tcc_vdec_ctx *c
 			pfmt[0].sizeimage = tcc_vdec_get_framesize_raw(ctx, pixmp->pixelformat, pixmp->width, pixmp->height, 0, 2);
 			pfmt[0].bytesperline = ALIGN(pixmp->width * 4, ctx->align_width);
 		}
+		else if (pixmp->pixelformat == V4L2_PIX_FMT_RGB565)
+		{
+			pfmt[0].sizeimage = tcc_vdec_get_framesize_raw(ctx, pixmp->pixelformat, pixmp->width, pixmp->height, 0, 1);
+			pfmt[0].bytesperline = ALIGN(pixmp->width * 2, ctx->align_width);
+		}
 	} else {
 		pixmp->width = ctx->out_width;
 		pixmp->height = ctx->out_height;
@@ -434,6 +452,7 @@ static int tcc_vdec_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
 
 	orig_pixmp = *pixmp;
 
+	/* Normalize the incoming format first */
 	fmt = tcc_vdec_try_fmt_common(ctx, f);
 
 	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
@@ -444,8 +463,46 @@ static int tcc_vdec_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
 		pixfmt_out = ctx->fmt_out->pixfmt;
 	}
 
-	memset(&format, 0, sizeof(format));
+	/* When OUTPUT, select codec and alignment BEFORE touching CAPTURE format. */
+	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		unsigned int codec;
 
+		switch (fmt->pixfmt) {
+		case V4L2_PIX_FMT_H264:
+			codec = TCC_VIDEO_CODEC_H264;
+			ctx->align_width = 16;
+			ctx->align_height = 16;
+			break;
+		case V4L2_PIX_FMT_VP9:
+			codec = TCC_VIDEO_CODEC_VP9;
+			ctx->align_width = 16;
+			ctx->align_height = 16;
+			break;
+		case V4L2_PIX_FMT_HEVC:
+			codec = TCC_VIDEO_CODEC_HEVC;
+			ctx->align_width = 16;
+			ctx->align_height = 16;
+			break;
+		default:
+			tcvdec_err("Not supported codec. fourcc=%s", v4l2_format_name(fmt->pixfmt));
+			ret = -EINVAL;
+			goto exit_dec_not_supported;
+		}
+
+		if (ctx->state == VPU_STATE_FREE) {
+			ret = tccvpudec_if_init(ctx->vpu_drv, codec, ctx);
+			if (ret) {				
+				tcvdec_err("VPU initialization failed. codec=%d, ret=%d", codec, ret);
+				ctx->state = VPU_STATE_FREE;  /* Keep in FREE state */
+				return -EINVAL;
+			}
+			ctx->state = VPU_STATE_INIT;
+		}
+		ctx->pix_format = fmt->pixfmt;
+	}
+
+	/* Re-try OUTPUT with the requested size (clamped) */
+	memset(&format, 0, sizeof(format));
 	format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
 	format.fmt.pix_mp.pixelformat = pixfmt_out;
 	format.fmt.pix_mp.width = orig_pixmp.width;
@@ -461,59 +518,24 @@ static int tcc_vdec_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
 		ctx->xfer_func = pixmp->xfer_func;
 	}
 
+	/* Now compute CAPTURE format with alignment already set */
 	memset(&format, 0, sizeof(format));
-
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 	format.fmt.pix_mp.pixelformat = pixfmt_cap;
 	format.fmt.pix_mp.width = orig_pixmp.width;
 	format.fmt.pix_mp.height = orig_pixmp.height;
 	tcc_vdec_try_fmt_common(ctx, &format);
 
+	/* Store selected formats */
 	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
 		ctx->fmt_out = fmt;
 	else if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
 		ctx->fmt_cap = fmt;
 
-	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		unsigned int codec;
-		switch(fmt->pixfmt) {
-/*
-		case V4L2_PIX_FMT_H264:
-			codec = TCC_VIDEO_CODEC_H264;
-			ctx->align_width = 8;
-			ctx->align_height = 8;
-			break;
-		case V4L2_PIX_FMT_VP8:
-			codec = TCC_VIDEO_CODEC_VP8;
-			break;
-		case V4L2_PIX_FMT_VP9:
-			codec = TCC_VIDEO_CODEC_VP9;
-			break;
-*/
-		case V4L2_PIX_FMT_HEVC:
-			codec = TCC_VIDEO_CODEC_HEVC;
-			ctx->align_width = 8;
-			ctx->align_height = 8;
-			break;
-		default:
-			{
-				tcvdec_err("Not supported codec. codec=%s ", v4l2_format_name(codec));
-				ret = EINVAL;
-				goto exit_dec_not_supported;
-			}
-			break;
-		}
-		if(ctx->state == VPU_STATE_FREE) {
-			ret = tccvpudec_if_init(ctx->vpu_drv, codec, ctx);
-			if (ret)
-				return ret;
-			ctx->state = VPU_STATE_INIT;
-		}
-		ctx->pix_format = fmt->pixfmt;
-	}
 exit_dec_not_supported:
 	return ret;
 }
+
 
 static int tcc_vdec_g_fmt(struct file *file, void *fh, struct v4l2_format *f)
 {
@@ -632,11 +654,14 @@ static int tcc_vdec_enum_framesizes(struct file *file, void *fh,
 	return -EINVAL;
 }
 
+
 static int tcc_vdec_subscribe_event(struct v4l2_fh *fh,
 				const struct v4l2_event_subscription *sub)
 {
 	struct tcc_vdec_ctx *ctx = container_of(fh, struct tcc_vdec_ctx, fh);
 	int ret;
+
+	tcvdec_step("subscribe_event : type=%d", sub->type);
 
 	switch (sub->type) {
 	case V4L2_EVENT_EOS:
@@ -706,7 +731,6 @@ static int tcc_vdec_s_parm(struct file *file, void *fh, struct v4l2_streamparm *
 static int tcc_vdec_decoder_cmd(struct file *file, void *fh, struct v4l2_decoder_cmd *cmd)
 {
 	struct tcc_vdec_ctx *ctx = to_ctx(file);
-	struct vb2_v4l2_buffer *src_buf;
 
 	int ret = 0;
 
@@ -717,14 +741,17 @@ static int tcc_vdec_decoder_cmd(struct file *file, void *fh, struct v4l2_decoder
 		return ret;
 
 	if (cmd->cmd == V4L2_DEC_CMD_STOP) {
-		if(ctx->vpu_drv != NULL) {
-			src_buf = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
-			v4l2_m2m_dst_buf_remove_by_buf(ctx->fh.m2m_ctx, src_buf);
-			v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_DONE);
-			mutex_lock(&ctx->lock);
-			ctx->stopping = true;
-			mutex_unlock(&ctx->lock);
-		}
+		mutex_lock(&ctx->lock);
+		ctx->stopping = true;
+		mutex_unlock(&ctx->lock);
+	} else if (V4L2_DEC_CMD_START) {
+		mutex_lock(&ctx->lock);
+		ctx->stopping = false;
+		mutex_unlock(&ctx->lock);
+	} else if (V4L2_DEC_CMD_PAUSE) {
+
+	} else if (V4L2_DEC_CMD_RESUME) {
+
 	}
 	return 0;
 }
@@ -747,6 +774,12 @@ static uint32_t get_framesize_raw_argb(struct tcc_vdec_ctx *ctx, uint32_t width,
     return ALIGN(size, SZ_4K);
 }
 
+static uint32_t get_framesize_raw_rgb565(struct tcc_vdec_ctx *ctx, uint32_t width, uint32_t height)
+{
+    uint32_t stride = ALIGN(width * 2, ctx->align_width);
+    uint32_t size = stride * height;
+    return ALIGN(size, SZ_4K);
+}
 
 static uint32_t tcc_vdec_get_framesize_raw(struct tcc_vdec_ctx *ctx, uint32_t v4l2_fmt, uint32_t width,
 	uint32_t height, uint32_t plane_idx, uint32_t planes)
@@ -755,6 +788,8 @@ static uint32_t tcc_vdec_get_framesize_raw(struct tcc_vdec_ctx *ctx, uint32_t v4
 	{
 		case V4L2_PIX_FMT_ABGR32:
 			return get_framesize_raw_argb(ctx, width, height);
+		case V4L2_PIX_FMT_RGB565:
+			return get_framesize_raw_rgb565(ctx, width, height);
 		default:
 			return 0;
 	}
@@ -865,8 +900,13 @@ static void tcc_vdec_stop_streaming(struct vb2_queue *q)
 		tccvdecqueue_reset(&ctx->timestamp_queue);
 
 		mutex_lock(&ctx->lock);
-		while ((dst_buf = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx)))
-			v4l2_m2m_buf_done(dst_buf, VB2_BUF_STATE_ERROR);
+        while ((dst_buf = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx))) {
+            vb2_set_plane_payload(&dst_buf->vb2_buf, 0, 0);
+            if (ctx->fmt_cap->num_planes == 2) {
+                vb2_set_plane_payload(&dst_buf->vb2_buf, 1, 0);
+            }
+            v4l2_m2m_buf_done(dst_buf, VB2_BUF_STATE_ERROR);
+        }
 		list_for_each_entry_safe(fb, temp, &ctx->framebuffer_list, framebuffer_item) {
 			if(fb->m2m_buf.vb.vb2_buf.state == VB2_BUF_STATE_ACTIVE)
 				v4l2_m2m_buf_done(&fb->m2m_buf.vb, VB2_BUF_STATE_ERROR);
@@ -889,20 +929,26 @@ static void tcc_vb2_buf_queue(struct vb2_buffer *vb)
 	struct tcc_codec_header_t hdr;
 	struct tcc_vdec_buffer *tdst_buf = NULL;
 
+	if(ctx->aborting) {
+		tcvdec_err("aborting vb : %d and force stop", vb->index);
+		tcc_vdec_force_stop(ctx);
+		return;
+	}
+
 	mutex_lock(&ctx->lock);
+
 	v4l2_m2m_buf_queue(vdec_ctx->fh.m2m_ctx, vbuf);
 	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-			tdst_buf = to_tcvdec_buffer(vbuf);
-			tcvdec_step("Queue capture buffer: 0x%llx", (u64)tdst_buf->planes[0].phy_addr);
+		tdst_buf = to_tcvdec_buffer(vbuf);
+		tcvdec_step("Queue capture buffer: 0x%llx", (u64)tdst_buf->planes[0].phy_addr);
 
-		 if ((tdst_buf->used) && (tdst_buf->vpu_idx >= 0)) {
+		if ((tdst_buf->used) && (tdst_buf->vpu_idx >= 0)) {
 			tccvpudec_if_buf_clear(ctx->vpu_drv, tdst_buf->vpu_idx);
 			tdst_buf->used = false;
 			tdst_buf->vpu_idx = -1;
 			--ctx->used_buf_cnt;
-		 }
-		 if(ctx->stopping) {
-			clear_used_buffers(ctx);
+		}
+		if(ctx->stopping) {
 			v4l2_m2m_dst_buf_remove_by_buf(ctx->fh.m2m_ctx, vbuf);
 			v4l2_m2m_buf_done(vbuf, VB2_BUF_STATE_DONE);
 		}
@@ -911,12 +957,23 @@ static void tcc_vb2_buf_queue(struct vb2_buffer *vb)
 #ifdef DUMP_BITSTREAM
 		dump_bitstream(ctx, vbuf, true);
 #endif
-		if(ctx->stopping) {
-			tcvdec_err("Queue bitstream buffer while stopping - application bug");
-		}
 		++ctx->input_bs_buf_cnt;
 	}
 	mutex_unlock(&ctx->lock);
+	/* Check if VPU initialization failed */
+	if (ctx->state == VPU_STATE_FREE && ctx->vpu_drv && ctx->vpu_drv->vdec_handle == NULL) {
+		tcvdec_err("VPU not initialized. Cannot process buffers.");
+		/* Remove and done the buffer with error */
+		if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+			src_buf = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
+			if (src_buf) {
+				v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src_buf);
+				v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_ERROR);
+			}
+		}
+		return;
+	}
+	
 	if (ctx->state == VPU_STATE_FRAMEBUFFER) {
 		// already VPU driver is seqeunce header init
 		return;
@@ -938,15 +995,22 @@ static void tcc_vb2_buf_queue(struct vb2_buffer *vb)
 			tcvdec_info("sequence header is parsed. %dx%d, min=%d", hdr.width, hdr.height, hdr.min_framebuffer_cnt);
 			ctx->state = VPU_STATE_HEADER;
 			ctx->min_framebuffer_cnt = hdr.min_framebuffer_cnt;
-			ctx->user_framebuffer_cnt = 8;
+			//ctx->user_framebuffer_cnt = 8;
 			ctx->profile = hdr.profile;
 			ctx->level = hdr.level;
 			ctx->width = hdr.width;
 			ctx->height = hdr.height;
 			ctx->out_width = hdr.width;
 			ctx->out_height = hdr.height;
+			ctx->sequnce_fail_cnt = 0;
 		} else {
 			tcvdec_err("Failed to parse sequence header. size=%ld va=%p dma=%p\n ", input_bs.size, input_bs.va, (void*)input_bs.dma_addr);
+			++ctx->sequnce_fail_cnt;
+			if (ctx->sequnce_fail_cnt > 3) {
+				tcvdec_err("Sequence header parse failed too many times. force stop");
+				tcc_vdec_force_stop(ctx);
+				return;
+			}
 		}
 	}
 }
@@ -987,43 +1051,6 @@ static int tcc_vdec_vb2_buf_init(struct vb2_buffer *vb)
 		mutex_unlock(&ctx->lock);
 
 		list_add_tail(&buf->framebuffer_item, &ctx->framebuffer_list);
-	}
-	return 0;
-}
-
-static void tcc_vdec_buf_cleanup(struct vb2_buffer *vb)
-{
-	struct tcc_vdec_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
-	tcvdec_step("");
-
-	if(ctx == NULL) {
-		tcvdec_err("%s Invalid parameter.", __func__);
-		return;
-	}
-	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		ctx->cap_buf_count--;
-	}
-}
-
-
-static int tcc_vdec_vb2_buf_prepare(struct vb2_buffer *vb)
-{
-	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
-	tcvdec_step("");
-
-
-	if(vbuf == NULL) {
-		tcvdec_err("Invalid parameter.");
-		return -EINVAL;
-	}
-
-	if (V4L2_TYPE_IS_OUTPUT(vb->vb2_queue->type)) {
-		if (vbuf->field == V4L2_FIELD_ANY)
-			vbuf->field = V4L2_FIELD_NONE;
-		if (vbuf->field != V4L2_FIELD_NONE) {
-			tcvdec_err("field isn't supported. only support progressive video");
-			return -EINVAL;
-		}
 	}
 	return 0;
 }
@@ -1100,23 +1127,53 @@ static int tcc_vdec_queue_setup(struct vb2_queue *vq,
 	return ret;
 }
 
-static void tcc_vdec_m2m_job_abort(void *ctx)
-{
-	struct tcc_vdec_ctx *vdec_ctx = ctx;
-	tcvdec_step("abort");
-	
-	mutex_lock(&vdec_ctx->lock);
-	vdec_ctx->aborting = true;
-	mutex_unlock(&vdec_ctx->lock);
-}
-
-
 static void clear_used_buffers(struct tcc_vdec_ctx *ctx)
 {
 	int idx = 0;
 	for(; idx < ctx->num_output_bufs; idx++)
 	{
+		tcvdec_dbg("clear used buffer: %d", idx);
 		tccvpudec_if_buf_clear(ctx->vpu_drv, idx);
+	}
+}
+
+/*FIXME 2025.09.08*/
+/*This function is called when SPEC out, FINISH, or EXIT occurs, but it may cause kernel panic in __vb2_queue_cancel occasionally.*/
+/*Sometimes, this function may cause kernel panic in __vb2_queue_cancel.*/
+static void tcc_vdec_force_stop(struct tcc_vdec_ctx *ctx)
+{
+	struct vb2_queue *q;
+	struct vb2_v4l2_buffer *src_buf, *dst_buf;	
+	struct tcc_vdec_buffer *fb, *temp = NULL;
+
+	tcvdec_info("force stop");
+	
+	flush_workqueue(ctx->tcc_dev->workqueue);
+	
+	q = v4l2_m2m_get_vq(ctx->m2m_ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE);
+	if (q) {
+		mutex_lock(&ctx->lock);
+		while ((src_buf = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx)))
+			v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_ERROR);
+		mutex_unlock(&ctx->lock);
+		vb2_queue_error(q);
+	}
+	q = v4l2_m2m_get_vq(ctx->m2m_ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE);
+	if (q) {
+		mutex_lock(&ctx->lock);
+        while ((dst_buf = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx))) {
+            vb2_set_plane_payload(&dst_buf->vb2_buf, 0, 0);
+            if (ctx->fmt_cap->num_planes == 2) {
+                vb2_set_plane_payload(&dst_buf->vb2_buf, 1, 0);
+            }
+            v4l2_m2m_buf_done(dst_buf, VB2_BUF_STATE_ERROR);
+        }
+		list_for_each_entry_safe(fb, temp, &ctx->framebuffer_list, framebuffer_item) {
+			if(fb->m2m_buf.vb.vb2_buf.state == VB2_BUF_STATE_ACTIVE)
+				v4l2_m2m_buf_done(&fb->m2m_buf.vb, VB2_BUF_STATE_ERROR);
+		}
+		mutex_unlock(&ctx->lock);
+		vb2_queue_error(q);
 	}
 }
 
@@ -1129,10 +1186,14 @@ static void tcvdec_worker(struct work_struct *work)
 
 	struct vb2_v4l2_buffer *src_buf, *dst_buf;
 	struct vb2_buffer *dst_vb;
-	struct v4l2_event ev;
  
 	int i,ret = 0;
- 
+
+	if(ctx->aborting || ctx->state < VPU_STATE_FRAMEBUFFER) {
+		v4l2_m2m_job_finish(ctx->m2m_dev, ctx->fh.m2m_ctx);
+		return;
+	}
+
 	src_buf = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
 
 	if (src_buf == NULL) {
@@ -1141,9 +1202,12 @@ static void tcvdec_worker(struct work_struct *work)
 		return;
 	}
 
+	tccvdecqueue_enqueue(&ctx->timestamp_queue, src_buf->vb2_buf.timestamp, 0, NULL);
+
 	if(!ctx->streaming) {
 		v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src_buf);
 		v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_DONE);
+		v4l2_m2m_job_finish(ctx->m2m_dev, ctx->fh.m2m_ctx);
 		return;
 	}
 
@@ -1153,12 +1217,16 @@ static void tcvdec_worker(struct work_struct *work)
 	input_bs.dma_addr = vb2_dma_contig_plane_dma_addr(&src_buf->vb2_buf, 0);
 	input_bs.pa = (void*)dma_to_phys(ctx->tcc_dev->dev, input_bs.dma_addr);
 	input_bs.timestamp = src_buf->vb2_buf.timestamp;
-
+	
 	tcvdec_step("[%llu]input : 0x%llx (size : 0x%lx)", input_bs.timestamp, (u64)input_bs.pa, input_bs.size);
 
 	memset(&output, 0x0, sizeof(output));
 
-	dst_buf = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
+	dst_buf = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
+	if (dst_buf == NULL) {
+	    v4l2_m2m_job_finish(ctx->m2m_dev, ctx->fh.m2m_ctx);
+	    return;
+	}
 	tdst_buf = to_tcvdec_buffer(dst_buf);
 
 	for( i = 0; i < ctx->fmt_cap->num_planes; i++) {
@@ -1168,38 +1236,47 @@ static void tcvdec_worker(struct work_struct *work)
 	}
 
 	mutex_lock(&ctx->lock);
-	ret = tccvpudec_if_decode(ctx->vpu_drv, &input_bs, &output);
+	if(ctx->aborting) {
+		ret = VPU_RETCODE_CODEC_EXIT;
+	} else {
+		ret = tccvpudec_if_decode(ctx->vpu_drv, &input_bs, &output);
+	}
 	mutex_unlock(&ctx->lock);
 
-	if (ret != VPU_RETCODE_SUCCESS) {
-		tcvdec_err("Failed to decode. ret=%d", ret);
-		if(ctx->streaming) {
-			++ctx->output_bs_buf_cnt;
+	if (ret != VPU_RETCODE_SUCCESS) {		
+		if (ret == VPU_RETCODE_CODEC_SPECOUT ||
+			ret == VPU_RETCODE_CODEC_FINISH  || 
+			ret == VPU_RETCODE_CODEC_EXIT ) {
+			tcvdec_err("VPU_RETCODE_CODEC_SPECOUT/VPU_RETCODE_CODEC_FINISH/VPU_RETCODE_CODEC_EXIT detected. Immediate cleanup. set src flag : %d", src_buf->flags);
+			
+			mutex_lock(&ctx->lock);
+			ctx->aborting = true;
+			mutex_unlock(&ctx->lock);
+
 			v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src_buf);
-			v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_DONE);
-		} else {
+			v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_DONE);	
 			v4l2_m2m_job_finish(ctx->m2m_dev, ctx->fh.m2m_ctx);
 			return;
 		}
-		if (ret == VPU_RETCODE_CODEC_SPECOUT) {
-			tcvdec_err("SPECOUT detected. Exiting workqueue and flushing buffers.");
-			dst_buf->flags |= V4L2_BUF_FLAG_LAST;
-		}
 	}
-	
+		
 	if (output.status & TCC_VIDEO_CODEC_STATUS_BUF_FULL) {
 		mutex_lock(&ctx->lock);
+		tcvdec_dbg("clear used buffer: %d", output.displayIndex);
 		clear_used_buffers(ctx);
+		msleep(SLEEP_TIME_MS);
 		mutex_unlock(&ctx->lock);
 	} else if (output.status & TCC_VIDEO_CODEC_STATUS_DECODED){
-		if (output.decodedIndex >= 0) {
-			tccvdecqueue_enqueue(&ctx->timestamp_queue, input_bs.timestamp, output.decodedIndex, NULL);
+		if (dst_buf) {
+			dst_buf->flags |= src_buf->flags & V4L2_BUF_FLAG_LAST;
 		}
+
+		dst_vb = &dst_buf->vb2_buf;
 
 		v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src_buf);
 		v4l2_m2m_buf_done(src_buf, VB2_BUF_STATE_DONE);
-	} 
-	
+	}
+				
 	if (output.status & TCC_VIDEO_CODEC_STATUS_DISPLAYABLE) {
 		struct tccvdecqueue_entry *ts_entry;
 
@@ -1210,19 +1287,30 @@ static void tcvdec_worker(struct work_struct *work)
 		} else {
 			dst_buf->vb2_buf.timestamp = input_bs.timestamp;
 		}
+
 		tdst_buf->vpu_idx = output.displayIndex;
 		tdst_buf->used = true;
-		dst_buf->flags |= src_buf->flags & V4L2_BUF_FLAG_LAST;
-		dst_vb = &dst_buf->vb2_buf;
-
+		
+		if(output.pic_type == VPU_PICTURE_I || output.pic_type == VPU_PICTURE_IDR) {
+			dst_buf->flags &= ~V4L2_BUF_FLAG_KEYFRAME;
+			dst_buf->flags |= V4L2_BUF_FLAG_KEYFRAME;
+		}
+		
+		/*
+		if(output.picture_structure) {
+			dst_buf->field = output.top_field_first ? V4L2_FIELD_INTERLACED_TB : V4L2_FIELD_INTERLACED_BT;
+		}
+		*/
+		
 		for( i = 0; i < ctx->fmt_cap->num_planes; i++) {
-			vb2_set_plane_payload(dst_vb, i, tdst_buf->planes[i].size);			
-			dst_vb->planes[i].data_offset = i;
+			vb2_set_plane_payload(dst_vb, i, tdst_buf->planes[i].size);
+			dst_vb->planes[i].data_offset = 0;
 		}
 
-		tcvdec_step("Dequeue capture buffer: 0x%llx (%lld) idx : %d, size : %u", (u64)tdst_buf->planes[0].phy_addr, dst_buf->vb2_buf.timestamp, tdst_buf->vpu_idx, tdst_buf->planes[0].size);
+		tcvdec_dbg("Dequeue capture buffer: 0x%llx (%lld) idx : %d, size : %u", (u64)tdst_buf->planes[0].phy_addr, dst_buf->vb2_buf.timestamp, tdst_buf->vpu_idx, tdst_buf->planes[0].size);
 
 		if(ctx->streaming) {
+			v4l2_m2m_dst_buf_remove_by_buf(ctx->fh.m2m_ctx, dst_buf);
 			v4l2_m2m_buf_done(dst_buf, VB2_BUF_STATE_DONE);
 		} else {
 			tccvpudec_if_buf_clear(ctx->vpu_drv, output.displayIndex);
@@ -1230,14 +1318,14 @@ static void tcvdec_worker(struct work_struct *work)
 			return;
 		}
 	}
-
 	if (dst_buf->flags & V4L2_BUF_FLAG_LAST) {
+		struct v4l2_event ev;
 		tcvdec_err("Detect V4L2_BUF_FLAG_LAST");
 		ev.type = V4L2_EVENT_EOS;
 		v4l2_event_queue_fh(&ctx->fh, &ev);
 		v4l2_m2m_buf_done(dst_buf, VB2_BUF_STATE_ERROR);
 	}
-	 v4l2_m2m_job_finish(ctx->m2m_dev, ctx->fh.m2m_ctx);
+	v4l2_m2m_job_finish(ctx->m2m_dev, ctx->fh.m2m_ctx);
 }
 
 static void tcc_vdec_m2m_device_run(void *priv)
@@ -1315,7 +1403,7 @@ static int tcc_vdec_probe(struct platform_device *pdev)
 		goto exit_destroy_tcc_dev;
 	}
 
-	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
+	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
 	if (ret) {
 		goto exit_destroy_workqueue;
 	}
@@ -1486,29 +1574,39 @@ static int tcc_vdec_release(struct file *file)
 {
 	struct tcc_vdec_ctx *ctx = NULL;
 
-    if (file == NULL || file->private_data == NULL) {
-        tcvdec_err("Invalid file or private_data\n");
-        return -EINVAL;
-    }
+	if (file == NULL || file->private_data == NULL) {
+		tcvdec_err("Invalid file or private_data\n");
+		return -EINVAL;
+	}
 
 	tcvdec_step("Entering: (file=%p)", file);
 
-    ctx = to_ctx(file);
-    if (ctx != NULL) {
-		if (ctx->tcc_dev && ctx->tcc_dev->workqueue) {
-			flush_workqueue(ctx->tcc_dev->workqueue);
-		}	
-        tccvpudec_if_deinit(ctx->vpu_drv);
-        tccvdec_ctrl_deinit(ctx);
-        mutex_destroy(&ctx->lock);
-        v4l2_fh_del(&ctx->fh);
-        v4l2_fh_exit(&ctx->fh);
-        v4l2_m2m_ctx_release(ctx->m2m_ctx);
-        v4l2_m2m_release(ctx->m2m_dev);
-        kfree(ctx->vpu_drv);
-        kfree(ctx);
-    }
-    return 0;
+	ctx = to_ctx(file);
+	if (ctx == NULL) {
+		tcvdec_err("ctx is NULL\n");
+		return -EINVAL;
+	}
+
+	if (ctx->tcc_dev && ctx->tcc_dev->workqueue) {
+		flush_workqueue(ctx->tcc_dev->workqueue);
+		cancel_work_sync(&ctx->decode_work);
+	}
+
+	if (ctx->vpu_drv != NULL) {
+		tccvpudec_if_deinit(ctx->vpu_drv);
+		kfree(ctx->vpu_drv);
+		ctx->vpu_drv = NULL;
+	}
+	tccvdec_ctrl_deinit(ctx);
+	mutex_destroy(&ctx->lock);
+	v4l2_fh_del(&ctx->fh);
+	v4l2_fh_exit(&ctx->fh);
+	v4l2_m2m_ctx_release(ctx->m2m_ctx);
+	v4l2_m2m_release(ctx->m2m_dev);
+	
+	kfree(ctx);
+	
+	return 0;
 }
 
 MODULE_DEVICE_TABLE(of, tccvdec_of_match);

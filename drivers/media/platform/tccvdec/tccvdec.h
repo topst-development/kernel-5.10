@@ -21,6 +21,8 @@
 #define TCCVDEC_WORKQUEUE_THROTTLE_MS   10
 #define TCCVDEC_MAX_CAPTURE_BUFFER_NUM   28
 
+#define SLEEP_TIME_MS   500
+
 struct tcc_vdec_variant {
 	unsigned int version;
 	unsigned int port_num;

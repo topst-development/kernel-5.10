@@ -152,6 +152,7 @@ typedef struct vdec_t {
 
 static int vdec_scaler_process(vdec_t *pInst, vdec_v3_decode_out_t vpu_output, struct tcc_codec_decode_output_t *output);
 
+
 static enum vpu_return_code vdec_cmd_process(int32_t cmd, unsigned long* args, vdec_t *pVdec)
 {
     enum vpu_return_code ret;
@@ -207,7 +208,7 @@ Retry:
             {
                 vdec_v3_init_t* init_info = (vdec_v3_init_t *)args;
                 if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_INIT_RESULT_KERNEL, (unsigned long)init_info) < 0){
-                    tcvdec_err("[VDEC-%d] pInst->pfdec_fd->f_op->unlocked_ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_INIT_RESULT_KERNEL);
+                    tcvdec_err("[VDEC-%d] VDEC_V3_INIT_RESULT_KERNEL (0x%x) error!!", pInst->vdec_id, VDEC_V3_INIT_RESULT_KERNEL);
                 }
                 ret = init_info->result;
             }
@@ -218,7 +219,7 @@ Retry:
                 vdec_v3_seqheader_t* seq_info = (vdec_v3_seqheader_t*)args;
                 if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_SEQ_HEADER_RESULT_KERNEL, (unsigned long)seq_info) < 0)
 				{
-                    tcvdec_err("[VDEC-%d] pInst->pfdec_fd->f_op->unlocked_ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_SEQ_HEADER_RESULT_KERNEL);
+                    tcvdec_err("[VDEC-%d] VDEC_V3_SEQ_HEADER_RESULT_KERNEL(0x%x) error!!", pInst->vdec_id, VDEC_V3_SEQ_HEADER_RESULT_KERNEL);
                 }
                 ret = seq_info->result;
             }
@@ -229,7 +230,7 @@ Retry:
                 vdec_v3_decode_t* dec_info = (vdec_v3_decode_t*)args;
                 if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_DECODE_RESULT_KERNEL, (unsigned long)dec_info) < 0)
 				{
-                    tcvdec_err("[VDEC-%d] pInst->pfdec_fd->f_op->unlocked_ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_DECODE_RESULT_KERNEL);
+                    tcvdec_err("[VDEC-%d]VDEC_V3_DECODE_RESULT_KERNEL (0x%x) error!!", pInst->vdec_id, VDEC_V3_DECODE_RESULT_KERNEL);
                 }
                 ret = dec_info->result;
             }
@@ -240,7 +241,7 @@ Retry:
 				vdec_v3_buf_clear_t* bufclear_info = (vdec_v3_buf_clear_t*)args;
                 if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_BUF_CLEAR_RESULT_KERNEL, (unsigned long)bufclear_info) < 0)
 				{
-                    tcvdec_err("[VDEC-%d] pInst->pfdec_fd->f_op->unlocked_ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_BUF_CLEAR_RESULT_KERNEL);
+                    tcvdec_err("[VDEC-%d] VDEC_V3_BUF_CLEAR_RESULT_KERNEL (0x%x) error!!", pInst->vdec_id, VDEC_V3_BUF_CLEAR_RESULT_KERNEL);
                 }
                 ret = bufclear_info->result;
 			}
@@ -251,7 +252,7 @@ Retry:
 				vdec_v3_flush_t* flush_info = (vdec_v3_flush_t*)args;
                 if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_FLUSH_RESULT_KERNEL, (unsigned long)flush_info) < 0)
 				{
-                    tcvdec_err("[VDEC-%d] pInst->pfdec_fd->f_op->unlocked_ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_FLUSH_RESULT_KERNEL);
+                    tcvdec_err("[VDEC-%d] VDEC_V3_FLUSH_RESULT_KERNEL (0x%x) error!!", pInst->vdec_id, VDEC_V3_FLUSH_RESULT_KERNEL);
                 }
                 ret = flush_info->result;
 			}
@@ -262,7 +263,7 @@ Retry:
 				vdec_v3_drain_t* drain_info = (vdec_v3_drain_t*)args;
                 if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_DRAIN_RESULT_KERNEL, (unsigned long)drain_info) < 0)
 				{
-                    tcvdec_err("[VDEC-%d] pInst->pfdec_fd->f_op->unlocked_ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_DRAIN_RESULT_KERNEL);
+                    tcvdec_err("[VDEC-%d] VDEC_V3_DRAIN_RESULT_KERNEL (0x%x) error!!", pInst->vdec_id, VDEC_V3_DRAIN_RESULT_KERNEL);
                 }
                 ret = drain_info->result;
 			}
@@ -273,7 +274,7 @@ Retry:
 			   vdec_v3_reg_framebuffer_t* regframebuffer_info = (vdec_v3_reg_framebuffer_t *)args;
 			  if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_REG_FRAMEBUFFER_RESULT_KERNEL, (unsigned long)regframebuffer_info) < 0)
 			   {
-				   tcvdec_err("[VDEC-%d] ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_REG_FRAMEBUFFER_RESULT_KERNEL);
+				   tcvdec_err("[VDEC-%d] VDEC_V3_REG_FRAMEBUFFER_RESULT_KERNEL ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_REG_FRAMEBUFFER_RESULT_KERNEL);
 			   }
 			   ret = regframebuffer_info->result;
 		   }
@@ -284,7 +285,7 @@ Retry:
 				vdec_v3_close_t* close_info = (vdec_v3_close_t*)args;
                 if(pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->pfdec_fd, VDEC_V3_CLOSE_RESULT_KERNEL, (unsigned long)close_info) < 0)
 				{
-                    tcvdec_err("[VDEC-%d] pInst->pfdec_fd->f_op->unlocked_ioctl(0x%x) error!!", pInst->vdec_id, VDEC_V3_CLOSE_RESULT_KERNEL);
+                    tcvdec_err("[VDEC-%d] VDEC_V3_CLOSE_RESULT_KERNEL (0x%x) error!!", pInst->vdec_id, VDEC_V3_CLOSE_RESULT_KERNEL);
                 }
                 ret = close_info->result;
 			}
@@ -295,6 +296,7 @@ Retry:
             break;
     }
 
+ 
     if((ret&0xf000) != 0x0000)
 	{ //If there is an invalid return, we skip it because this return means that vpu didn't process current command yet.
         all_retry_cnt--;
@@ -317,7 +319,7 @@ Retry:
 
         if(ret != VPU_RETCODE_CODEC_EXIT && ret != VPU_RETCODE_MULTI_CODEC_EXIT_TIMEOUT){
 //          pInst->pfdec_fd->f_op->unlocked_ioctl(pInst->mgr_fd, VPU_HW_RESET, (void*)NULL);
-        }
+		}
 
         return VPU_RETCODE_CODEC_EXIT;
     }
@@ -477,6 +479,8 @@ enum vpu_return_code vdec_init(vdec_handle_h handle, vdec_v3_init_t* p_init_para
 	if( vpu_ret != VPU_RETCODE_SUCCESS )
 	{
 		tcvdec_err( "[VDEC-%d] VDEC_V3_INIT failed Error code is 0x%x ", pInst->vdec_id, vpu_ret );
+		/* Return immediately on init failure */
+		return vpu_ret;
 	}
 	else
 	{
@@ -612,8 +616,10 @@ int vdec_decode(vdec_handle_h handle, struct tcc_codec_bs_t* bs, struct tcc_code
 	output->height 			=  pInst->decode_info.output.out_info.display_height;
 
 	output->displayIndex 	= pInst->decode_info.output.out_info.display_idx;		
-	output->decodedIndex	= pInst->decode_info.output.out_info.decoded_idx;		
-
+	output->decodedIndex	= pInst->decode_info.output.out_info.decoded_idx;
+	output->pic_type		= pInst->decode_info.output.out_info.pic_type;
+	output->picture_structure = pInst->decode_info.output.out_info.specific_info.picture_structure;
+	output->top_field_first = pInst->decode_info.output.out_info.specific_info.top_field_first;
 
 	if( vpu_ret == VPU_RETCODE_INFO_INSUFFICIENT_DATA )
 	{
@@ -653,7 +659,7 @@ int vdec_decode(vdec_handle_h handle, struct tcc_codec_bs_t* bs, struct tcc_code
 			output->status |= TCC_VIDEO_CODEC_STATUS_DECODED;
 		}
 
-			/*
+			/*		
 			if(pInst->decode_info.output.out_info.specific_info.picture_structure == 1)
 			{
 				int top_field_type = 0;
@@ -661,14 +667,14 @@ int vdec_decode(vdec_handle_h handle, struct tcc_codec_bs_t* bs, struct tcc_code
 
 				top_field_type = ((unsigned int)pInst->decode_info.output.out_info.pic_type >> 3U) & 0x07U;
 				bottom_field_type = (unsigned int)pInst->decode_info.output.out_info.pic_type & 0x07U;
-				tcvdec_err("[VDEC-%d] Dec ret:%d Interlace PicType[%s(%d),%s(%d)], OutIdx[%d/%d], OutStatus[%d/%d] \n", pInst->vdec_id, ret,
+				tcvdec_err("[VDEC-%d] Dec ret:%d Interlace PicType[%s(%d),%s(%d)], OutIdx[%d/%d], OutStatus[%d/%d] \n", pInst->vdec_id, vpu_ret,
 									get_pic_type_name(top_field_type), top_field_type, get_pic_type_name(bottom_field_type), bottom_field_type,
 									pInst->decode_info.output.out_info.display_idx,pInst->decode_info.output.out_info.decoded_idx,
 									pInst->decode_info.output.out_info.display_status, pInst->decode_info.output.out_info.decoded_status);
 			}
 			else
 			{
-				tcvdec_err("[VDEC-%d] Dec ret:%d Progressive PicType[%s(%d)], OutIdx[%d/%d], OutStatus[%d/%d] \n", pInst->vdec_id, ret,
+				tcvdec_err("[VDEC-%d] Dec ret:%d Progressive PicType[%s(%d)], OutIdx[%d/%d], OutStatus[%d/%d] \n", pInst->vdec_id, vpu_ret,
 									get_pic_type_name(pInst->decode_info.output.out_info.pic_type), pInst->decode_info.output.out_info.pic_type,
 									pInst->decode_info.output.out_info.display_idx, pInst->decode_info.output.out_info.decoded_idx,
 									pInst->decode_info.output.out_info.display_status, pInst->decode_info.output.out_info.decoded_status);
@@ -711,7 +717,7 @@ enum vpu_return_code vdec_drain(vdec_handle_h handle, struct tcc_codec_decode_ou
 	vpu_ret = vdec_cmd_process(VDEC_V3_DRAIN_KERNEL, (unsigned long*)&pInst->drain_info, pInst);
 
 	if(vpu_ret != VPU_RETCODE_SUCCESS) {
-		tcvdec_dbg("[%s:%d] Failed to Drain(). ret=%d", __func__, __LINE__, vpu_ret);
+		tcvdec_dbg("Failed to Drain(). ret=%d", vpu_ret);
 		return -EFAULT;
 	} else {
 		if(pInst->drain_info.output.out_info.display_status == VPU_DISP_STAT_SUCCESS) {
@@ -734,7 +740,7 @@ enum vpu_return_code vdec_flush(vdec_handle_h handle)
 	vdec_t *pInst = (vdec_t *)handle;
 
 	if(!pInst) {
-		tcvdec_err( "[VDEC-%d][%s:%d] vdec_handle is NULL", pInst->vdec_id, __func__, __LINE__);
+		tcvdec_err( "[VDEC-%d] vdec_handle is NULL", pInst->vdec_id);
 		return VPU_RETCODE_FAILURE;
 	}
 
@@ -888,7 +894,12 @@ enum vpu_return_code vdec_register_framebuffer(vdec_handle_h handle, struct devi
 		}
 	}
 
-	input->frame_buffer_count = pInst->init_info.input.codec_id == VCODEC_ID_HEVC ? number * 2 : number;
+	input->frame_buffer_count = number;
+	
+	if (pInst->init_info.input.codec_id == VCODEC_ID_HEVC || pInst->init_info.input.codec_id == VCODEC_ID_VP9) 
+	{
+		input->frame_buffer_count += number;
+	}
 
 	vpu_ret = vdec_cmd_process(VDEC_V3_REG_FRAMEBUFFER_KERNEL, (long unsigned int *)&pInst->regframebuffer_info, pInst);
 
@@ -935,7 +946,7 @@ static int vdec_scaler_process(vdec_t *pInst, vdec_v3_decode_out_t vpu_output, s
 	scaler_info.dest_Vaddr 			= (unsigned long)output->fb.pa[VPU_FRAMEBUFFER_Y];
 
 	scaler_info.dst_rgb_swap        = 0;
-	scaler_info.dest_fmt            = SCALER_ARGB8888;
+	scaler_info.dest_fmt            = SCALER_RGB565;
 	scaler_info.dest_ImgWidth       = vpu_output.out_info.display_width - vpu_output.out_info.display_crop.left - vpu_output.out_info.display_crop.right;
 	scaler_info.dest_ImgHeight      = vpu_output.out_info.display_height - vpu_output.out_info.display_crop.bottom - vpu_output.out_info.display_crop.top;
 
@@ -964,7 +975,7 @@ static int vdec_scaler_process(vdec_t *pInst, vdec_v3_decode_out_t vpu_output, s
 	tcvdec_info("[VDEC-%d] Decoded resolution = %dx%d", pInst->vdec_id, scaler_info.src_ImgWidth, scaler_info.src_ImgHeight);
 	*/
 
-	if(pInst->init_info.input.codec_id == VCODEC_ID_HEVC) {
+	if(pInst->init_info.input.codec_id == VCODEC_ID_HEVC || pInst->init_info.input.codec_id == VCODEC_ID_VP9) {
 		scaler_info.mapConv_info.m_CompressedY[VPU_PA] 		= vpu_output.out_info.disp_map_conv_info.compressed_y[VPU_PA];
 		scaler_info.mapConv_info.m_CompressedY[VPU_KVA] 	= vpu_output.out_info.disp_map_conv_info.compressed_y[VPU_KVA];
 		scaler_info.mapConv_info.m_CompressedCb[VPU_PA] 	= vpu_output.out_info.disp_map_conv_info.compressed_cb[VPU_PA];

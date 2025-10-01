@@ -1737,20 +1737,9 @@ static vpu_ip_module_t vpu_c7_module = {
 	.internal_handler = vmgr_c7_internal_handler,
 	//codec id, codec name(string), profile(string), level(string), width(unsigned int), height(unsigned int), fps(unsigned int)
 	.dec_capa = {{VCODEC_ID_AVC, CODEC_NAME_AVC, "high", "4.2", 1920, 1080, 60},
-				{VCODEC_ID_MPEG2, CODEC_NAME_MPEG2, "main", "high", 1920, 1080, 60},
-				{VCODEC_ID_MPEG4, CODEC_NAME_MPEG4, "advanced simple", "5", 1920, 1080, 60},
-				{VCODEC_ID_VC1, CODEC_NAME_VC1, "advanced", "3.0", 1920, 1080, 60},
-				{VCODEC_ID_VP8, CODEC_NAME_VP8, NULL, NULL, 1920, 1080, 60},
-				{VCODEC_ID_H263, CODEC_NAME_H263, "Profile3", "70", 1920, 1080, 30},
-				{VCODEC_ID_MVC, CODEC_NAME_MVC, "stereo high", NULL, 1920, 1080, 60},
-#if defined(ENABLE_VPU_DRV_VPU_C7)
-				{VCODEC_ID_AVS, CODEC_NAME_AVS, "Jizhun", "6.2", 1920, 1080, 60},
-#endif
 				{VCODEC_ID_NONE, NULL, NULL, NULL, 0, 0, 0}},
 #if defined(ENABLE_VPU_DRV_VPU_C7)
 	.enc_capa = {{VCODEC_ID_AVC, CODEC_NAME_AVC, "baseline", "4.0", 1920, 1080, 60},
-				{VCODEC_ID_H263, CODEC_NAME_H263, "Profile 3", "70", 1920, 1080, 60},
-				{VCODEC_ID_MPEG4, CODEC_NAME_MPEG4, "simple", "5/6", 1920, 1080, 60},
 				{VCODEC_ID_NONE, NULL, NULL, NULL, 0, 0, 0}},
 #else
 	//VPU_D6 (encoder is not supported)

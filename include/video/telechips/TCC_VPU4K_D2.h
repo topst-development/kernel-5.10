@@ -9,21 +9,21 @@
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
-#define VPU4K_D2_API_VERSION "2.2"
+#define VPU4K_D2_API_VERSION "3.0"
 //specific operation code
 #define VPU4K_D2_GET_VERSION        0x1000 /**< Command to get the version of the VPU 4K D2 decoder. */
 #define VPU4K_D2_SET_OPTIONS        0x1001 /**< Command to set various options for the VPU 4K D2 decoder. */
 #define VPU4K_D2_CTRL_LOG_STATUS    0x1002 /**< Command to control the log status using the vpu4k_dec_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
+#define VPU4K_D2_SET_FW_ADDRESS     0x1003 /**< Command to set firmware base address of the VPU 4K D2 decoder. */
+#define VPU4K_MAX_NUM_INSTANCE      4
 
-#define VPU4K_MAX_NUM_INSTANCE		4
-
-#define RETCODE_VPUERR_SEQ_HEADER_NOT_FOUND	31
-#define RETCODE_VPUERR_STRIDE_ZERO_OR_ALIGN8	100
-#define RETCODE_VPUERR_MIN_RESOLUTION		101
-#define RETCODE_VPUERR_MAX_RESOLUTION		102
-#define RETCODE_VPUERR_SEQ_INIT_HANGUP		103
-#define RETCODE_VPUERR_CHROMA_FORMAT		104
-#define RETCODE_VPUERR_PROFILE			110
+#define RETCODE_VPUERR_SEQ_HEADER_NOT_FOUND     31
+#define RETCODE_VPUERR_STRIDE_ZERO_OR_ALIGN8    100
+#define RETCODE_VPUERR_MIN_RESOLUTION           101
+#define RETCODE_VPUERR_MAX_RESOLUTION           102
+#define RETCODE_VPUERR_SEQ_INIT_HANGUP          103
+#define RETCODE_VPUERR_CHROMA_FORMAT            104
+#define RETCODE_VPUERR_PROFILE                  110
 
 #ifndef RETCODE_WRAP_AROUND
 #define RETCODE_WRAP_AROUND		(-10)
@@ -38,15 +38,15 @@
 #define VPU4K_COMMAND_QUEUE_DEPTH       2
 #define VPU4K_ONE_TASKBUF_SIZE_FOR_CQ	(8*1024*1024)
 #define VPU4K_TASKBUF_SIZE_FOR_CQ	(VPU4K_COMMAND_QUEUE_DEPTH * \
-					 VPU4K_ONE_TASKBUF_SIZE_FOR_CQ)
+					VPU4K_ONE_TASKBUF_SIZE_FOR_CQ)
 
 #define VPU4K_SIZE_BIT_WORK		(VPU4K_MAX_CODE_BUF_SIZE + \
-					 VPU4K_TEMPBUF_SIZE + \
-					 VPU4K_SEC_AXI_BUF_SIZE + \
-					 VPU4K_TASKBUF_SIZE_FOR_CQ)
+					VPU4K_TEMPBUF_SIZE + \
+					VPU4K_SEC_AXI_BUF_SIZE + \
+					VPU4K_TASKBUF_SIZE_FOR_CQ)
 #define VPU4K_WORK_CODE_BUF_SIZE	(VPU4K_SIZE_BIT_WORK + \
-					 (VPU4K_WORKBUF_SIZE * \
-					  VPU4K_MAX_NUM_INSTANCE))
+					(VPU4K_WORKBUF_SIZE * \
+					VPU4K_MAX_NUM_INSTANCE))
 
 #define VPU4K_STREAM_BUF_SIZE		0x1400000
 #define VPU4K_USERDATA_BUF_SIZE		(512*1024)
@@ -137,6 +137,13 @@ typedef struct vpu4k_dec_ctrl_log_status_t {
 	} stLogCondition;
 } vpu4k_dec_ctrl_log_status_t;
 
+/**
+ @brief Structure for VPU_4KD2_SET_FW_ADDRESS command
+ */
+typedef struct vpu_4K_D2_dec_set_fw_addr_t {
+	codec_addr_t m_FWBaseAddr; /**< Address of VPU4K D2 firmware. */
+	int iReserved[6];
+} vpu4K_dec_set_fw_addr_t;
 
 //------------------------------------------------------------------------------
 // user data struct and definition
@@ -322,20 +329,20 @@ typedef struct hevc_colour_remapping_info_t {
 	unsigned char	colour_remap_bit_depth;
 	unsigned char	pre_lut_num_val_minus1[HEVC_MAX_LUT_NUM_VAL];
 	unsigned short	pre_lut_coded_value[HEVC_MAX_LUT_NUM_VAL]
-					   [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+					[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 	unsigned short	pre_lut_target_value[HEVC_MAX_LUT_NUM_VAL]
-					    [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+						[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 
 	unsigned char	colour_remap_matrix_present_flag;
 	unsigned char	log2_matrix_denom;
 	unsigned char	colour_remap_coeffs[HEVC_MAX_COLOUR_REMAP_COEFFS]
-					   [HEVC_MAX_COLOUR_REMAP_COEFFS];
+					[HEVC_MAX_COLOUR_REMAP_COEFFS];
 
 	unsigned char	post_lut_num_val_minus1[HEVC_MAX_LUT_NUM_VAL];
 	unsigned short	post_lut_coded_value[HEVC_MAX_LUT_NUM_VAL]
-					    [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+						[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 	unsigned short	post_lut_target_value[HEVC_MAX_LUT_NUM_VAL]
-					     [HEVC_MAX_LUT_NUM_VAL_MINUS1];
+						[HEVC_MAX_LUT_NUM_VAL_MINUS1];
 } hevc_colour_remapping_info_t;
 
 typedef struct hevc_film_grain_characteristics_t {
@@ -446,13 +453,13 @@ typedef struct vp9_color_info_t {
 	 * 5	BT.2020 (UHDTV, HDR)
 	 * 6	Reserved
 	 * 7	sRGB
-	 */
+	*/
 	unsigned int color_space;
 	/*
 	 * this syntax is meaningful if color_spage is one of 0, 1, 2, 3, 4.
 	 * 0	Limited Range (TV Range, MPEG Range)
 	 * 1	Full Range (PC Range, JPEG Range)
-	 */
+	*/
 	unsigned int color_range;
 } vp9_color_info_t;
 
@@ -908,6 +915,7 @@ TCC_VPU4K_D2_DEC_EXT(int Op, codec_handle_t *pHandle,
 #define VPU_4KD2_GET_VERSION 			VPU4K_D2_GET_VERSION
 #define VPU_4KD2_SET_OPTIONS 			VPU4K_D2_SET_OPTIONS
 #define VPU_4KD2_CTRL_LOG_STATUS 		VPU4K_D2_CTRL_LOG_STATUS
+#define VPU_4KD2_SET_FW_ADDRESS			VPU4K_D2_SET_FW_ADDRESS
 
 #define WAVE5_MAX_NUM_INSTANCE 			VPU4K_MAX_NUM_INSTANCE
 #define WAVE5_MAX_CODE_BUF_SIZE			VPU4K_MAX_CODE_BUF_SIZE
@@ -931,6 +939,7 @@ TCC_VPU4K_D2_DEC_EXT(int Op, codec_handle_t *pHandle,
 #define vpu_4K_D2_dec_get_version_t 		vpu4k_dec_get_version_t
 #define vpu_4K_D2_dec_set_options_t 		vpu4k_dec_set_options_t
 #define vpu_4K_D2_dec_ctrl_log_status_t 	vpu4k_dec_ctrl_log_status_t
+#define vpu_4K_D2_dec_set_fw_addr_t		vpu4K_dec_set_fw_addr_t
 
 #define vpu_4K_D2_dec_UserData_info_t	 	vpu4k_dec_userdata_info_t
 #define vpu_4K_D2_dec_initial_info_t	 	vpu4k_dec_initial_info_t

@@ -1,0 +1,209 @@
+/ {
+	imx219_vana: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "imx219_vana";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	imx219_vdig: fixedregulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "imx219_vdig";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	imx219_vddl: fixedregulator@2 {
+		compatible = "regulator-fixed";
+		regulator-name = "imx219_vddl";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	imx219_clk: imx219_clk {
+		compatible = "fixed-clock";
+		#clock-cells = <1>;
+		clock-frequency = <24000000>;
+	};
+};
+
+&i2c7 {
+	status = "okay";
+	imx219@10 {
+		compatible = "sony,imx219";
+		status = "okay";
+		reg = <0x10>;
+
+		clocks = <&imx219_clk 200>;
+		clock-names = "xclk";
+		clock-frequency = <24000000>;
+
+		VANA-supply = <&imx219_vana>;	// 2.8v
+		VDIG-supply = <&imx219_vdig>;	// 1.8v
+		VDDL-supply = <&imx219_vddl>;	// 1.2v
+
+		reset-gpios = <&gpg 5 GPIO_ACTIVE_HIGH>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				imx219_out0: endpoint@0 {
+					remote-endpoint = <&mipi_csi2_0_in>;
+					io-direction = "output";
+					channel = <0>;
+
+					clock-lanes = <0>;
+					data-lanes = <1 2>;
+					clock-noncontinuous;
+					link-frequencies =
+						/bits/ 64 <456000000>;
+				};
+			};
+		};
+	};
+};
+
+&mipi_csi2_0 {
+	status = "okay";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		/*
+		 * 0
+		 * input port.
+		 *
+		 * 1 ~ 4
+		 * output ports. (1: VC0 ~ 4: VC3)
+		 */
+		port@0 {
+			reg = <0>;
+			mipi_csi2_0_in: endpoint {
+				remote-endpoint	= <&imx219_out0>;
+				io-direction	= "input";
+				num-channel	= <4>;
+
+				/*
+				 * 0: CH0 only, no data interleave
+				 * 1: DT only
+				 * 2: VC only
+				 * 3: VC and DT
+				 */
+				interleave-mode = <0>;
+				hs-settle = <13>;
+				data-lanes = <1 2>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			mipi_csi2_0_out0: endpoint {
+				remote-endpoint	= <&isp0_in>;
+				io-direction	= "output";
+				channel		= <0>;
+				/*
+				 * 0: Single pixel mode
+				 * 1: Dual pixel mode (RAW8/10/12, YUV422)
+				 * 2: Quad pixel mode (RAW8/10/12)
+				 * 3: Invalid
+				 */
+				pixel-mode = <0>;
+			};
+		};
+		port@2 {
+			reg = <2>;
+			mipi_csi2_0_out1: endpoint {
+				io-direction	= "output";
+				channel		= <1>;
+				pixel-mode = <0>;
+			};
+		};
+		port@3 {
+			reg = <3>;
+			mipi_csi2_0_out2: endpoint {
+				io-direction	= "output";
+				channel		= <2>;
+				pixel-mode = <0>;
+			};
+		};
+		port@4 {
+			reg = <4>;
+			mipi_csi2_0_out3: endpoint {
+				io-direction	= "output";
+				channel		= <3>;
+				pixel-mode = <0>;
+			};
+		};
+	};
+};
+
+&isp0 {
+	status = "okay";
+	mem_share = <1>;
+	/*
+	 * 0: RGGB
+	 * 1: RCCB (ISP0 only)
+	 * 2: RCCC (ISP0 only)
+	 * 3: RGBIR (ISP0 only)
+	 */
+	cfa = <0>;
+
+	/* buffer for 3DNR */
+	//memory-region	= <&pmap_isp0_3dnr>;
+
+	/*
+	 * Crop output image (X, Y)
+	 * X: The number of left pixel. It will also crop X pixels of right.
+	 * Y: The number of top pixel. It will also crop Y pixels of bottom.
+	 * The default value is (8, 8).
+	 */
+	out_win_crop = <4 8>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			isp0_in: endpoint {
+				remote-endpoint = <&mipi_csi2_0_out0>;
+				io-direction	= "input";
+			};
+		};
+		port@1 {
+			reg = <1>;
+			isp0_out: endpoint {
+				remote-endpoint	= <&videoinput0_in>;
+				io-direction	= "output";
+			};
+		};
+	};
+};
+
+&videoinput0 {
+	status		= "okay";
+	cifport		= <&cifport		5>;
+	/* memory-region
+	 *  - [0]: parking guideline
+	 *  - [1]: deinterlacing by viqe
+	 *  - [2]: preview
+	 *  - [3]: last frame
+	 */
+	memory-region	= <0
+			   0
+			   &pmap_rearcamera
+			   0>;
+	port {
+		videoinput0_in: endpoint {
+			remote-endpoint	= <&isp0_out>;
+			io-direction	= "input";
+			stream-enable	= <1>;	// VIN_CTRL.SE
+			flush-vsync	= <1>;	// VIN_MISC.FVS
+		};
+	};
+};

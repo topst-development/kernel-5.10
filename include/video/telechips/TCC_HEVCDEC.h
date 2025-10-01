@@ -16,6 +16,10 @@
 */
 #define HEVCDEC_GET_VERSION        0x1000
 #define HEVCDEC_CTRL_LOG_STATUS    0x1002 /**< Command to control the log status using the hevc_dec_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
+#define HEVCDEC_SET_FW_ADDRESS      0x1003 /**< Command to set firmware base address of the HEVC D1 decoder. */
+
+
+//#define USE_VPU_DISPLAY_MODE  //! use ring buffer
 
 #define HEVC_MAX_NUM_INSTANCE       4
 
@@ -103,6 +107,11 @@ typedef struct hevc_dec_ctrl_log_status_t {
 		int bDecodeSuccess; /**< Log when decoding is successful (on=1, off=0) */
 	} stLogCondition;
 } hevc_dec_ctrl_log_status_t;
+
+typedef struct hevc_dec_set_fw_addr_t {
+	codec_addr_t m_FWBaseAddr; /**< Address of HEVC D1 firmware. */
+	int iReserved[6];
+} hevc_dec_set_fw_addr_t;
 
 
 

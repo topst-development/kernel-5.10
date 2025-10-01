@@ -15,7 +15,7 @@
  * c : revision
  */
 #define VPU_V3_VERSION_MAJOR 3  // major
-#define VPU_V3_VERSION_MINOR 4  // minor
+#define VPU_V3_VERSION_MINOR 5  // minor
 #define VPU_V3_VERSION_REV 1  // minor
 
 

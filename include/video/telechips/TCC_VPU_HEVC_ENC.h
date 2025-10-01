@@ -9,6 +9,8 @@
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
+#define HEVC_E3_API_VERSION "2.0"
+
 #define VPU_HEVC_ENC_CTRL_LOG_STATUS    0x1002 /**< Command to control the log status using the vpu_hevc_enc_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
 #define VPU_HEVC_ENC_SET_FW_ADDRESS     0x1003 /**< Command to set firmware base address of the VPU 4K D2 decoder. */
 #define VPU_ENC_GET_VERSION             0x3001
@@ -16,7 +18,6 @@
 #if !defined(RETCODE_INSUFFICIENT_WORKBUF)
 #define RETCODE_INSUFFICIENT_WORKBUF	32
 #endif
-
 
 // HEVC/H.265 Main Profile @ L5.0 High-tier
 #define VPU_HEVC_ENC_PROFILE  1      //!< Main Profile
@@ -65,7 +66,6 @@
 																				 //!< 4K - 3840x2160 @ L5.0 Main Profile : 11.87 Mbytes (0x00BDEC00)
 
 #define VPU_CAL_HEVC_ENC_PROCBUFFER(width, height, frame_count)  (ALIGNED_SIZE_VPU_HEVC_ENC(VPU_HEVC_ENC_STREAM_BUF_SIZE, (1024*1024)) + VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE(width, height, frame_count)) //frame_count = 2;
-
 
 #define VPU_HEVC_ENC_USERDATA_BUF_SIZE		(512*1024)
 
@@ -489,4 +489,4 @@ TCC_VPU_HEVC_ENC_EXT(int Op, codec_handle_t *pHandle, void *pParam1, void *pPara
 
 #endif  //INC_DEVICE_TREE_PMAP
 
-#endif//_TCC_VPU_HEVC_ENC_H_
+#endif//TCC_VPU_HEVC_ENC_H

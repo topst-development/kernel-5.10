@@ -151,6 +151,8 @@ struct tcc_vdec_ctx {
 	u32 input_frame_buf_cnt;
 	u32 output_frame_buf_cnt;
 
+	u32 sequnce_fail_cnt;
+
 	u32 subscriptions;
 
 	struct file *dump_file;

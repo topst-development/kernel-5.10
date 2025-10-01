@@ -258,7 +258,7 @@ EXPORT_SYMBOL(vetc_vm_flags_set);
 unsigned char *vpu_fw_name[VPU_FW_MAX] = {
 	"vpu_c7.bin",
 	"vpu4k_d2.bin",
-	"hevc_d2.bin",
+	"hevc_d1.bin",
 	"hevc_e3.bin",
 	"vpu_d8.bin",
 	"vpu4k_e1.bin"
@@ -267,7 +267,7 @@ unsigned char *vpu_fw_name[VPU_FW_MAX] = {
 enum vfwidx {
 	VPU_C7_FW,         // 00
 	VPU4K_D2_FW,       // 01
-	HEVC_D2_FW,        // 02
+	HEVC_D1_FW,        // 02
 	HEVC_E3_FW,        // 03
 	VPU_D8_FW,         // 04
 	VPU4K_E1_FW,        // 05 ~ 06
@@ -302,8 +302,8 @@ int vetc_prepare_firmware(struct platform_device *pdev, const enum vpu_ip_type i
 
 		case VPU_IP_HEVC_DEC:
 		{
-			V_DBG(VPU_DBG_INFO, "HEVC D2 is not supported yet.");
-			ip_idx = HEVC_D2_FW;
+			V_DBG(VPU_DBG_INFO, "HEVC D1 is not supported yet.");
+			ip_idx = HEVC_D1_FW;
 		}
 		break;
 
@@ -331,7 +331,6 @@ int vetc_prepare_firmware(struct platform_device *pdev, const enum vpu_ip_type i
 
 	if ((ret != 0)
 			|| (ip_idx == JPU_FW) /* The JPU IP operates without firmware. */
-			|| (ip_idx == HEVC_D2_FW) /* HEVC D2 is not supported yet. */
 			) {
 		return ret;
 	}

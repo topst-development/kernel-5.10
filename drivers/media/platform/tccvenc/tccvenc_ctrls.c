@@ -15,7 +15,7 @@ static int tccvenc_s_ctrl(struct v4l2_ctrl *ctrl)
 		tcvenc_step("Set GOP size: %d", ctrl->val);
 		ctx->gop_size = ctrl->val;
 		break;
-/*
+
 	case V4L2_CID_MPEG_VIDEO_H264_PROFILE:
 		tcvenc_step("Set H.264 profile: %d", ctrl->val);
 		ctx->profile = ctrl->val;
@@ -24,7 +24,7 @@ static int tccvenc_s_ctrl(struct v4l2_ctrl *ctrl)
 		tcvenc_step("Set H.264 level: %d", ctrl->val);
 		ctx->level = ctrl->val;
 		break;
-*/
+
 	case V4L2_CID_MPEG_VIDEO_HEVC_PROFILE:
 		tcvenc_info("Set HEVC profile: %d", ctrl->val);
 		if (ctrl->val != V4L2_MPEG_VIDEO_HEVC_PROFILE_MAIN)
@@ -58,8 +58,7 @@ int tccvenc_ctrls_init(struct tcc_venc_ctx *ctx)
 
 	v4l2_ctrl_new_std(&ctx->ctrl_handler, &tccvenc_ctrl_ops,
 		V4L2_CID_MPEG_VIDEO_GOP_SIZE, 1, 300, 1, 30);
-
-		/*
+	
 	v4l2_ctrl_new_std_menu(&ctx->ctrl_handler, &tccvenc_ctrl_ops,
 		V4L2_CID_MPEG_VIDEO_H264_PROFILE,
 		V4L2_MPEG_VIDEO_H264_PROFILE_HIGH,
@@ -71,7 +70,6 @@ int tccvenc_ctrls_init(struct tcc_venc_ctx *ctx)
 		V4L2_MPEG_VIDEO_H264_LEVEL_5_2,
 		0,
 		V4L2_MPEG_VIDEO_H264_LEVEL_4_1);
-		*/
 
 	v4l2_ctrl_new_std_menu(&ctx->ctrl_handler, &tccvenc_ctrl_ops,
 		V4L2_CID_MPEG_VIDEO_HEVC_PROFILE,

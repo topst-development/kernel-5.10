@@ -3,4 +3,5 @@
  * Copyright (C) Telechips Inc.
  */
 
-#include "tcc805x-videoinput-mipi0-ov5647.dtsi"
+//#include "tcc805x-videoinput-mipi0-ov5647.dtsi"
+//#include "tcc805x-videoinput-mipi0-imx219.dtsi"

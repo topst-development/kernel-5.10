@@ -33,5 +33,6 @@ int tccvenc_g_fmt(struct file *file, void *priv,
 int tccvenc_s_parm(struct file *file, void *fh,
                   struct v4l2_streamparm *a);
 
-
+int tccvenc_g_parm(struct file *file, void *priv,
+			      struct v4l2_streamparm *a);
 #endif

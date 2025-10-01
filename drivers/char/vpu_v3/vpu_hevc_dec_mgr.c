@@ -50,6 +50,9 @@ static const int VPU_HEVC_DEC_NUM_OF_BITSTREAM_BUFFERS = 2;
 //This value is assigned to ip_param of vpu_drv_info_t.
 typedef struct vpu_hevc_dec_papam_t {
 	hevc_dec_ctrl_log_status_t dec_log;
+#if defined(ENABLE_VPU_FW_LOADING)
+	hevc_dec_set_fw_addr_t fw_info;
+#endif
 	hevc_dec_init_t dec_init;
 	hevc_dec_initial_info_t dec_initialInfo;
 	hevc_dec_input_t seq_input;
@@ -562,6 +565,10 @@ static int vmgr_hevc_dec_init(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd_info, vpu_drv_i
 		}
 	}
 
+#if defined(ENABLE_VPU_FW_LOADING)
+	pDecInit->m_uiDecOptFlags |= (1U << 7U);
+#endif
+
 	if ((arg_init_in->enable_ringbuffer_mode == 1U) && ((mgr_ctx->each_ip->buffer_mode & VPU_BS_MODE_RINGBUFFER) != 0)) {
 		vdec_v3_init_out_t *arg_init_out = &arg_init->output;
 		arg_init_out->is_ringbuffer_mode = 1U; //to inform the user that the system is operating in ring buffer mode, it is set to 1U.
@@ -632,6 +639,17 @@ static int vmgr_hevc_dec_init(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd_info, vpu_drv_i
 			ret = tcc_hevc_dec_l(vpu_ap, HEVCDEC_CTRL_LOG_STATUS, NULL, (void *)(&ip_param->dec_log), (void *)NULL);
 		}
 	}
+
+#if defined(ENABLE_VPU_FW_LOADING)
+	if (mgr_ctx->fw_addr != 0) {
+		vetc_memset(&ip_param->fw_info, 0x00, sizeof(hevc_dec_set_fw_addr_t), 0);
+		ip_param->fw_info.m_FWBaseAddr = mgr_ctx->fw_addr;
+
+		dlog_hevcd("[id:%u] HEVCDEC_SET_FW_ADDRESS addr 0x%x", drv_id, mgr_ctx->fw_addr);
+		ret = tcc_hevc_dec_l(vpu_ap, HEVCDEC_SET_FW_ADDRESS,
+				NULL, (void *)(&ip_param->fw_info), (void *)NULL);
+	}
+#endif
 
 	ret = tcc_hevc_dec_l(vpu_ap, VPU_DEC_INIT, (codec_handle_t *)&decHandle, (void *)pDecInit, (void *)NULL);
 	if (ret != RETCODE_SUCCESS) {

@@ -48,8 +48,6 @@ static void tcc_venc_device_run (void *priv);
 static int  tcc_venc_job_ready	(void *priv);
 static void tcc_venc_worker		(struct work_struct *work);
 
-
-
 static struct of_device_id tccvenc_of_match[] = {
 	{ .compatible = "telechips,v4l2_venc" },
 	{}
@@ -125,6 +123,7 @@ static const struct v4l2_ioctl_ops tcc_venc_ioctl_ops = {
 	.vidioc_s_fmt_vid_cap_mplane = tccvenc_s_fmt,
 
 	.vidioc_s_parm				 = tccvenc_s_parm,
+	.vidioc_g_parm				 = tccvenc_g_parm,
 
 	// G_FMT
 	.vidioc_g_fmt_vid_out_mplane = tccvenc_g_fmt,
@@ -257,94 +256,121 @@ static void tcc_venc_get_ycbcr_addr(struct tcc_venc_ctx *ctx,
 	}
 }
 
+
 static void tcc_venc_worker(struct work_struct *work)
 {
-	struct tcc_venc_ctx *ctx = container_of(work, struct tcc_venc_ctx, encode_work);
-	struct vb2_v4l2_buffer *src, *dst;
-	struct vb2_buffer *src_vb, *dst_vb;
+    struct tcc_venc_ctx *ctx = container_of(work, struct tcc_venc_ctx, encode_work);
+    struct vb2_v4l2_buffer *src = NULL, *dst = NULL;
+    struct vb2_buffer *src_vb, *dst_vb;
+    venc_input_t input = {0};
+    venc_output_t output = {0};
+    venc_seq_header_t seq_header = {0};
+    int ret;
+    void *dst_buf;
+    size_t total_size = 0;
+    size_t dst_buf_size;
 
-	venc_input_t input = {0};
-	venc_output_t output = {0};
-	//venc_seq_header_t seq_header = {0};
-	int ret;
+    src = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
+    dst = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
+    if (!src || !dst) {
+        tcvenc_err("Missing buffer (src=%p, dst=%p)", src, dst);
+        return;
+    }
 
-	src = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
-	dst = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
+    src_vb = &src->vb2_buf;
+    dst_vb = &dst->vb2_buf;
+    
+    dst_buf = vb2_plane_vaddr(dst_vb, 0);
+    dst_buf_size = vb2_plane_size(dst_vb, 0);
+    
+    if (!dst_buf || dst_buf_size < 1024) {
+        tcvenc_err("Invalid destination buffer");
+        goto err_remove_then_done;
+    }
 
-	if (!src || !dst) {
-		tcvenc_err("Missing buffer\n");
-		return;
+    if (ctx->put_header) {
+        ret = venc_put_seqheader(ctx->venc_handle, &seq_header);
+        if (ret < 0) {
+            tcvenc_err("Failed to get sequence header");
+            goto err_remove_then_done;
+        }
+        
+        if (seq_header.seq_header_out_size == 0 || 
+            !seq_header.seq_header_out ||
+            seq_header.seq_header_out_size > dst_buf_size / 2) {
+            tcvenc_err("Invalid sequence header: size=%d, ptr=%p", 
+                      seq_header.seq_header_out_size, seq_header.seq_header_out);
+            goto err_remove_then_done;
+        }
+		tcvenc_dbg("Wrote SEQUENCE HEADER (%d bytes)", seq_header.seq_header_out_size);
+		memcpy(dst_buf, seq_header.seq_header_out, seq_header.seq_header_out_size);
+		total_size = seq_header.seq_header_out_size;
+    }
+
+    tcc_venc_get_ycbcr_addr(ctx, &input, src_vb);
+
+    ret = venc_encode(ctx->venc_handle, &input, &output);
+    if (ret < 0) {
+        tcvenc_err("venc_encode failed: %d", ret);
+        goto err_remove_then_done;
+    }
+
+    if (output.bitstream_out_size == 0 || !output.bitstream_out) {
+        tcvenc_err("Invalid encoder output: size=%d, ptr=%p", 
+                  output.bitstream_out_size, output.bitstream_out);
+        goto empty_frame;
+    }
+    
+    if (total_size + output.bitstream_out_size * 2 > dst_buf_size) {
+        tcvenc_err("Output would exceed buffer: current=%zu, adding=%d, max=%zu",
+                  total_size, output.bitstream_out_size, dst_buf_size);
+        goto err_remove_then_done;
+    }
+
+		
+    if (ctx->put_header) {
+        ctx->put_header = false;
+        memcpy(dst_buf + seq_header.seq_header_out_size,
+			   output.bitstream_out, output.bitstream_out_size);
+		total_size += output.bitstream_out_size;
+
+    } else {
+		memcpy(dst_buf, output.bitstream_out, output.bitstream_out_size);
+		total_size = output.bitstream_out_size;
+		tcvenc_dbg("Wrote BITSTREAM (%zu bytes)", total_size);
 	}
 
-	src_vb = &src->vb2_buf;
-	dst_vb = &dst->vb2_buf;
+    dst_vb->planes[0].bytesused = total_size;
+    dst_vb->timestamp = src_vb->timestamp;
+    vb2_set_plane_payload(dst_vb, 0, total_size);
+    
+    if (output.pic_type == VPU_PICTURE_I || output.pic_type == VPU_PICTURE_IDR) { // I-frame
+        dst->flags &= ~V4L2_BUF_FLAG_KEYFRAME;
+        dst->flags |= V4L2_BUF_FLAG_KEYFRAME;
+    }
 
-	//if (ctx->put_header) {
-	//	ret = venc_put_seqheader(ctx->venc_handle, &seq_header);
-	//	if (ret < 0) {
-	//		tcvenc_err("Failed to put sequence header\n");
-	//		goto error;
-	//	}
-	//	ctx->put_header = false;
-	//	tcvenc_info("Sequence Header size = %d bytes", seq_header.seq_header_out_size);
-	//}
-//
-	tcc_venc_get_ycbcr_addr(ctx, &input, src_vb);
+    v4l2_m2m_dst_buf_remove_by_buf(ctx->fh.m2m_ctx, dst);
+    v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src);
+    v4l2_m2m_buf_done(dst, VB2_BUF_STATE_DONE);
+    v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
+    v4l2_m2m_job_finish(ctx->m2m_dev, ctx->m2m_ctx);
+    return;
 
-	ret = venc_encode(ctx->venc_handle, &input, &output);
-	if (ret < 0) {
-		tcvenc_err("venc_encode failed");
-		goto error;
-	}
+empty_frame:
+    tcvenc_dbg("Empty frame, skipping");
+    v4l2_m2m_dst_buf_remove_by_buf(ctx->fh.m2m_ctx, dst);
+    v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src);
+    v4l2_m2m_buf_done(dst, VB2_BUF_STATE_ERROR);
+    v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
+    v4l2_m2m_job_finish(ctx->m2m_dev, ctx->m2m_ctx);
+    return;
 
-	if (output.bitstream_out_size == 0) {
-		tcvenc_err("No encoded output. Possibly delayed or failed frame.");
-		v4l2_m2m_buf_done(dst, VB2_BUF_STATE_ERROR);
-		v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
-		goto finish;
-	}
-
-	{
-		void *dst_buf;
-		size_t total_size = 0;
-
-		dst_buf = vb2_plane_vaddr(dst_vb, 0);
-		if (!dst_buf) {
-			tcvenc_err("Failed to get destination plane vaddr");
-			goto error;
-		}
-
-		//if (ctx->put_header) {
-		//	memcpy(dst_buf, seq_header.seq_header_out, seq_header.seq_header_out_size);
-		//	memcpy(dst_buf + seq_header.seq_header_out_size,
-		//	       output.bitstream_out, output.bitstream_out_size);
-		//	total_size = seq_header.seq_header_out_size + output.bitstream_out_size;
-		//	tcvenc_info("Wrote SEQ+BITSTREAM (%zu bytes)", total_size);
-		//	ctx->put_header = false;
-		//} else 
-		{
-			memcpy(dst_buf, output.bitstream_out, output.bitstream_out_size);
-			total_size = output.bitstream_out_size;
-			tcvenc_dbg("Wrote BITSTREAM (%zu bytes)", total_size);
-		}
-
-		dst_vb->planes[0].bytesused = total_size;
-		dst_vb->timestamp = src_vb->timestamp;
-		vb2_set_plane_payload(dst_vb, 0, dst_vb->planes[0].bytesused);	
-	}
-
-	v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src);
-	v4l2_m2m_buf_done(dst, VB2_BUF_STATE_DONE);
-	v4l2_m2m_dst_buf_remove_by_buf(ctx->fh.m2m_ctx, dst);
-	v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
-finish:
-	v4l2_m2m_job_finish(ctx->m2m_dev, ctx->m2m_ctx);
-	return;
-
-error:
-	v4l2_m2m_buf_done(dst, VB2_BUF_STATE_ERROR);
-	v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
-	v4l2_m2m_job_finish(ctx->m2m_dev, ctx->m2m_ctx);
+err_remove_then_done:
+    if (dst) v4l2_m2m_dst_buf_remove_by_buf(ctx->fh.m2m_ctx, dst);
+    if (src) v4l2_m2m_src_buf_remove_by_buf(ctx->fh.m2m_ctx, src);
+    if (dst) v4l2_m2m_buf_done(dst, VB2_BUF_STATE_ERROR);
+    if (src) v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
+    v4l2_m2m_job_finish(ctx->m2m_dev, ctx->m2m_ctx);
 }
 
 const struct v4l2_m2m_ops tccvenc_m2m_ops = {
@@ -381,7 +407,7 @@ static int tcc_venc_probe(struct platform_device *pdev)
 		goto exit_destroy_tcc_dev;
 	}
 
-	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
+	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
 	if (ret) {
 		goto exit_destroy_workqueue;
 	}
@@ -510,6 +536,7 @@ static int tcc_venc_open(struct file *file)
 
 	ctx->venc_handle = venc_alloc_instance();
 	ctx->put_header  = true; 
+	ctx->initialied_enc = false;
 
 	return 0;
 

@@ -9,7 +9,7 @@
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
-#define VPU_API_VERSION "5.4"
+#define VPU_API_VERSION "6.0"
 
 /**
  @brief Specific operation codes

@@ -16,6 +16,7 @@ obj-$(CONFIG_VIDEO_TCC_AR0231)		+= tcc-ar0231.o
 obj-$(CONFIG_VIDEO_TCC_AR0144)		+= tcc-ar0144.o
 obj-$(CONFIG_VIDEO_TCC_AR0239)		+= tcc-ar0239.o
 obj-$(CONFIG_VIDEO_TCC_OV5647)		+= ov5647.o
+obj-$(CONFIG_VIDEO_TCC_IMX219)		+= imx219.o
 # External ISP(in camera module)
 obj-$(CONFIG_VIDEO_TCC_CXD5700)		+= tcc-cxd5700.o
 # deserializer
