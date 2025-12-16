@@ -43,6 +43,11 @@
 #define to_atu_inb_reg(index, offset) \
 	(u32)(PCIE_GET_ATU_INB_UNR_REG_OFFSET((index)) + (u32)(offset))
 
+/* BAR-match mode for Inbound iATU */
+#ifndef PCIE_ATU_BAR_NUM
+#define PCIE_ATU_BAR_NUM(bar)   (((u32)(bar) & 0x7U) << 8)
+#endif
+
 /*
  * PCIe controller wrapper DBI configuration registers
  */
@@ -2199,6 +2204,72 @@ static s32 tcc_pcie_prepare_ep(struct tcc_pcie *tp, struct platform_device *pdev
 	return err;
 }
 
+static void tcc_pcie_prog_inbound_atu_bar(struct dw_pcie *pci, u8 func_no,
+					  u32 index, u32 bar_num,
+					  u64 target_addr)
+{
+	u32 offset, val, retries;
+
+	if (!pci)
+		return;
+
+	if (pci->iatu_unroll_enabled) {
+		offset = PCIE_GET_ATU_INB_UNR_REG_OFFSET(index);
+
+		/* target = EP local phys */
+		tcc_pcie_writel_atu(pci, offset + PCIE_ATU_UNR_LOWER_TARGET,
+				    lower_32_bits(target_addr));
+		tcc_pcie_writel_atu(pci, offset + PCIE_ATU_UNR_UPPER_TARGET,
+				    upper_32_bits(target_addr));
+
+		tcc_pcie_writel_atu(pci, offset + PCIE_ATU_UNR_REGION_CTRL1,
+				    PCIE_ATU_TYPE_MEM | PCIE_ATU_FUNC_NUM(func_no));
+
+		tcc_pcie_writel_atu(pci, offset + PCIE_ATU_UNR_REGION_CTRL2,
+				    PCIE_ATU_ENABLE | PCIE_ATU_BAR_MODE_ENABLE |
+				    PCIE_ATU_BAR_NUM(bar_num));
+
+		for (retries = 0; retries < (u32)LINK_WAIT_MAX_IATU_RETRIES; retries++) {
+			val = tcc_pcie_readl_atu(pci, offset + PCIE_ATU_UNR_REGION_CTRL2);
+			if (val & PCIE_ATU_ENABLE) {
+				dev_info(pci->dev, "Inbound iATU[%u] BAR%u -> 0x%llx enabled\n",
+					 index, bar_num, target_addr);
+				return;
+			}
+			mdelay(LINK_WAIT_IATU);
+		}
+		dev_err(pci->dev, "Inbound(BAR) iATU enable failed idx=%u bar=%u\n",
+			index, bar_num);
+	} else {
+		/* non-unroll path */
+		dw_pcie_writel_dbi(pci, PCIE_ATU_VIEWPORT,
+				   PCIE_ATU_REGION_INBOUND | index);
+
+		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_TARGET,
+				   lower_32_bits(target_addr));
+		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_TARGET,
+				   upper_32_bits(target_addr));
+
+		dw_pcie_writel_dbi(pci, PCIE_ATU_CR1,
+				   PCIE_ATU_TYPE_MEM | PCIE_ATU_FUNC_NUM((u32)func_no));
+		dw_pcie_writel_dbi(pci, PCIE_ATU_CR2,
+				   (u32)PCIE_ATU_ENABLE | PCIE_ATU_BAR_MODE_ENABLE |
+				   PCIE_ATU_BAR_NUM(bar_num));
+
+		for (retries = 0; retries < (u32)LINK_WAIT_MAX_IATU_RETRIES; retries++) {
+			val = dw_pcie_readl_dbi(pci, PCIE_ATU_CR2);
+			if (val & (u32)PCIE_ATU_ENABLE) {
+				dev_info(pci->dev, "Inbound iATU[%u] BAR%u -> 0x%llx enabled\n",
+					 index, bar_num, target_addr);
+				return;
+			}
+			mdelay(LINK_WAIT_IATU);
+		}
+		dev_err(pci->dev, "Inbound(BAR) iATU enable failed idx=%u bar=%u\n",
+			index, bar_num);
+	}
+}
+
 static s32 tcc_pcie_add_pcie_ep(struct tcc_pcie *tp, struct platform_device *pdev)
 {
 	s32 err = 0;
@@ -2223,6 +2294,14 @@ static s32 tcc_pcie_add_pcie_ep(struct tcc_pcie *tp, struct platform_device *pde
 		if (err == 0) {
 			pci->dbi_base2 = pci->dbi_base + PCIE_DBI2_OFFSET;
 			err = dw_pcie_ep_init(ep);
+		}
+
+		if (err == 0) {
+			/* Program Inbound iATU (BAR match) */
+			tcc_pcie_prog_inbound_atu_bar(pci, 0, 0, 0,
+				0x500010000ULL); /* ib0 -> BAR0 (4KB) */
+			tcc_pcie_prog_inbound_atu_bar(pci, 0, 1, 1,
+				0x500020000ULL); /* ib1 -> BAR1 (64KB) */
 		}
 
 		if (err == 0) {
