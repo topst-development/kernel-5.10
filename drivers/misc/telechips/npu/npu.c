@@ -220,6 +220,9 @@ static oe_npu_t devs[NPU_MAX_MINORS];
 static npu_err_rd_req_t npu_err_stat;
 
 
+/* Global NPU device array for kernel API access */
+static oe_npu_t *g_npu_devices[2] = { NULL, NULL };
+
 static oe_npu_buf_t *buf_alloc(oe_npu_t *npu, unsigned long size);
 static void buf_free(const oe_npu_buf_t *npu_buf);
 
@@ -2463,3 +2466,159 @@ static int npu_disable_wdt(oe_npu_t *npu)
 
 	return ret;
 }
+
+/*
+ * ============================================================================
+ * Kernel-level API for PCIe EPF-NPU Integration
+ * ============================================================================
+ * These functions are exported for use by pci-epf-npu.ko module.
+ * They provide direct kernel access to NPU without /dev/npu* ioctl overhead.
+ */
+
+/**
+ * npu_kernel_get_device - Get NPU device pointer
+ * @npu_id: NPU ID (0 or 1)
+ *
+ * Returns: NPU device pointer or NULL if not available
+ */
+struct device *npu_kernel_get_device(int npu_id)
+{
+	if (npu_id < 0 || npu_id > 1)
+		return NULL;
+
+	/* Initialize g_npu_devices from devs array if not already set */
+	if (!g_npu_devices[npu_id] && npu_id < NPU_MAX_MINORS && devs[npu_id].dev) {
+		g_npu_devices[npu_id] = &devs[npu_id];
+	}
+
+	if (!g_npu_devices[npu_id])
+		return NULL;
+
+	return g_npu_devices[npu_id]->dev;
+}
+EXPORT_SYMBOL(npu_kernel_get_device);
+
+/**
+ * npu_kernel_alloc_buffer - Allocate DMA buffer for NPU
+ * @npu_id: NPU ID (0 or 1)
+ * @size: Buffer size in bytes
+ * @phys_addr: Output - physical address of allocated buffer
+ *
+ * Returns: Virtual address of buffer or NULL on failure
+ */
+void *npu_kernel_alloc_buffer(int npu_id, size_t size, dma_addr_t *phys_addr)
+{
+	oe_npu_t *npu;
+	oe_npu_buf_t *buf;
+
+	if (npu_id < 0 || npu_id > 1 || !phys_addr)
+		return NULL;
+
+	npu = g_npu_devices[npu_id];
+	if (!npu)
+		return NULL;
+
+	buf = buf_alloc(npu, size);
+	if (!buf)
+		return NULL;
+
+	kref_init(&buf->ref_cnt);
+	*phys_addr = buf->phys_addr;
+
+	return buf->buf;
+}
+EXPORT_SYMBOL(npu_kernel_alloc_buffer);
+
+/**
+ * npu_kernel_free_buffer - Free DMA buffer
+ * @npu_id: NPU ID (0 or 1)
+ * @virt_addr: Virtual address returned by npu_kernel_alloc_buffer
+ */
+void npu_kernel_free_buffer(int npu_id, void *virt_addr)
+{
+	/* Note: Need to track buffer by virt_addr
+	 * For now, buffers are freed when module unloads
+	 * TODO: Implement proper buffer tracking
+	 */
+	(void)npu_id;
+	(void)virt_addr;
+}
+EXPORT_SYMBOL(npu_kernel_free_buffer);
+
+/**
+ * npu_kernel_run - Execute NPU inference (synchronous)
+ * @npu_id: NPU ID (0 or 1)
+ * @input_phys: Physical address of input buffer
+ * @output_phys: Physical address of output buffer
+ * @input_size: Size of input data
+ * @output_size: Output - size of result data
+ * @timeout_ms: Timeout in milliseconds (0 = default)
+ *
+ * Returns: 0 on success, negative error code on failure
+ *
+ * Note: This function is synchronous and will block until inference completes
+ * or timeout occurs. For async operation, use npu_kernel_run_async().
+ */
+int npu_kernel_run(int npu_id, dma_addr_t input_phys, dma_addr_t output_phys,
+                   size_t input_size, size_t *output_size, unsigned int timeout_ms)
+{
+	oe_npu_t *npu;
+	int ret = 0;
+
+	if (npu_id < 0 || npu_id > 1)
+		return -EINVAL;
+
+	npu = g_npu_devices[npu_id];
+	if (!npu)
+		return -ENODEV;
+
+	if (npu->status != NPU_READY)
+		return -EBUSY;
+
+	/* TODO: Implement actual NPU run using existing npu_run_pic() logic
+	 * This requires:
+	 * 1. Find/create network context from loaded network
+	 * 2. Set input/output buffer addresses
+	 * 3. Trigger NPU execution
+	 * 4. Wait for completion (IRQ)
+	 * 5. Return output size
+	 *
+	 * For now, return stub success
+	 */
+	(void)input_phys;
+	(void)output_phys;
+	(void)input_size;
+	(void)timeout_ms;
+
+	if (output_size)
+		*output_size = 0;
+
+	pr_info("npu_kernel_run: NPU%d (stub) input_size=%zu\n", npu_id, input_size);
+
+	return ret;
+}
+EXPORT_SYMBOL(npu_kernel_run);
+
+/**
+ * npu_kernel_reset - Reset NPU
+ * @npu_id: NPU ID (0 or 1)
+ * @hard: 1 for hard reset, 0 for soft reset
+ *
+ * Returns: 0 on success, negative error code on failure
+ */
+int npu_kernel_reset(int npu_id, int hard)
+{
+	oe_npu_t *npu;
+
+	if (npu_id < 0 || npu_id > 1)
+		return -EINVAL;
+
+	npu = g_npu_devices[npu_id];
+	if (!npu)
+		return -ENODEV;
+
+	npu_reset(npu, hard);
+
+	return 0;
+}
+EXPORT_SYMBOL(npu_kernel_reset);

@@ -163,4 +163,26 @@ struct test_cfg_wr_req {
 //TODO: For next update
 // #define NPU_NET_GET_LASTEST_STATUS      _IOW(NPU_IOCTL_MAGIC,  3, net_current_state_req_t)
 
+
+/*
+ * Kernel-level API for PCIe EPF-NPU Integration
+ * These functions are exported for use by other kernel modules
+ */
+#ifdef __KERNEL__
+#include <linux/dma-mapping.h>
+
+/* Get NPU device pointer for DMA operations */
+struct device *npu_kernel_get_device(int npu_id);
+
+/* Allocate/free DMA buffer */
+void *npu_kernel_alloc_buffer(int npu_id, size_t size, dma_addr_t *phys_addr);
+void npu_kernel_free_buffer(int npu_id, void *virt_addr);
+
+/* Run NPU inference (synchronous) */
+int npu_kernel_run(int npu_id, dma_addr_t input_phys, dma_addr_t output_phys,
+                   size_t input_size, size_t *output_size, unsigned int timeout_ms);
+
+/* Reset NPU */
+int npu_kernel_reset(int npu_id, int hard);
+#endif /* __KERNEL__ */
 #endif //TELECHIPS_NPU_H
