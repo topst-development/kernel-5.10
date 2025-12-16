@@ -1011,14 +1011,13 @@ static void tcc_pcie_write_dbi(struct dw_pcie *pci, void __iomem *base,
 				write_val &= mask;
 			}
 
-			if ((reg == to_atu_outb_reg(0, PCIE_ATU_UNR_UPPER_BASE)) ||
-					(reg == to_atu_outb_reg(1, PCIE_ATU_UNR_UPPER_BASE)) ||
-					(reg == to_atu_outb_reg(2, PCIE_ATU_UNR_UPPER_BASE)) ||
-					(reg == to_atu_inb_reg(0, PCIE_ATU_UNR_UPPER_BASE)) ||
-					(reg == to_atu_inb_reg(1, PCIE_ATU_UNR_UPPER_BASE)) ||
-					(reg == to_atu_inb_reg(2, PCIE_ATU_UNR_UPPER_BASE))) {
-				write_val = 0x0U;
-			}
+			/*
+			 * REMOVED: Forcing UPPER_BASE to 0 breaks >4GB addresses
+			 * (e.g., addr_space at 0x500000000). Keep UPPER registers as-is.
+			 *
+			 * if ((reg == to_atu_outb_reg(0, PCIE_ATU_UNR_UPPER_BASE)) || ...
+			 *     write_val = 0x0U;
+			 */
 		} else {
 			mask = 0x00FFFFFFU;
 			if ((reg == (u32)PCIE_ATU_LOWER_BASE) ||
