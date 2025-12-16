@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Copyright (C) 2024 TOPST AI Development Team
+ *
+ * PCIe Endpoint mode override for TCC7500-LPD4X321 (AI-G board)
+ *
+ * This file disables PCIe RC mode and enables PCIe EP mode.
+ * Include this file instead of tcc7500-lpd4x321-pcie.dtsi for EP operation.
+ */
+
+&pcie_phy {
+	status = "okay";
+};
+
+/* Disable PCIe Root Complex mode */
+&pcie {
+	status = "disabled";
+};
+
+/* Enable PCIe Endpoint mode */
+&pcie_epc {
+	pinctrl-names = "default", "idle", "sleep";
+	pinctrl-0 = <&pcie_rst>;
+	pinctrl-1 = <&pcie_rst_idle>;
+	pinctrl-2 = <&pcie_rst_idle>;
+	refclk_type = <0>;  /* Internal clock - AI-G HW outputs REFCLK */
+	status = "okay";
+};
+
+&pinctrl {
+	pcie_rst: pcie_rst {
+		telechips,pins = "gpg-8";
+		telechips,pin-function = <0>;
+		telechips,output-high;
+	};
+
+	pcie_rst_idle: pcie_rst_idle {
+		telechips,pins = "gpg-8";
+		telechips,pin-function = <0>;
+		telechips,output-low;
+	};
+};

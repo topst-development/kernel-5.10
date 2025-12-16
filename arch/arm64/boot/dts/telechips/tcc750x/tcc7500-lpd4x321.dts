@@ -24,7 +24,7 @@
 #include "override/tcc7500-lpd4x321-i2c.dtsi"
 #include "override/tcc7500-lpd4x321-spi.dtsi"
 #include "override/tcc7500-lpd4x321-gmac.dtsi"
-#include "override/tcc7500-lpd4x321-pcie.dtsi"
+#include "override/tcc7500-lpd4x321-pcie-ep.dtsi"
 #include "override/tcc7500-linux-display.dtsi"
 #include "override/tcc7500-lpd4x321-camera.dtsi"
 #include "override/tcc7500-lpd4x321-npu.dtsi"
