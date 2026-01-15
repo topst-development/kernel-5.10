@@ -437,15 +437,17 @@ static const char * const imx219_supply_name[] = {
  * - h&v flips
  */
 static const u32 codes[] = {
-	MEDIA_BUS_FMT_SRGGB10_1X10,
-	MEDIA_BUS_FMT_SGRBG10_1X10,
-	MEDIA_BUS_FMT_SGBRG10_1X10,
+	/* 10-bit: no-flip, hflip, vflip, hvflip (base = SBGGR) */
 	MEDIA_BUS_FMT_SBGGR10_1X10,
+	MEDIA_BUS_FMT_SGBRG10_1X10,
+	MEDIA_BUS_FMT_SGRBG10_1X10,
+	MEDIA_BUS_FMT_SRGGB10_1X10,
 
-	MEDIA_BUS_FMT_SRGGB8_1X8,
-	MEDIA_BUS_FMT_SGRBG8_1X8,
-	MEDIA_BUS_FMT_SGBRG8_1X8,
+	/* 8-bit: no-flip, hflip, vflip, hvflip (base = SBGGR) */
 	MEDIA_BUS_FMT_SBGGR8_1X8,
+	MEDIA_BUS_FMT_SGBRG8_1X8,
+	MEDIA_BUS_FMT_SGRBG8_1X8,
+	MEDIA_BUS_FMT_SRGGB8_1X8,
 };
 
 /*
