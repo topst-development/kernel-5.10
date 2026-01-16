@@ -1,19 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright (C) Telechips Inc.
- */
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc.
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_dbg_string.h"
 
-const char* codec_name[] =
-{
+const char *codec_name[] = {
 	"none",  // 0
 	CODEC_NAME_AVC,
 	CODEC_NAME_VC1,
 	CODEC_NAME_MPEG2,
 	CODEC_NAME_MPEG4,
 	CODEC_NAME_H263,
-	CODEC_NAME_DIVX,
 	CODEC_NAME_AVS,
 	CODEC_NAME_MJPEG,
 	CODEC_NAME_VP8,
@@ -22,18 +21,16 @@ const char* codec_name[] =
 	CODEC_NAME_VP9,
 };
 
-const char* op_type_name_invalid = "OP_TYPE_INVALID";
+const char *op_type_name_invalid = "OP_TYPE_INVALID";
 
 //enum vpu_op_type in vpu_internal_type.h
-const char* op_type_name[VPU_OP_TYPE_MAX] =
-{
+const char *op_type_name[VPU_OP_TYPE_MAX] = {
 	"OP_TYPE_DEC",
 	"OP_TYPE_ENC"
 };
 
 //enum vpu_ip_type in vpu_internal_type.h
-const char* vmgr_name[VPU_IP_MAX] =
-{
+const char *vmgr_name[VPU_IP_MAX] = {
 	"VPU_IP_UNKNOWN",
 	"VPU_IP_C7",
 	"VPU_IP_4KD2",
@@ -43,14 +40,13 @@ const char* vmgr_name[VPU_IP_MAX] =
 	"VPU_IP_HEVC_DEC"
 };
 
-const char* invalid_ip_type_name = "INVALID_IP_TYPE";
+const char *invalid_ip_type_name = "INVALID_IP_TYPE";
 
 //for debugging
-const char* vpu_cmd_name_invalid = "VPU_INVALID_COMMAND";
+const char *vpu_cmd_name_invalid = "VPU_INVALID_COMMAND";
 
 //enum vpu_cmd_type in vpu_internal_type.h
-const char* vpu_cmd_name[] =
-{
+const char *vpu_cmd_name[] = {
 	"VPU_CMD_DEC_INIT",
 	"VPU_CMD_DEC_SEQ_HEADER",
 	"VPU_CMD_DEC_GET_INFO",
@@ -73,8 +69,7 @@ const char* vpu_cmd_name[] =
 };
 
 // RETCODE from TCCxxxx_VPU_CODEC_COMMON.h
-const char* vpu_error_name[] =
-{
+const char *vpu_error_name[] = {
 	"RETCODE_SUCCESS", //0
 	"RETCODE_FAILURE",
 	"RETCODE_INVALID_HANDLE",
@@ -105,11 +100,10 @@ const char* vpu_error_name[] =
 	"RETCODE_REPORT_NOT_READY",
 };
 
-const char* vpu_error_invalid = "INVALID ERROR_CODE";
+const char *vpu_error_invalid = "INVALID ERROR_CODE";
 
 //enum vpu_pmap_type in tcc_vpu_v3_common.h
-const char* pmap_type_name[] =
-{
+const char *pmap_type_name[] = {
 	"VPU_PMAP_DEC",
 	"VPU_PMAP_DEC_EXT",
 	"VPU_PMAP_DEC_EXT2",
@@ -133,11 +127,10 @@ const char* pmap_type_name[] =
 	"VPU_PMAP_ENC_EXT15",
 };
 
-const char* invalid_pmap_type_name = "INVALID_PMAP_TYPE";
+const char *invalid_pmap_type_name = "INVALID_PMAP_TYPE";
 
 //VPU_RETURN in tcc_vpu_v3_common.h
-const char* return_type_name[] =
-{
+const char *return_type_name[] = {
 	"VPU_RETCODE_SUCCESS",
 	"VPU_RETCODE_FAILURE",
 	"VPU_RETCODE_INSUFFICIENT_MEMORY",
@@ -153,112 +146,93 @@ const char* return_type_name[] =
 	"VPU_RETCODE_INFO_INSUFFICIENT_DATA"
 };
 
-const char* invalid_return_name = "INVALID_RETURN_TYPE";
+const char *invalid_return_name = "INVALID_RETURN_TYPE";
 
 
-const char* vmgr_error_name(const int err_code)
+const char *vmgr_error_name(const int err_code)
 {
-	const char* ret_name = NULL;
+	const char *ret_name = NULL;
 
-	if(err_code >= 0 && err_code <= RETCODE_REPORT_NOT_READY)
-	{
+	if (err_code >= 0 && err_code <= RETCODE_REPORT_NOT_READY) {
 		ret_name = vpu_error_name[err_code];
-	}
-	else
-	{
+	} else {
 		ret_name = vpu_error_invalid;
 	}
 
 	return ret_name;
 }
 
-const char* vmgr_cmd_name(const enum vpu_cmd_type cmd)
+const char *vmgr_cmd_name(const enum vpu_cmd_type cmd)
 {
-	const char* ret_name = NULL;
+	const char *ret_name = NULL;
 
-	if(cmd >= VPU_CMD_DEC_INIT && cmd < VPU_CMD_TYPE_MAX)
-	{
+	if (cmd >= VPU_CMD_DEC_INIT && cmd < VPU_CMD_TYPE_MAX) {
 		ret_name = vpu_cmd_name[cmd];
-	}
-	else
-	{
+	} else {
 		ret_name = vpu_cmd_name_invalid;
 	}
 
 	return ret_name;
 }
 
-const char* vmgr_get_codec_name(const enum vpu_codec_id codec_id)
+const char *vmgr_get_codec_name(const enum vpu_codec_id codec_id)
 {
-	const char* cname = NULL;
+	const char *cname = NULL;
 	int nb_array = sizeof(codec_name) / sizeof(codec_name[0]);
 
-	if((codec_id >= 0) && (codec_id < nb_array))
-	{
+	if ((codec_id >= 0) && (codec_id < nb_array)) {
 		cname = codec_name[codec_id];
 	}
 
 	return cname;
 }
 
-const char* vmgr_get_optype_name(const enum vpu_op_type op_type)
+const char *vmgr_get_optype_name(const enum vpu_op_type op_type)
 {
-	const char* opname = NULL;
+	const char *opname = NULL;
 
-	if(op_type >= 0 && op_type < VPU_OP_TYPE_MAX)
-	{
+	if (op_type >= 0 && op_type < VPU_OP_TYPE_MAX) {
 		opname = op_type_name[op_type];
-	}
-	else
-	{
+	} else {
 		opname = op_type_name_invalid;
 	}
 
 	return opname;
 }
 
-const char* vmgr_get_ip_name(const enum vpu_ip_type ip_type)
+const char *vmgr_get_ip_name(const enum vpu_ip_type ip_type)
 {
-	const char* ret_name = NULL;
+	const char *ret_name = NULL;
 
-	if((ip_type >= VPU_IP_UNKNOWN) && (ip_type < VPU_IP_MAX))
-	{
+	if ((ip_type >= VPU_IP_UNKNOWN) && (ip_type < VPU_IP_MAX)) {
 		ret_name  = vmgr_name[ip_type];
-	}
-	else
-	{
+	} else {
 		ret_name = invalid_ip_type_name;
 	}
 
 	return ret_name;
 }
 
-const char* vmgr_get_pmap_name(const int pmap_type)
+const char *vmgr_get_pmap_name(const int pmap_type)
 {
-	const char* ret_name = NULL;
+	const char *ret_name = NULL;
 
-	if((pmap_type >= VPU_PMAP_DEC) && (pmap_type < VPU_PMAP_MAX))
-	{
+	if ((pmap_type >= VPU_PMAP_DEC) && (pmap_type < VPU_PMAP_MAX)) {
 		ret_name  = pmap_type_name[pmap_type];
-	}
-	else
-	{
+	} else {
 		ret_name = invalid_pmap_type_name;
 	}
 
 	return ret_name;
 }
 
-const char* vmgr_get_return_name(int ret_value)
+const char *vmgr_get_return_name(int ret_value)
 {
-	const char* ret_name = NULL;
+	const char *ret_name = NULL;
 
-	if((ret_value >= VPU_RETCODE_SUCCESS) && (ret_value < VPU_RETCODE_MAX))
-	{
+	if ((ret_value >= VPU_RETCODE_SUCCESS) && (ret_value < VPU_RETCODE_MAX)) {
 		ret_name  = return_type_name[ret_value];
-	}
-	else
-	{
+	} else {
 		ret_name = invalid_return_name;
 	}
 

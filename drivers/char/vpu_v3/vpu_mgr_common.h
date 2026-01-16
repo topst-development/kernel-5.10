@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef VPU_MGR_COMMON_H
 #define VPU_MGR_COMMON_H

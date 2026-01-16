@@ -4,8 +4,21 @@
  * Contact: shkim@telechips.com
  */
 
-#ifndef TCC_HEVC_DEC__H
-#define TCC_HEVC_DEC__H
+/**
+ * @file TCC_HEVC_D1.h
+ * @brief This header provides the necessary declarations for HEVC Decoder.
+ *
+ * @deprecated This header file replaces the old TCC_HEVCDEC.h.
+ * All future development should use TCC_HEVC_D1.h.
+ * The TCC_HEVCDEC.h file is scheduled for removal in future updates.
+ *
+ * Please update your code to include this file instead of TCC_HEVCDEC.h.
+ *
+ * @note Identical content as TCC_HEVCDEC.h to maintain backward compatibility during the transition period.
+ */
+
+#ifndef TCC_HEVC_D1__H
+#define TCC_HEVC_D1__H
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
@@ -16,10 +29,6 @@
 */
 #define HEVCDEC_GET_VERSION        0x1000
 #define HEVCDEC_CTRL_LOG_STATUS    0x1002 /**< Command to control the log status using the hevc_dec_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
-#define HEVCDEC_SET_FW_ADDRESS      0x1003 /**< Command to set firmware base address of the HEVC D1 decoder. */
-
-
-//#define USE_VPU_DISPLAY_MODE  //! use ring buffer
 
 #define HEVC_MAX_NUM_INSTANCE       4
 
@@ -58,7 +67,6 @@
 #define VPU_WAVE4_HEVC_MIN_BUF_START_ADDR_ALIGN	(4*1024)	//VPU_MIM_BUF_SIZE_ALIGN
 #define VPU_WAVE4_HEVC_MIN_BUF_SIZE_ALIGN	(4*1024)	//VPU_MIM_BUF_START_ADD_ALIGN
 
-#ifndef INC_DEVICE_TREE_PMAP
 /**
  * @struct hevc_dec_ctrl_log_status_t
  * @brief Structure for controlling logging status within the VPU decoder library.
@@ -108,12 +116,8 @@ typedef struct hevc_dec_ctrl_log_status_t {
 	} stLogCondition;
 } hevc_dec_ctrl_log_status_t;
 
-typedef struct hevc_dec_set_fw_addr_t {
-	codec_addr_t m_FWBaseAddr; /**< Address of HEVC D1 firmware. */
-	int iReserved[6];
-} hevc_dec_set_fw_addr_t;
 
-
+#ifndef INC_DEVICE_TREE_PMAP
 
 //------------------------------------------------------------------------------
 // decode struct and definition
@@ -738,4 +742,4 @@ codec_result_t
 TCC_HEVC_DEC_EXT(int Op, codec_handle_t *pHandle, void *pParam1, void *pParam2);
 
 #endif
-#endif//TCC_HEVC_DEC__H
+#endif//TCC_HEVC_D1__H

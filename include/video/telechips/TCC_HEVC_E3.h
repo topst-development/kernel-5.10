@@ -4,8 +4,8 @@
  * Contact: shkim@telechips.com
  */
 
-#ifndef TCC_VPU_HEVC_ENC_H
-#define TCC_VPU_HEVC_ENC_H
+#ifndef TCC_HEVC_E3__H
+#define TCC_HEVC_E3__H
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
@@ -20,17 +20,17 @@
 #endif
 
 // HEVC/H.265 Main Profile @ L5.0 High-tier
-#define VPU_HEVC_ENC_PROFILE  1      //!< Main Profile
-#define VPU_HEVC_ENC_MAX_LEVEL 50 //!< level 5.0
+#define VPU_HEVC_ENC_PROFILE            1  //!< Main Profile
+#define VPU_HEVC_ENC_MAX_LEVEL          50 //!< level 5.0
 
 
-#define VPU_HEVC_ENC_MAX_WIDTH   3840  //!< Max resolution: widthxheight = 3840x2160
-#define VPU_HEVC_ENC_MAX_HEIGHT  2160
+#define VPU_HEVC_ENC_MAX_WIDTH          3840  //!< Max resolution: widthxheight = 3840x2160
+#define VPU_HEVC_ENC_MAX_HEIGHT         2160
 
-#define VPU_HEVC_ENC_MIM_WIDTH   256  //!<Min resolution: widthxheight = 256x128
-#define VPU_HEVC_ENC_MIM_HEIGHT  128
+#define VPU_HEVC_ENC_MIM_WIDTH          256  //!<Min resolution: widthxheight = 256x128
+#define VPU_HEVC_ENC_MIM_HEIGHT         128
 
-#define VPU_HEVC_ENC_MAX_NUM_INSTANCE	8
+#define VPU_HEVC_ENC_MAX_NUM_INSTANCE   8
 
 // VPU_HEVC_ENC Memory map
 // Total Size = (1) + (2) + (3)
@@ -38,15 +38,15 @@
 // (2) VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE
 // (3) VPU_HEVC_ENC_STREAM_BUF_SIZE
 
-#define VPU_HEVC_ENC_MAX_CODE_BUF_SIZE		(1024*1024)
-#define VPU_HEVC_ENC_TEMPBUF_SIZE		(2*1024*1024)
-#define VPU_HEVC_ENC_SEC_AXI_BUF_SIZE		(256*1024)
-#define VPU_HEVC_ENC_STACK_SIZE			(8*1024)
-#define VPU_HEVC_ENC_WORKBUF_SIZE		(3*1024*1024)
-#define VPU_HEVC_ENC_HEADER_BUF_SIZE		(16*1024)
+#define VPU_HEVC_ENC_MAX_CODE_BUF_SIZE  (1024*1024)
+#define VPU_HEVC_ENC_TEMPBUF_SIZE       (2*1024*1024)
+#define VPU_HEVC_ENC_SEC_AXI_BUF_SIZE   (256*1024)
+#define VPU_HEVC_ENC_STACK_SIZE         (8*1024)
+#define VPU_HEVC_ENC_WORKBUF_SIZE       (3*1024*1024)
+#define VPU_HEVC_ENC_HEADER_BUF_SIZE    (16*1024)
 
-#define VPU_HEVC_ENC_SIZE_BIT_WORK			(VPU_HEVC_ENC_MAX_CODE_BUF_SIZE + VPU_HEVC_ENC_TEMPBUF_SIZE + VPU_HEVC_ENC_SEC_AXI_BUF_SIZE + VPU_HEVC_ENC_STACK_SIZE)
-#define VPU_HEVC_ENC_WORK_CODE_BUF_SIZE	(VPU_HEVC_ENC_SIZE_BIT_WORK + ((VPU_HEVC_ENC_WORKBUF_SIZE+VPU_HEVC_ENC_HEADER_BUF_SIZE)*VPU_HEVC_ENC_MAX_NUM_INSTANCE))
+#define VPU_HEVC_ENC_SIZE_BIT_WORK      (VPU_HEVC_ENC_MAX_CODE_BUF_SIZE + VPU_HEVC_ENC_TEMPBUF_SIZE + VPU_HEVC_ENC_SEC_AXI_BUF_SIZE + VPU_HEVC_ENC_STACK_SIZE)
+#define VPU_HEVC_ENC_WORK_CODE_BUF_SIZE (VPU_HEVC_ENC_SIZE_BIT_WORK + ((VPU_HEVC_ENC_WORKBUF_SIZE + VPU_HEVC_ENC_HEADER_BUF_SIZE) * VPU_HEVC_ENC_MAX_NUM_INSTANCE))
 
 
 // Calculation formula = FrameCount * Align1M( ( Align256(width) * Align64(height) * 69 / 32 + 20*1024 ) )
@@ -56,18 +56,19 @@
 // example) 3840x2160:36MB  2560x1920:22MB  2560x1440:16MB  1920x1088:10MB  1920x720:8MB  1280x720:6MB  1024x768:4MB
 
 #if !defined(ALIGNED_SIZE_VPU_HEVC_ENC)
-#define ALIGNED_SIZE_VPU_HEVC_ENC(buffer_size, align) (((unsigned int)(buffer_size) + ((align)-1)) & ~((align)-1))
+#define ALIGNED_SIZE_VPU_HEVC_ENC( buffer_size, align) ( ( (unsigned int)(buffer_size) + ((align)-1) ) & ~((align)-1) )
 #endif
-#define VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) ALIGNED_SIZE_VPU_HEVC_ENC((ALIGNED_SIZE_VPU_HEVC_ENC((width), 256)*ALIGNED_SIZE_VPU_HEVC_ENC((height), 64)*69/32 + (20*1024)), (1024*1024))
-#define VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE(width, height, frame_count)   (VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) * (frame_count))
+#define VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) ALIGNED_SIZE_VPU_HEVC_ENC( (ALIGNED_SIZE_VPU_HEVC_ENC((width), 256)*ALIGNED_SIZE_VPU_HEVC_ENC((height), 64)*69/32 + (20*1024)), (1024*1024))
+#define VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE(width, height, frame_count)   ( VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) * (frame_count) )
 
-#define VPU_HEVC_ENC_STREAM_BUF_SIZE			0x00BDEC00 //!< A maximum bitstream buffer size is the same size of uncompressed frame size.
-																				 //!< HD - 1080p @ L4.1 Main Profile : 2.97 Mbytes  (0x002F8800)
-																				 //!< 4K - 3840x2160 @ L5.0 Main Profile : 11.87 Mbytes (0x00BDEC00)
+#define VPU_HEVC_ENC_STREAM_BUF_SIZE    0x00BDEC00 //!< A maximum bitstream buffer size is the same size of uncompressed frame size.
+                                                   //!< HD - 1080p @ L4.1 Main Profile : 2.97 Mbytes  (0x002F8800)
+                                                   //!< 4K - 3840x2160 @ L5.0 Main Profile : 11.87 Mbytes (0x00BDEC00)
 
 #define VPU_CAL_HEVC_ENC_PROCBUFFER(width, height, frame_count)  (ALIGNED_SIZE_VPU_HEVC_ENC(VPU_HEVC_ENC_STREAM_BUF_SIZE, (1024*1024)) + VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE(width, height, frame_count)) //frame_count = 2;
 
-#define VPU_HEVC_ENC_USERDATA_BUF_SIZE		(512*1024)
+
+#define VPU_HEVC_ENC_USERDATA_BUF_SIZE  (512*1024)
 
 #define VPU_HEVC_ENC_MIN_BUF_START_ADDR_ALIGN	(4*1024)	//VPU_MIM_BUF_SIZE_ALIGN
 #define VPU_HEVC_ENC_MIN_BUF_SIZE_ALIGN		(4*1024)	//VPU_MIM_BUF_START_ADD_ALIGN
@@ -77,7 +78,7 @@
 	#define STD_HEVC_ENC  17
 #endif
 
-#define RETCODE_HEVCENCERR_HW_PRODUCTID		 2000
+#define RETCODE_HEVCENCERR_HW_PRODUCTID 2000
 
 #ifndef INC_DEVICE_TREE_PMAP
 
@@ -257,7 +258,7 @@ typedef struct hevc_enc_init_t {
 	//  [input] num : Number of bytes to copy
 	//  [input] type : option (default 0)
 	//  [output] Returns a pointer to the destination area str.
-	void *(*m_Memcpy) (void *, const void *, unsigned int, unsigned int);
+	void *(*m_Memcpy ) (void *, const void *, unsigned int, unsigned int);
 
 	// Sets the first num bytes of the block of memory pointed by ptr to the specified value
 	//  [input] ptr : Pointer to the block of memory to fill
@@ -265,7 +266,7 @@ typedef struct hevc_enc_init_t {
 	//  [input] num : Number of bytes to be set to the value.
 	//  [input] type : option (default 0)
 	//  [output] none
-	void (*m_Memset) (void *, int, unsigned int, unsigned int);
+	void (*m_Memset ) (void *, int, unsigned int, unsigned int);
 	int (*m_Interrupt) (void);	// hw interrupt (return value is always 0)
 	void (*m_Usleep)(unsigned int, unsigned int);
 
@@ -288,7 +289,7 @@ typedef struct hevc_enc_init_t {
 	// example: *((volatile codec_addr_t *)(vritual_base_video_reg_addr+offset)) = (unsigned int)(data);
 	void (*m_reg_write)(void *, unsigned int, unsigned int);
 
-	void *m_CallbackReserved[4];
+	void *m_CallbackReserved [4];
 
 
 	//////////// Encoding Info ////////////
@@ -435,11 +436,11 @@ typedef struct hevc_enc_header_t {
  * \return
  *		If successful, TCC_VPU_HEVC_ENC returns 0 or plus. Otherwise, it returns a minus value.
  * \example
- *     TCC_VPU_HEVC_ENC( VPU_ENC_INIT                     , codec_handle_t*     , hevc_enc_init_t*      , hevc_enc_initial_info_t*);
- *     TCC_VPU_HEVC_ENC( VPU_ENC_REG_FRAME_BUFFER, codec_handle_t*     , hevc_enc_buffer_t*   , (void*)NULL);
- *     TCC_VPU_HEVC_ENC( VPU_ENC_PUT_HEADER         , codec_handle_t*     , hevc_enc_header_t*  , (void*)NULL);
- *     TCC_VPU_HEVC_ENC( VPU_ENC_ENCODE               , codec_handle_t*     , hevc_enc_input_t*    , hevc_enc_output_t*);
- *     TCC_VPU_HEVC_ENC( VPU_ENC_CLOSE                  , codec_handle_t*     , (void*)NULL            , (void*)NULL);
+ *     TCC_VPU_HEVC_ENC( VPU_ENC_INIT            , codec_handle_t *, hevc_enc_init_t   *, hevc_enc_initial_info_t *);
+ *     TCC_VPU_HEVC_ENC( VPU_ENC_REG_FRAME_BUFFER, codec_handle_t *, hevc_enc_buffer_t *, (void *)NULL);
+ *     TCC_VPU_HEVC_ENC( VPU_ENC_PUT_HEADER      , codec_handle_t *, hevc_enc_header_t *, (void *)NULL);
+ *     TCC_VPU_HEVC_ENC( VPU_ENC_ENCODE          , codec_handle_t *, hevc_enc_input_t  *, hevc_enc_output_t *);
+ *     TCC_VPU_HEVC_ENC( VPU_ENC_CLOSE           , codec_handle_t *, (void *)NULL       , (void *)NULL);
  ********************************************************************************
  */
 codec_result_t
@@ -460,7 +461,7 @@ TCC_VPU_HEVC_ENC(int Op, codec_handle_t *pHandle, void *pParam1, void *pParam2);
  * \return
  *		TCC_VPU_HEVC_ENC_ESC returns 0.
  * \example
- *      TCC_VPU_HEVC_ENC_ESC( 1, codec_handle_t*, (void*)NULL, (void*)NULL );
+ *      TCC_VPU_HEVC_ENC_ESC(1, codec_handle_t *, (void *)NULL, (void *)NULL);
  ********************************************************************************
  */
 codec_result_t
@@ -481,7 +482,7 @@ TCC_VPU_HEVC_ENC_ESC(int Op, codec_handle_t *pHandle, void *pParam1, void *pPara
  * \return
  *		TCC_VPU_HEVC_ENC_EXT returns 0.
  * \example
- *      TCC_VPU_HEVC_ENC_EXT( 1, codec_handle_t*, (void*)NULL, (void*)NULL );
+ *      TCC_VPU_HEVC_ENC_EXT(1, codec_handle_t *, (void *)NULL, (void *)NULL);
  ********************************************************************************
  */
 codec_result_t
@@ -489,4 +490,4 @@ TCC_VPU_HEVC_ENC_EXT(int Op, codec_handle_t *pHandle, void *pParam1, void *pPara
 
 #endif  //INC_DEVICE_TREE_PMAP
 
-#endif//TCC_VPU_HEVC_ENC_H
+#endif//TCC_HEVC_E3__H

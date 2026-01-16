@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef VPU_DEC_H
 #define VPU_DEC_H
@@ -10,11 +11,10 @@
 #include "vpu_mgr.h"
 #include "vpu_internal_type.h"
 
-typedef struct vpu_dec_drv_t
-{
-	vpu_drv_shared_t* dec_shared; //decoder shared data
+typedef struct vpu_dec_drv_t {
+	vpu_drv_shared_t *dec_shared; //decoder shared data
 	vpu_drv_poll_t drv_poll_data; //each decoder have this context to process command interrrupt
-	vpu_mgr_t* mgr_ctx;
+	vpu_mgr_t *mgr_ctx;
 	vpu_drv_info_t info;
 
 	//each decoder has a sequentially incremented command_id to check for drops or unusual sequences.
@@ -23,9 +23,10 @@ typedef struct vpu_dec_drv_t
 
 	//after sequence header init, flush, it will set to 1
 	enum vpu_frame_skip_mode auto_frame_skipmode;
-}vpu_dec_drv_t;
+} vpu_dec_drv_t;
 
 int vdec_probe(struct platform_device *pdev);
-int vdec_remove(struct platform_device *pdev);
+VREMOVE_RET_TYPE vdec_remove(struct platform_device *pdev);
+long vdec_poll_2(struct file *filp, int timeout_ms);
 
 #endif /*VPU_DEC_H*/

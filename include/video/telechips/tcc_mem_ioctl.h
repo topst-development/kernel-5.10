@@ -1,7 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ WITH Linux-syscall-note */
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
+
 #ifndef _TCC_MEM_IOCTL_H
 #define _TCC_MEM_IOCTL_H
 

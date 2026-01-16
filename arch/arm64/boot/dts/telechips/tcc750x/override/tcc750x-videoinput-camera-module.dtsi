@@ -4,7 +4,8 @@
  */
 
 //#include "tcc750x-videoinput-odw-mipi0-fhd.dtsi"
+//#include "tcc750x-videoinput-imx219.dtsi"
 //#include "tcc750x-videoinput-tp2855.dtsi"
 //#include "tcc750x-videoinput-ov5645.dtsi"
 //#include "tcc750x-videoinput-arducam.dtsi"
-#include "tcc750x-videoinput-ov5647.dtsi"
+//#include "tcc750x-videoinput-ov5647.dtsi"

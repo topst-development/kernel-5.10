@@ -1,13 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
-/*
- *   include/video/tcc/TCC_VPU_HEVC_ENC_CODEC.h
- *   Author:  <linux@telechips.com>
- *   Created: Apr 29, 2020
- *   Description: header to interface TCC HEVC ENC Lib.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: shkim@telechips.com
+*/
 
 #include "TCC_VPU_HEVC_ENC.h"
 

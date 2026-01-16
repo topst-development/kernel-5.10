@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef VPU_LINUX_KERNEL_H
 #define VPU_LINUX_KERNEL_H
@@ -95,7 +96,7 @@
 #include <video/telechips/tcc_vpu_wbuffer.h>
 #include <video/telechips/tcc_vpu_mem_ioctl.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
 	#define USE_ACCESS_POINT
 #endif
 

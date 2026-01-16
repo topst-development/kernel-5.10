@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- * FileName   : tcc_4k_d2_ioctl.h
- * Description: TCC VPU h/w block
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "tcc_video_common.h"
 
@@ -37,6 +36,11 @@ typedef struct {
 	int result;
 	vpu_4K_D2_dec_buffer_t gsV4kd2DecBuffer;
 } VPU_4K_D2_SET_BUFFER_t;
+
+typedef struct {
+	int result;
+	vpu_4K_D2_dec_buffer3_t gsV4kd2DecBuffer3;
+} VPU_4K_D2_SET_BUFFER3_t;
 
 typedef struct {
 	int result;

@@ -1,50 +1,50 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright (C) Telechips Inc.
+ * SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+ * Copyright 2025 Telechips Inc.
+ * Contact: shkim@telechips.com
  */
 
-#ifndef TCC_JPU_CODEC_H
-#define TCC_JPU_CODEC_H
-
-#define JPU_MAX_NUM_INSTANCE		4
-
-#define PA 0	// physical address
-#define VA 1	// virtual  address
+#ifndef TCC_JPU_C6__H
+#define TCC_JPU_C6__H
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
-#define COMP_Y 0
-#define COMP_U 1
-#define COMP_V 2
+#define JPU_API_VERSION "1.3"
 
-#define	YUV_FORMAT_420					0
-#define	YUV_FORMAT_422					1
-#define	YUV_FORMAT_224					2
-#define	YUV_FORMAT_444					3
-#define	YUV_FORMAT_400					4
+/**
+ @brief Specific operation codes
+*/
+#define JPU_GET_VERSION			0x1000 /**< Command to get the version of the JPU_C6. */
+#define JPU_CTRL_LOG_STATUS 	0x1002 /**< Command to control the log status using the jpu_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
+
+#define MAX_NUM_INSTANCE		4
+
+#define	YUV_FORMAT_420			0
+#define	YUV_FORMAT_422			1
+#define	YUV_FORMAT_224			2
+#define	YUV_FORMAT_444			3
+#define	YUV_FORMAT_400			4
 
 // Decoding Status
-#define JPU_DEC_SUCCESS								1
-#define JPU_DEC_INVALID_INSTANCE					2
-#define JPU_DEC_SUCCESS_PARTIAL_MODE				3
-
+#define JPU_DEC_SUCCESS					1
+#define JPU_DEC_INVALID_INSTANCE		2
+#define JPU_DEC_SUCCESS_PARTIAL_MODE	3
 
 // Encoder Op Code
-#define JPU_ENC_INIT				0x00	//!< init
-#define JPU_ENC_REG_FRAME_BUFFER	0x01	//!< register frame buffer
-#define JPU_ENC_ENCODE				0x12	//!< encode
-#define JPU_ENC_CLOSE				0x20	//!< close
+#define JPU_ENC_INIT				VPU_ENC_INIT				//!< init
+#define JPU_ENC_REG_FRAME_BUFFER	VPU_ENC_REG_FRAME_BUFFER	//!< register frame buffer
+#define JPU_ENC_ENCODE				VPU_ENC_ENCODE				//!< encode
+#define JPU_ENC_CLOSE				VPU_ENC_CLOSE				//!< close
 
 // Decoder Op Code
-#define JPU_DEC_INIT				0x00	//!< init
-#define JPU_DEC_SEQ_HEADER			0x01	//!< decode sequence header
-#define JPU_DEC_REG_FRAME_BUFFER	0x03	//!< register frame buffer
-#define JPU_DEC_REG_FRAME_BUFFER3	0x04	//!< register frame buffer
-#define JPU_DEC_DECODE				0x10	//!< decode
-#define JPU_DEC_CLOSE				0x20	//!< close
-#define JPU_DEC_GET_ROI_INFO		0x21	//!< get ROI info
-#define JPU_CODEC_GET_VERSION		0x3000	//!< get JPU version
-#define JPU_CTRL_LOG_STATUS			0x1002	/**< Command to control the log status using the jpu_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
+#define JPU_DEC_INIT				VPU_DEC_INIT				//!< init
+#define JPU_DEC_SEQ_HEADER			VPU_DEC_SEQ_HEADER			//!< decode sequence header
+#define JPU_DEC_REG_FRAME_BUFFER	VPU_DEC_REG_FRAME_BUFFER	//!< register frame buffer
+#define JPU_DEC_REG_FRAME_BUFFER3	0x04						//!< register frame buffer
+#define JPU_DEC_DECODE				VPU_DEC_DECODE				//!< decode
+#define JPU_DEC_CLOSE				VPU_DEC_CLOSE				//!< close
+#define JPU_DEC_GET_ROI_INFO		0x21						//!< get ROI info
+#define JPU_CODEC_GET_VERSION		VPU_CODEC_GET_VERSION		//!< get JPU version
 
 #define RETCODE_ERR_MIN_RESOLUTION			101
 #define RETCODE_ERR_MAX_RESOLUTION			102
@@ -71,6 +71,15 @@
 #define	JPG_RET_CODEC_FINISH				19
 
 #ifndef INC_DEVICE_TREE_PMAP
+/**
+ @brief Structure for JPU_GET_VERSION command
+ */
+typedef struct jpu_get_version_t {
+	char *pszHeaderApiVersion; /**< [inp] Set the value to JPU_GET_VERSION to check API compatibility, or NULL to skip */
+	char szGetVersion[32];	   /**< [out] Returns TCC_JPU_DEC or TCC_JPU_ENC version */
+	char szGetBuildDate[32];   /**< [out] Returns TCC_JPU_DEC or TCC_JPU_ENC build date */
+} jpu_get_version_t;
+
 /**
  * @struct jpu_ctrl_log_status_t
  * @brief Structure for controlling logging status within the VPU 4K D2 decoder library.
@@ -117,6 +126,7 @@ typedef struct jpu_ctrl_log_status_t {
 	 */
 	struct {
 		int bDecodeSuccess; /**< Log when decoding is successful (on=1, off=0) */
+		int bEncodeSuccess; /**< Log when encoding is successful (on=1, off=0) */
 	} stLogCondition;
 } jpu_ctrl_log_status_t;
 
@@ -124,8 +134,7 @@ typedef struct jpu_ctrl_log_status_t {
 // data structure to get information necessary to
 // start decoding from the decoder (this is an output parameter)
 //-----------------------------------------------------
-typedef struct jpu_dec_initial_info_t
-{
+typedef struct jpu_dec_initial_info_t {
 	int m_iPicWidth;				//!< {(PicX+15)/16} * 16  (this width  will be used while allocating decoder frame buffers. picWidth  is a multiple of 16)
 	int m_iPicHeight;				//!< {(PicY+15)/16} * 16  (this height will be used while allocating decoder frame buffers. picHeight is a multiple of 16)
 	int m_iSourceFormat;			//!< the minimum number of frame buffers that are required for decoding. application must allocate at least this number of frame buffers.
@@ -140,8 +149,7 @@ typedef struct jpu_dec_initial_info_t
 } jpu_dec_initial_info_t;
 
 //! data structure for initializing Video unit
-typedef struct jpu_dec_init_t
-{
+typedef struct jpu_dec_init_t {
 	codec_addr_t m_RegBaseVirtualAddr;	//!< virtual address BIT_BASE
 	codec_addr_t m_BitstreamBufAddr[2];	//!< bitstream buf address : multiple of 4
 	int m_iBitstreamBufSize;			//!< bitstream buf size	   : multiple of 1024
@@ -151,11 +159,11 @@ typedef struct jpu_dec_init_t
 	unsigned int m_uiDecOptFlags;
 
 	//! Callback Func
-	void* (*m_Memcpy ) ( void*, const void*, unsigned int, unsigned int );	//!< memcpy
-	void  (*m_Memset ) ( void*, int, unsigned int, unsigned int );			//!< memset
-	int   (*m_Interrupt ) ( void );								//!< hw interrupt (return value is always 0)
-	void* (*m_Ioremap ) ( unsigned int, unsigned int );
-	void  (*m_Iounmap ) ( void* );
+	void* (*m_Memcpy) (void*, const void*, unsigned int, unsigned int);	//!< memcpy
+	void  (*m_Memset) (void*, int, unsigned int, unsigned int);			//!< memset
+	int   (*m_Interrupt) (void);								//!< hw interrupt (return value is always 0)
+	void* (*m_Ioremap) (unsigned int, unsigned int);
+	void  (*m_Iounmap) (void *);
 	unsigned int (*m_reg_read)(void *, unsigned int);
 	void (*m_reg_write)(void *, unsigned int, unsigned int);
 
@@ -164,8 +172,7 @@ typedef struct jpu_dec_init_t
 
 // ===========================================================================
 // [32 bit user-space bearer for |jpu_dec_init_t|]
-typedef struct jpu_dec_init_64bit_t
-{
+typedef struct jpu_dec_init_64bit_t {
     codec_addr_t m_RegBaseVirtualAddr;
     codec_addr_t m_BitstreamBufAddr[2];
     int m_iBitstreamBufSize;
@@ -187,15 +194,13 @@ typedef struct jpu_dec_init_64bit_t
 } jpu_dec_init_64bit_t;
 // ===========================================================================
 
-typedef struct jpu_dec_input_t
-{
+typedef struct jpu_dec_input_t {
 	codec_addr_t m_BitstreamDataAddr[2];	//!< bitstream data address
 	int m_iBitstreamDataSize;				//!< bitstream data size
 	int m_Reserved[29];
 } jpu_dec_input_t;
 
-typedef struct jpu_dec_buffer_t
-{
+typedef struct jpu_dec_buffer_t {
 	codec_addr_t m_FrameBufferStartAddr[2];	//!< physical[0] and virtual[1] address of a frame buffer of the decoder.
 	int m_iFrameBufferCount;				//!< allocated frame buffer count
 	int m_iJPGScaleRatio;					//!< JPEG Scaling Ratio
@@ -223,8 +228,7 @@ typedef struct jpu_dec_buffer3_t {
 // JPU after decoding a frame
 //-----------------------------------------------------
 
-typedef struct jpu_dec_output_info_t
-{
+typedef struct jpu_dec_output_info_t {
 	int m_iHeight;					//!< Height of input bitstream. In some cases, this value can be different from the height of previous frames.
 	int m_iWidth;					//!< Width of input bitstream. In some cases, this value can be different from the height of previous frames.
 	int m_iDecodingStatus;
@@ -234,17 +238,15 @@ typedef struct jpu_dec_output_info_t
 	int m_Reserved[26];
 } jpu_dec_output_info_t;
 
-typedef struct jpu_dec_output_t
-{
+typedef struct jpu_dec_output_t {
 	jpu_dec_output_info_t m_DecOutInfo;
-	unsigned char* m_pCurrOut[2][3];	//! physical[0] and virtual[1] current  address of Y, Cb, Cr component
+	unsigned char *m_pCurrOut[2][3];	//! physical[0] and virtual[1] current  address of Y, Cb, Cr component
 	int m_Reserved[25];
 } jpu_dec_output_t;
 
 // ===========================================================================
 // [32 bit user-space bearer for |jpu_dec_output_t|]
-typedef struct jpu_dec_output_64bit_t
-{
+typedef struct jpu_dec_output_64bit_t {
     jpu_dec_output_info_t m_DecOutInfo;
     unsigned long long m_nCurrOut[2][3];
     int m_Reserved[25];
@@ -268,15 +270,14 @@ typedef struct jpu_dec_output_64bit_t
  ***********************************************************************
  */
 codec_result_t
-TCC_JPU_DEC( int Op, codec_handle_t* pHandle, void* pParam1, void* pParam2 );
+TCC_JPU_DEC(int Op, codec_handle_t *pHandle, void *pParam1, void *pParam2);
 
 
 //------------------------------------------------------------------------------
 // encode struct and definition
 //------------------------------------------------------------------------------
 
-typedef struct jpu_enc_init_t
-{
+typedef struct jpu_enc_init_t {
 	codec_addr_t m_RegBaseVirtualAddr;
 
 	//! Encoding Info
@@ -295,19 +296,18 @@ typedef struct jpu_enc_init_t
 	unsigned int m_uiEncOptFlags;
 
 	//! Callback Func
-	void* (*m_Memcpy ) ( void*, const void*, unsigned int, unsigned int );	//!< memcpy
-	void  (*m_Memset ) ( void*, int, unsigned int, unsigned int );		//!< memset
-	int   (*m_Interrupt ) ( void );						//!< hw interrupt (return value is always 0)
-	void* (*m_Ioremap ) ( unsigned int, unsigned int );
-	void  (*m_Iounmap ) ( void* );
+	void* (*m_Memcpy) (void*, const void*, unsigned int, unsigned int);	//!< memcpy
+	void  (*m_Memset) (void*, int, unsigned int, unsigned int);		//!< memset
+	int   (*m_Interrupt) (void);						//!< hw interrupt (return value is always 0)
+	void* (*m_Ioremap) (unsigned int, unsigned int);
+	void  (*m_Iounmap) (void *);
 	unsigned int (*m_reg_read)(void *, unsigned int);
 	void (*m_reg_write)(void *, unsigned int, unsigned int);
 
 	int m_Reserved[15];
 } jpu_enc_init_t;
 
-typedef struct jpu_enc_input_t
-{
+typedef struct jpu_enc_input_t {
 	unsigned int m_PicYAddr;
 	unsigned int m_PicCbAddr;
 	unsigned int m_PicCrAddr;
@@ -317,8 +317,7 @@ typedef struct jpu_enc_input_t
 	int m_Reserved[26];
 } jpu_enc_input_t;
 
-typedef struct jpu_enc_output_t
-{
+typedef struct jpu_enc_output_t {
 	codec_addr_t m_BitstreamOut[2];
 	int m_iBitstreamOutSize;
 	int m_iBitstreamHeaderSize;
@@ -342,7 +341,7 @@ typedef struct jpu_enc_output_t
  ***********************************************************************
  */
 codec_result_t
-TCC_JPU_ENC( int Op, codec_handle_t* pHandle, void* pParam1, void* pParam2 );
+TCC_JPU_ENC(int Op, codec_handle_t *pHandle, void *pParam1, void *pParam2);
 
 #endif
-#endif  // TCC_JPU_CODEC_H
+#endif	// TCC_JPU_C6__H

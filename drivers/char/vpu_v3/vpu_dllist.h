@@ -1,22 +1,21 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef VPU_DLLIST_H
 #define VPU_DLLIST_H
 
 #include "vpu_linux_kernel.h"
 
-typedef struct vpu_dllist_node_tag
-{
+typedef struct vpu_dllist_node_tag {
     struct vpu_dllist_node_tag *next;
     struct vpu_dllist_node_tag *prev;
 } vpu_dllist_node_t;
 
 #define VDLLIST_MAX_NAME	64
-typedef struct vpu_dllist_tag
-{
+typedef struct vpu_dllist_tag {
     char name[VDLLIST_MAX_NAME];
     struct mutex mutex;
     vpu_dllist_node_t *head;
@@ -40,7 +39,7 @@ void vpu_dllist_insert_after(vpu_dllist_t *list, vpu_dllist_node_t *insert_node,
 
 void vpu_dllist_insert_before(vpu_dllist_t *list, vpu_dllist_node_t *insert_node, vpu_dllist_node_t *new_node);
 
-vpu_dllist_node_t* vpu_dllist_remove_node(vpu_dllist_t *list, vpu_dllist_node_t *node);
+vpu_dllist_node_t *vpu_dllist_remove_node(vpu_dllist_t *list, vpu_dllist_node_t *node);
 
 
 void vpu_dllist_insert_head(vpu_dllist_t *list, vpu_dllist_node_t *node);
@@ -80,7 +79,7 @@ vpu_dllist_node_t *vpu_dllist_get_next_sync(vpu_dllist_t *list, vpu_dllist_node_
 int vpu_dllist_get_count_sync(vpu_dllist_t *list);
 
 //for debugging
-char* vpu_dllist_name(vpu_dllist_t *list);
+char *vpu_dllist_name(vpu_dllist_t *list);
 
 #endif // VPU_DLLIST_H
 

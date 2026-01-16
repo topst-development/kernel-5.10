@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- * FileName   : tcc_video_common.h
- * Description: TCC VPU h/w block
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef phys_addr_t
 #define phys_addr_t unsigned int
@@ -152,6 +151,7 @@ typedef struct dec_user_info_t {
 // Get initial Info for ring buffer use
 #define V_GET_INITIAL_INFO_FOR_STREAMING_MODE_ONLY  21
 #define V_DEC_CLOSE                                 22 // close
+#define V_DEC_REG_FRAME_BUFFER3         23  // register frame buffer
 
 #define V_DEC_ALLOC_MEMORY              30
 // use-case: 32 bit user space, 64 bit kernel space
@@ -252,6 +252,8 @@ typedef struct dec_user_info_t {
 					+ V_DEC_REG_FRAME_BUFFER)
 #define V_DEC_REG_FRAME_BUFFER2_KERNEL	(V_DEC_KERNEL_OP_BASE \
 					+ V_DEC_REG_FRAME_BUFFER2)
+#define V_DEC_REG_FRAME_BUFFER3_KERNEL	(V_DEC_KERNEL_OP_BASE \
+										+ V_DEC_REG_FRAME_BUFFER3)
 #define V_DEC_DECODE_KERNEL		(V_DEC_KERNEL_OP_BASE + V_DEC_DECODE)
 #define V_DEC_BUF_FLAG_CLEAR_KERNEL	(V_DEC_KERNEL_OP_BASE \
 					+ V_DEC_BUF_FLAG_CLEAR)

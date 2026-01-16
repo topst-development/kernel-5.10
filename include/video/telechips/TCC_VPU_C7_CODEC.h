@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Copyright (C) Telechips Inc.
+ * SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+ * Copyright 2025 Telechips Inc.
+ * Contact: shkim@telechips.com
  */
 
 #ifndef TCC_VPU_C7_CODEC__H
@@ -8,15 +9,14 @@
 
 #include "TCCxxxx_VPU_CODEC_COMMON.h"
 
-#define VPU_API_VERSION "5.1"
+#define VPU_API_VERSION "6.0"
 
 /**
  @brief Specific operation codes
 */
 #define VPU_GET_VERSION            0x1000
 #define VPU_CTRL_LOG_STATUS        0x1002 /**< Command to control the log status using the vpu_dec_ctrl_log_status_t structure. This command can be issued at any time, even before initialization. */
-
-//#define USE_VPU_DISPLAY_MODE	//use ring buffer
+#define VPU_C7_SET_FW_ADDRESS      0x1003 /**< Command to set firmware base address of the VPU C7 decoder. */
 
 #define MAX_NUM_INSTANCE                          4
 
@@ -131,13 +131,20 @@ typedef struct vpu_dec_ctrl_log_status_t {
 	} stLogCondition;
 } vpu_dec_ctrl_log_status_t;
 
+/**
+  @brief Structure for VPU_C7_SET_FW_ADDRESS command
+  */
+typedef struct vpu_c7_set_fw_addr_t {
+	codec_addr_t m_FWBaseAddr; /**< Address of VPU C7 firmware. */
+	int iReserved[6];
+} vpu_c7_set_fw_addr_t;
+
 //------------------------------------------------------------------------------
 // decoder struct and definition
 //------------------------------------------------------------------------------
 
 // represents rectangular window information in a frame
-typedef struct pic_crop_t
-{
+typedef struct pic_crop_t {
 	unsigned int m_iCropLeft;
 	unsigned int m_iCropTop;
 	unsigned int m_iCropRight;
@@ -146,24 +153,47 @@ typedef struct pic_crop_t
 
 
 // Structure for VPU_GET_VERSION command
-typedef struct vpu_get_version_t
-{
+typedef struct vpu_get_version_t {
 	char *pszHeaderApiVersion;                //[inp] Set the value to VPU_API_VERSION to check API compatibility, or NULL to skip
 	char szGetVersion[32];                    //[out] Returns TCC_VPU_DEC or TCC_VPU_ENC version
 	char szGetBuildDate[32];                  //[out] Returns TCC_VPU_DEC or TCC_VPU_ENC build date
 } vpu_get_version_t;
 
-typedef struct AVC_vui_info_t
-{
+typedef struct AVC_vui_info_t {
+	// video_full_range_flag (0, if is not present)
+	// : [1 bit : 0 ~   1]
 	int m_iAvcVuiVideoFullRangeFlag;
+
+	// color_primaries (2 Unspecified, if is not present)
+	// : [8 bits: 0 ~ 255] (refer to Table E-3 of H.264 or H.265 video spec.)
 	int m_iAvcVuiColourPrimaries;
+
+	// transfer_characteristics (2 Unspecified, if is not present)
+	// : [8 bits: 0 ~ 255] (refer to Table E-4 of H.264 or H.265 video spec.)
 	int m_iAvcVuiTransferCharacteristics;
+
+	// matrix_coeffs (2 Unspecified, if is not present)
+	// : [8 bits: 0 ~ 255] (refer to Table E-5 of H.264 or H.265 video spec.)
 	int m_iAvcVuiMatrixCoefficients;
-	int m_Reserved[28];
+
+	// video_format (5 Unspecified video format, if is not present)
+	// : [3 bits: 0 ~   7] (refer to Table E-2 of H.264 or H.265 video spec.)
+	int m_iAvcVuiVideoFormat;
+
+	// video_signal_type_present_flag and color_description_present_flag
+	//  Bit [0] video_signal_type_present_flag
+	//       0 : If the 'video_signal_type_present_flag' equals zero, there's no VUI in SPS.
+	//       1 : encode vui info.
+	//  Bit [2] color_description_present_flag
+	//       0 : If the 'color_description_present_flag' equals zero, there's no color description info.
+	//           (color_primaries, transfer_characteristics, matrix_coeffs).
+	//       1 : encode color description info.
+	unsigned int m_iAvcVuiVideoSignalPresentFlags;	// only for encoder
+
+	int m_Reserved[26];
 } AVC_vui_info_t;
 
-typedef struct MPEG2_SeqDisplayExt_info_t
-{
+typedef struct MPEG2_SeqDisplayExt_info_t {
 	int m_iMp2ColorPrimaries;
 	int m_iMp2TransferCharacteristics;
 	int m_iMp2MatrixCoefficients;
@@ -171,8 +201,7 @@ typedef struct MPEG2_SeqDisplayExt_info_t
 } MPEG2_SeqDisplayExt_info_t;
 
 // data structure to get information necessary to start decoding from the decoder (this is an output parameter)
-typedef struct dec_initial_info_t
-{
+typedef struct dec_initial_info_t {
 	int m_iPicWidth;                          // width of decoder frame buffer(multiple of 16)
 	int m_iPicHeight;                         // height of decoder frame buffer(multiple of 16)
 
@@ -223,21 +252,20 @@ typedef struct dec_initial_info_t
 
 	//////// MJPEG only param ////////
 	int m_iMjpg_sourceFormat;                 // MJPEG source chroma format
-	                                          //    (0 - 4:2:0, 1 - 4:2:2, 2 - 4:2:2 vertical, 3 - 4:4:4, 4 - 4:0:0 )
-	                                          //    (only for TCC891x/88xx/93XX)
+											  //    (0 - 4:2:0, 1 - 4:2:2, 2 - 4:2:2 vertical, 3 - 4:4:4, 4 - 4:0:0 )
+											  //    (only for TCC891x/88xx/93XX)
 	int m_iMjpg_ThumbnailEnable;              // If  thumbnail image is exist, This field is set.
 	int m_iMjpg_MinFrameBufferSize[4];        // minimum frame buffer size for JPEG only
-	                                          //    0: Original Size
-	                                          //    1: 1/2 Scaling Down
-	                                          //    2: 1/4 Scaling Down
-	                                          //    3: 1/8 Scaling Down
+											  //    0: Original Size
+											  //    1: 1/2 Scaling Down
+											  //    2: 1/4 Scaling Down
+											  //    3: 1/8 Scaling Down
 
 	unsigned int m_Reserved[32];
 } dec_initial_info_t;
 
 // data structure for initializing Video unit
-typedef struct dec_init_t
-{
+typedef struct dec_init_t {
 	codec_addr_t m_BitWorkAddr[2];            // physical[0] and virtual[1] address of a working space of the decoder. This working buffer space consists of work buffer, code buffer, and parameter buffer.
 	codec_addr_t m_CodeAddr[2];               // physical[0] and virtual[1] address of a code buffer of the decoder.
 	codec_addr_t m_RegBaseVirtualAddr;        // virtual address BIT_BASE
@@ -252,16 +280,16 @@ typedef struct dec_init_t
 	//////// Decoding Options ////////
 #define M4V_DEBLK_DISABLE                         0       // (default)
 #define M4V_DEBLK_ENABLE                          1       // mpeg-4 deblocking
-#define M4V_GMC_FILE_SKIP                         (0<< 1) // (default) seq.init failure
-#define M4V_GMC_FRAME_SKIP                        (1<< 1) // frame skip without decoding
-#define AVC_VC1_REORDER_DISABLE                   (1<< 2) // reorder disable only for AVC and VC1, (default) reorder enable
-#define AVC_FIELD_DISPLAY                         (1<< 3) // if only field is fed, display it
+#define M4V_GMC_FILE_SKIP                         (0<<1) // (default) seq.init failure
+#define M4V_GMC_FRAME_SKIP                        (1<<1) // frame skip without decoding
+#define AVC_VC1_REORDER_DISABLE                   (1<<2) // reorder disable only for AVC and VC1, (default) reorder enable
+#define AVC_FIELD_DISPLAY                         (1<<3) // if only field is fed, display it
 #define MVC_DEC_ENABLE                            (1<<20) // H.264 MVC enable
 #define SEC_AXI_BUS_ENABLE_SRAM                   (1<<21) // Use SRAM for sec. AXI bus
 	unsigned int m_uiDecOptFlags;
 
 	//////// H264 only param ////////
-	unsigned char* m_pSpsPpsSaveBuffer;       // multiple of 4
+	unsigned char *m_pSpsPpsSaveBuffer;       // multiple of 4
 	int m_iSpsPpsSaveBufferSize;              // multiple of 1024
 
 	//////// VPU Control ////////
@@ -329,8 +357,13 @@ typedef struct dec_init_64bit_t {
 	unsigned int m_Reserved[36];
 } dec_init_64bit_t;
 
-typedef struct dec_input_t
-{
+typedef enum {
+	DEC_IN_OPTS_NONE    = 0x00000,
+	DEC_IN_OPTS_SET_EOS = 0x00001,            // enable eos flag when ring mode playback
+	DEC_IN_OPTS_MAX
+} DEC_INPUT_OPTIONS;
+
+typedef struct dec_input_t {
 	codec_addr_t m_BitstreamDataAddr[2];      // bitstream data address
 	int m_iBitstreamDataSize;                 // bitstream data size
 	codec_addr_t m_UserDataAddr[2];           // Picture Layer User-data address
@@ -356,11 +389,12 @@ typedef struct dec_input_t
 	// Number of skip frames (for I-frame Search Mode or Skip Frame Mode)
 	// When this number is 0, m_iSkipFrameMode option is disabled.
 	int m_iSkipFrameNum;
-	unsigned int m_Reserved[23];
+
+	int m_iDecOptions;
+	unsigned int m_Reserved[22];
 } dec_input_t;
 
-typedef struct dec_buffer_t
-{
+typedef struct dec_buffer_t {
 	codec_addr_t m_FrameBufferStartAddr[2];   // physical[0] and virtual[1] address of a frame buffer of the decoder.
 	int m_iFrameBufferCount;                  // allocated frame buffer count
 	unsigned int m_AvcSliceSaveBufferAddr;    // start address and size of slice save buffer which the decoder can save slice RBSP : multiple of 4
@@ -378,8 +412,7 @@ typedef struct dec_buffer_t
 	unsigned int m_Reserved[24];
 } dec_buffer_t;
 
-typedef struct dec_buffer2_t
-{
+typedef struct dec_buffer2_t {
 	codec_addr_t m_addrFrameBuffer[2][32];    // physical[0] and virtual[1] address of a frame buffer of the decoder.
 	unsigned int m_ulFrameBufferCount;        // allocated frame buffer count
 
@@ -425,29 +458,25 @@ typedef struct dec_buffer3_t {
 } dec_buffer3_t;
 
 
-typedef struct dec_ring_buffer_setting_in_t
-{
+typedef struct dec_ring_buffer_setting_in_t {
 	unsigned int m_OnePacketBufferAddr;
 	unsigned int m_iOnePacketBufferSize;
 } dec_ring_buffer_setting_in_t;
 
-typedef struct dec_ring_buffer_status_out_t
-{
+typedef struct dec_ring_buffer_status_out_t {
 	unsigned int m_ulAvailableSpaceInRingBuffer;
 	unsigned int m_ptrReadAddr_PA;
 	unsigned int m_ptrWriteAddr_PA;
 } dec_ring_buffer_status_out_t;
 
 // MVC specific picture information
-typedef struct MvcPictureInfo_t
-{
+typedef struct MvcPictureInfo_t {
 	int m_iViewIdxDisplay;
 	int m_iViewIdxDecoded;
 } MvcPictureInfo_t;
 
 // AVC specific SEI information (frame packing arrangement SEI)
-typedef struct MvcAvcFpaSei_t
-{
+typedef struct MvcAvcFpaSei_t {
 	unsigned int m_iExist;
 	unsigned int m_iFrame_Packing_Arrangement_Id;
 	unsigned int m_iFrame_Packing_Arrangement_Cancel_Flag;
@@ -468,16 +497,14 @@ typedef struct MvcAvcFpaSei_t
 	unsigned int m_iFrame_Packing_Arrangement_Repetition_Period;
 } MvcAvcFpaSei_t;
 
-typedef struct Vp8DecScaleInfo_t
-{
+typedef struct Vp8DecScaleInfo_t {
 	unsigned int m_iHscaleFactor;
 	unsigned int m_iVscaleFactor;
 	unsigned int m_iPicWidth;
 	unsigned int m_iPicHeight;
 } Vp8DecScaleInfo_t;
 
-typedef struct Vp8DecPicInfo_t
-{
+typedef struct Vp8DecPicInfo_t {
 	unsigned int m_iShowFrame;
 	unsigned int m_iVersionNumber;
 	unsigned int m_iRefIdxLast;
@@ -486,8 +513,7 @@ typedef struct Vp8DecPicInfo_t
 } Vp8DecPicInfo_t;
 
 // data structure to get resulting information from VPU after decoding a frame
-typedef struct dec_output_info_t
-{
+typedef struct dec_output_info_t {
 	int m_iPicType;                           // ( 0- I picture,  1- P picture,  2- B picture )
 
 	int m_iDispOutIdx;                        // index of output frame buffer
@@ -549,8 +575,7 @@ typedef struct dec_output_info_t
 	unsigned int m_Reserved[29];
 } dec_output_info_t;
 
-typedef struct dec_output_t
-{
+typedef struct dec_output_t {
 	dec_output_info_t m_DecOutInfo;
 	unsigned char *m_pDispOut[2][3];          // physical[0] and virtual[1] display  address of Y, Cb, Cr component
 	unsigned char *m_pCurrOut[2][3];          // physical[0] and virtual[1] current  address of Y, Cb, Cr component
@@ -558,8 +583,7 @@ typedef struct dec_output_t
 } dec_output_t;
 
 // 32 bit user-space bearer for |dec_output_t|
-typedef struct dec_output_64bit_t
-{
+typedef struct dec_output_64bit_t {
 	dec_output_info_t m_DecOutInfo;
 	unsigned long long m_nDispOut[2][3];
 	unsigned long long m_nCurrOut[2][3];
@@ -598,8 +622,7 @@ TCC_VPU_DEC_EXT(int Op, codec_handle_t *pHandle, void *pParam1, void *pParam2);
 //------------------------------------------------------------------------------
 
 
-typedef struct enc_rc_init_t
-{
+typedef struct enc_rc_init_t {
 	//////// AVC Deblocking Filter Related ////////
 	int m_iDeblkDisable;                      // 0: Enable, 1: Disable, 2: Disable at slice boundary
 	int m_iDeblkAlpha;                        // deblk_filter_offset_alpha (-6 ~ 6)
@@ -631,10 +654,22 @@ typedef struct enc_rc_init_t
 	// Encoded Video Quality level control (H.264 only)
 	//  1(Lowest Quality) ~ 35(Highest Quality), default is 11.
 	int m_iEncQualityLevel;
+
+	/**
+	* @brief Overrides the firmware-calculated profile level for MPEG-4 and H.264 encoding.
+	*
+	* If set to a valid profile level, this value will replace the profile level
+	* calculated by the firmware based on resolution and other decoding parameters.
+	* If left unset (or set to 0), the system will use the firmware's computed profile level.
+	*
+	* @note This setting applies only to MPEG-4 and H.264 encoders. For other codecs,
+	* this value is ignored. Ensure that the specified profile level is compatible
+	* with the selected codec and encoding settings.
+	*/
+	int m_iOverrideProfileLevel;
 } enc_rc_init_t;
 
-typedef struct enc_init_t
-{
+typedef struct enc_init_t {
 	// physical[0] and virtual[1] address of a working space of the decoder.
 	//  This working buffer space consists of work buffer, code buffer, and parameter buffer.
 	codec_addr_t m_BitWorkAddr[2];
@@ -677,7 +712,10 @@ typedef struct enc_init_t
 	unsigned int (*m_reg_read)(void *vir_addr, unsigned int offset);
 	void (*m_reg_write)(void *vir_addr, unsigned int offset, unsigned int val);
 
-	unsigned int m_Reserved[31];
+	unsigned int   m_uiVuiParamOption;	//If the 'm_uiVuiParamOption' equals zero, there's no VUI in SPS.
+	AVC_vui_info_t m_stVuiParam;		// VPU encodes VUI only if m_uiVuiParamOption == 1.
+	unsigned int m_Reserved[30];
+
 } enc_init_t;
 
 typedef struct enc_initial_info_t {
@@ -685,8 +723,7 @@ typedef struct enc_initial_info_t {
 	int m_iMinFrameBufferSize;                // minimum frame buffer size
 } enc_initial_info_t;
 
-typedef struct enc_input_t
-{
+typedef struct enc_input_t {
 	unsigned int m_PicYAddr;
 	unsigned int m_PicCbAddr;
 	unsigned int m_PicCrAddr;
@@ -717,13 +754,11 @@ typedef struct enc_input_t
 	codec_addr_t m_ReservedAddr2[2];
 } enc_input_t;
 
-typedef struct enc_buffer_t
-{
+typedef struct enc_buffer_t {
 	codec_addr_t m_FrameBufferStartAddr[2];
 } enc_buffer_t;
 
-typedef struct enc_output_t
-{
+typedef struct enc_output_t {
 	codec_addr_t m_BitstreamOut[2];
 	int m_iBitstreamOutSize;
 	int m_iPicType;
@@ -739,8 +774,7 @@ typedef struct enc_output_t
 	int m_Reserved;
 } enc_output_t;
 
-typedef struct enc_header_t
-{
+typedef struct enc_header_t {
 	int m_iHeaderType;              // [inp] header type : MPEG-4(VOL/VOS/VIS), H264(SPS/PPS)
 	int m_iHeaderSize;              // [out]
 	unsigned int m_HeaderAddr;      // [out] physical address

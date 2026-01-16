@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef SMP_DRIVER_H
 #define SMP_DRIVER_H
@@ -15,7 +16,7 @@
 #define TA_JPU_UUID {0x61e14432, 0x720b, 0x4760, \
 	{0x84, 0x53, 0x90, 0x8a, 0x00, 0x49, 0xd3, 0x8e } }
 
-#if CONFIG_ANDROID
+#ifdef ANDROID_VPU_KERNEL
 #define USE_TA_LOADING	//__FXXX__
 #endif
 

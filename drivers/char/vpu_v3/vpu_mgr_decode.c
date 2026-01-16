@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_mgr_decode.h"
 #include "vpu_comm.h"
@@ -27,11 +28,11 @@
 #define seq_info(fmt, args...)     	V_DBG(VPU_DBG_CMD, "[VPU_MGR_DEC][SEQ][id:%u]:"  fmt, drv_info->drv_id, ## args)
 #define err_info(fmt, args...)      V_DBG(VPU_DBG_ERROR, "[VPU_MGR_DEC][ERR][id:%u]:"  fmt, drv_info->drv_id, ## args)
 
-#define DBG(fmt, args...)	do { pr_err("[DEC][%s:%d]" fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+#define DBG(fmt, args...)	do { pr_err("[DEC][%s:%d]" fmt "\n", __FUNCTION__, __LINE__, ## args); } while (0)
 
 #define MAX_FRAMEBUFFER_COUNT	(31)
 
-static int vmgr_decode_get_bitstream_offset_update_index(vpu_pmap_alloc_info_t* alloc_info)
+static int vmgr_decode_get_bitstream_offset_update_index(vpu_pmap_alloc_info_t *alloc_info)
 {
 	int offset = 0;
 
@@ -41,7 +42,7 @@ static int vmgr_decode_get_bitstream_offset_update_index(vpu_pmap_alloc_info_t* 
 	return offset;
 }
 
-static int vmgr_decode_alloc_init_buffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv_info, vdec_v3_init_t* cmd_init)
+static int vmgr_decode_alloc_init_buffer(vpu_mgr_t *mgr_ctx, vpu_drv_info_t *drv_info, vdec_v3_init_t *cmd_init)
 {
 	int ret = 0;
 	int codec_type;
@@ -51,88 +52,63 @@ static int vmgr_decode_alloc_init_buffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 	MEM_ALLOC_INFO_t userdatabuf_info;
 	MEM_ALLOC_INFO_t bitworkbuf_info;
 
-	vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
-	vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
+	vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
+	vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
 
 	codec_type = vmgr_get_bitstream_format(drv_info->codec_id, VPU_OP_TYPE_DEC);
 
 	//bitstream buffer
-	if(cmd_init->input.user_bitstream_buf_size > 0)
-	{
+	if (cmd_init->input.user_bitstream_buf_size > 0) {
 		buf_size = ALIGNED_BUFF(cmd_init->input.user_bitstream_buf_size, (1024u));
-	}
-	else
-	{
+	} else {
 		buf_size = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_BITSTREAM, drv_info);
 	}
 
-	if(buf_size > 0)
-	{
+	if (buf_size > 0) {
 		bitstreambuf_info.buffer_type = BUFFER_STREAM;
 		bitstreambuf_info.request_size = buf_size;
 
 		dlog_info("try alloc bitstream_buf, codec_type:%d, buffer_type:%d, request_size:0x%x", codec_type, bitstreambuf_info.buffer_type, bitstreambuf_info.request_size);
 		ret = vmem_proc_alloc_memory(codec_type, &bitstreambuf_info, (vputype)drv_info->pmap_type);
-		if(ret == 0)
-		{
+		if (ret == 0) {
 			alloc_info->bitstream_buf.addr[VPU_PA] = (codec_addr_t)bitstreambuf_info.phy_addr;
 			alloc_info->bitstream_buf.addr[VPU_KVA] = (codec_addr_t)bitstreambuf_info.kernel_remap_addr;
 			alloc_info->bitstream_buf.size = bitstreambuf_info.request_size;
 
 			alloc_info->num_of_bitstream_buffers = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_NUM_OF_BITSTREAM, drv_info);
-#if defined(ENABLE_INTERLACE_DELAY_PROCESS)
-			if (mgr_ctx->each_ip->ip_type == VPU_IP_C7 && (cmd_init->input.enable_interlace_processing))
-			{
-				if (alloc_info->num_of_bitstream_buffers < 4)
-				{
-					alloc_info->num_of_bitstream_buffers = 4;
-				}
-			}
-#endif
-
 			dlog_info("number of bitstream buffers:%d", alloc_info->num_of_bitstream_buffers);
-			if(alloc_info->num_of_bitstream_buffers > 0)
-			{
+			if (alloc_info->num_of_bitstream_buffers > 0) {
 				alloc_info->size_of_bitstream_buffer = alloc_info->bitstream_buf.size / alloc_info->num_of_bitstream_buffers;
 				alloc_info->size_of_bitstream_buffer = ALIGNED_BUFF(alloc_info->size_of_bitstream_buffer, 4096u);
-			}
-			else
-			{
+			} else {
 				alloc_info->size_of_bitstream_buffer = alloc_info->bitstream_buf.size;
 			}
 
 			alloc_info->bitstream_buffer_index = 0;
 
-			dlog_info("alloc success bitstream_buf, PA:0x%x, KVA:0x%x, size:%d, num_of_buffers:%d, size_of_buffers:%d",
+			dlog_info("alloc success bitstream_buf, PA:0x%llx, KVA:0x%llx, size:%d, num_of_buffers:%d, size_of_buffers:%d",
 				alloc_info->bitstream_buf.addr[VPU_PA], alloc_info->bitstream_buf.addr[VPU_KVA], alloc_info->bitstream_buf.size,
 				alloc_info->num_of_bitstream_buffers, alloc_info->size_of_bitstream_buffer);
-		}
-		else
-		{
+		} else {
 			ret = -1;
 			err_info("alloc bitstream_buf fail");
 		}
 	}
 
 	//sps pps save buffer
-	if((ret == 0) && ((drv_info->codec_id == VCODEC_ID_AVC) || (drv_info->codec_id == VCODEC_ID_MVC)))
-	{
+	if ((ret == 0) && ((drv_info->codec_id == VCODEC_ID_AVC) || (drv_info->codec_id == VCODEC_ID_MVC))) {
 		buf_size = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_SPSPPS, drv_info);
-		if(buf_size > 0)
-		{
+		if (buf_size > 0) {
 			spsppssavebuf_info.buffer_type = BUFFER_PS;
 			spsppssavebuf_info.request_size = buf_size;
 
 			dlog_info("try alloc spsppssavebuf_info, codec_type:%d, buffer_type:%d, request_size:0x%x", codec_type, spsppssavebuf_info.buffer_type, spsppssavebuf_info.request_size);
 			ret = vmem_proc_alloc_memory(codec_type, &spsppssavebuf_info, (vputype)drv_info->pmap_type);
-			if(ret == 0)
-			{
+			if (ret == 0) {
 				alloc_info->spspps_buf.addr[VPU_PA] = (codec_addr_t)spsppssavebuf_info.phy_addr;
 				alloc_info->spspps_buf.size = spsppssavebuf_info.request_size;
 				dlog_info("alloc success, spsppssavebuf, PA:0x%x, size:%d", alloc_info->spspps_buf.addr[VPU_PA], alloc_info->spspps_buf.size);
-			}
-			else
-			{
+			} else {
 				ret = -1;
 				err_info("alloc spsppssavebuf_info fail");
 			}
@@ -140,34 +116,26 @@ static int vmgr_decode_alloc_init_buffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 	}
 
 	//user data buffer
-	if((ret == 0) && (cmd_init->input.enable_user_data == 1U))
-	{
-		if(cmd_init->input.user_userdata_buf_size > 0)
-		{
+	if ((ret == 0) && (cmd_init->input.enable_user_data == 1U)) {
+		if (cmd_init->input.user_userdata_buf_size > 0) {
 			buf_size = ALIGNED_BUFF((unsigned)cmd_init->input.user_userdata_buf_size, (4096u));
-		}
-		else
-		{
+		} else {
 			buf_size = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_USERDATA, drv_info);
 		}
 
-		if(buf_size > 0)
-		{
+		if (buf_size > 0) {
 			userdatabuf_info.buffer_type = BUFFER_USERDATA;
 			userdatabuf_info.request_size = buf_size;
 
 			dlog_info("try alloc userdatabuf_info, codec_type:%d, buffer_type:%d, request_size:0x%x", codec_type, userdatabuf_info.buffer_type, userdatabuf_info.request_size);
 			ret = vmem_proc_alloc_memory(codec_type, &userdatabuf_info, (vputype)drv_info->pmap_type);
-			if(ret == 0)
-			{
+			if (ret == 0) {
 				alloc_info->userdata_buf.addr[VPU_PA] = (codec_addr_t)userdatabuf_info.phy_addr;
 				alloc_info->userdata_buf.addr[VPU_KVA] = (codec_addr_t)userdatabuf_info.kernel_remap_addr;
 				alloc_info->userdata_buf.size = userdatabuf_info.request_size;
-				dlog_info("alloc success userdata_buf, PA:0x%x, KVA:0x%x, size:%d",
+				dlog_info("alloc success userdata_buf, PA:0x%llx, KVA:0x%llx, size:%d",
 					alloc_info->userdata_buf.addr[VPU_PA], alloc_info->userdata_buf.addr[VPU_KVA], alloc_info->userdata_buf.size);
-			}
-			else
-			{
+			} else {
 				ret = -1;
 				err_info("alloc userdatabuf_info fail");
 			}
@@ -175,26 +143,21 @@ static int vmgr_decode_alloc_init_buffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 	}
 
 	//bitwork buffer
-	if(ret == 0)
-	{
+	if (ret == 0) {
 		buf_size = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_BITWORK, drv_info);
-		if(buf_size > 0)
-		{
+		if (buf_size > 0) {
 			bitworkbuf_info.buffer_type = BUFFER_WORK;
 			bitworkbuf_info.request_size = buf_size;
 
 			dlog_info("try alloc bitworkbuf_info, codec_type:%d, buffer_type:%d, request_size:0x%x", codec_type, bitworkbuf_info.buffer_type, bitworkbuf_info.request_size);
 			ret = vmem_proc_alloc_memory(codec_type, &bitworkbuf_info, (vputype)drv_info->pmap_type);
-			if(ret == 0)
-			{
+			if (ret == 0) {
 				alloc_info->bitwork_buf.addr[VPU_PA] = (codec_addr_t)bitworkbuf_info.phy_addr;
 				alloc_info->bitwork_buf.addr[VPU_KVA] = (codec_addr_t)bitworkbuf_info.kernel_remap_addr;
 				alloc_info->bitwork_buf.size = bitworkbuf_info.request_size;
-				dlog_info("alloc success bitwork_buf, PA:0x%x, KVA:0x%x, size:%d",
+				dlog_info("alloc success bitwork_buf, PA:0x%llx, KVA:0x%llx, size:%d",
 					alloc_info->bitwork_buf.addr[VPU_PA], alloc_info->bitwork_buf.addr[VPU_KVA], alloc_info->bitwork_buf.size);
-			}
-			else
-			{
+			} else {
 				ret = -1;
 				err_info("alloc bitworkbuf_info fail");
 			}
@@ -209,7 +172,7 @@ static int vmgr_decode_alloc_init_buffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 	return ret;
 }
 
-static int vmgr_decode_alloc_framebuffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv_info, vdec_v3_seqheader_t* cmd_seqheader)
+static int vmgr_decode_alloc_framebuffer(vpu_mgr_t *mgr_ctx, vpu_drv_info_t *drv_info, vdec_v3_seqheader_t *cmd_seqheader)
 {
 	int ret = 0;
 	int codec_type;
@@ -218,33 +181,28 @@ static int vmgr_decode_alloc_framebuffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 	MEM_ALLOC_INFO_t mbdatabuf_info;
 	MEM_ALLOC_INFO_t framebuff_info;
 
-	vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
-	vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
+	vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
+	vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
 
 	codec_type = vmgr_get_bitstream_format(drv_info->codec_id, VPU_OP_TYPE_DEC);
 
 	//avc slice buffer
-	if(drv_info->codec_id == VCODEC_ID_AVC)
-	{
+	if (drv_info->codec_id == VCODEC_ID_AVC) {
 		buf_size = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_SLICE, drv_info);
 
-		if(buf_size > 0)
-		{
+		if (buf_size > 0) {
 			avcslicebuf_info.buffer_type = BUFFER_SLICE;
 			avcslicebuf_info.request_size = buf_size;
 
 			dlog_info("try alloc avcslicebuf_info, buffer_type:%d, request_size:0x%x", avcslicebuf_info.buffer_type, avcslicebuf_info.request_size);
 			ret = vmem_proc_alloc_memory(codec_type, &avcslicebuf_info, (vputype)drv_info->pmap_type);
-			if(ret == 0)
-			{
+			if (ret == 0) {
 				alloc_info->slice_buf.addr[VPU_PA] = (codec_addr_t)avcslicebuf_info.phy_addr;
 				alloc_info->slice_buf.addr[VPU_KVA] = (codec_addr_t)avcslicebuf_info.kernel_remap_addr;
 				alloc_info->slice_buf.size = avcslicebuf_info.request_size;
-				dlog_info("alloc success slice_buf, PA:0x%x, KVA:0x%x, size:%d",
+				dlog_info("alloc success slice_buf, PA:0x%llx, KVA:0x%llx, size:%d",
 					alloc_info->slice_buf.addr[VPU_PA], alloc_info->slice_buf.addr[VPU_KVA], alloc_info->slice_buf.size);
-			}
-			else
-			{
+			} else {
 				ret = -1;
 				err_info("alloc avcslicebuf_info fail");
 			}
@@ -252,26 +210,21 @@ static int vmgr_decode_alloc_framebuffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 	}
 
 	//vp8 mb buffer
-	if(drv_info->codec_id == VCODEC_ID_VP8)
-	{
+	if (drv_info->codec_id == VCODEC_ID_VP8) {
 		buf_size = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_MBDATA, drv_info);
-		if(buf_size > 0)
-		{
+		if (buf_size > 0) {
 			mbdatabuf_info.buffer_type = BUFFER_ELSE;
 			mbdatabuf_info.request_size = buf_size;
 
 			dlog_info("try alloc vp8 mbdatabuf_info, buffer_type:%d, request_size:0x%x", mbdatabuf_info.buffer_type, mbdatabuf_info.request_size);
 			ret = vmem_proc_alloc_memory(codec_type, &mbdatabuf_info, (vputype)drv_info->pmap_type);
-			if(ret == 0)
-			{
+			if (ret == 0) {
 				alloc_info->mbdata_buf.addr[VPU_PA] = (codec_addr_t)mbdatabuf_info.phy_addr;
 				alloc_info->mbdata_buf.addr[VPU_KVA] = (codec_addr_t)mbdatabuf_info.kernel_remap_addr;
 				alloc_info->mbdata_buf.size = mbdatabuf_info.request_size;
-				dlog_info("alloc success vp8 mbdata_buf, PA:0x%x, KVA:0x%x, size:%d",
+				dlog_info("alloc success vp8 mbdata_buf, PA:0x%llx, KVA:0x%llx, size:%d",
 					alloc_info->mbdata_buf.addr[VPU_PA], alloc_info->mbdata_buf.addr[VPU_KVA], alloc_info->mbdata_buf.size);
-			}
-			else
-			{
+			} else {
 				ret = -1;
 				err_info("alloc mbdatabuf_info fail");
 			}
@@ -280,12 +233,10 @@ static int vmgr_decode_alloc_framebuffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 
 	//framebuffer
 	dlog_info("ret:%d, to alloc framebuffer", ret);
-	if(ret == 0)
-	{
+	if (ret == 0) {
 		dlog_info("framebuffer min count:%d, add count:%d", cmd_seqheader->output.initial_info.min_frame_buffer_count, alloc_info->additional_frame_buffer_count);
 		alloc_info->framebuffer_count = cmd_seqheader->output.initial_info.min_frame_buffer_count + alloc_info->additional_frame_buffer_count;
-		if(alloc_info->framebuffer_count > MAX_FRAMEBUFFER_COUNT)
-		{
+		if (alloc_info->framebuffer_count > MAX_FRAMEBUFFER_COUNT) {
 			alloc_info->framebuffer_count = MAX_FRAMEBUFFER_COUNT;
 		}
 
@@ -296,23 +247,19 @@ static int vmgr_decode_alloc_framebuffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 
 		dlog_info("alloc framebuffer size", buf_size);
 
-		if(buf_size > 0)
-		{
+		if (buf_size > 0) {
 			framebuff_info.buffer_type = BUFFER_FRAMEBUFFER;
 			framebuff_info.request_size = buf_size;
 
 			dlog_info("try alloc framebuff_info, buffer_type:%d, request_size:0x%x", framebuff_info.buffer_type, framebuff_info.request_size);
 			ret = vmem_proc_alloc_memory(codec_type, &framebuff_info, (vputype)drv_info->pmap_type);
-			if(ret == 0)
-			{
+			if (ret == 0) {
 				alloc_info->frame_buf.addr[VPU_PA] = (codec_addr_t)framebuff_info.phy_addr;
 				alloc_info->frame_buf.addr[VPU_KVA] = (codec_addr_t)framebuff_info.kernel_remap_addr;
 				alloc_info->frame_buf.size = framebuff_info.request_size;
-				dlog_info("alloc success, frame_buf, PA:0x%x, KVA:0x%x, size:%d",
+				dlog_info("alloc success, frame_buf, PA:0x%llx, KVA:0x%llx, size:%d",
 					alloc_info->frame_buf.addr[VPU_PA], alloc_info->frame_buf.addr[VPU_KVA], alloc_info->frame_buf.size);
-			}
-			else
-			{
+			} else {
 				ret = -1;
 				err_info("alloc framebuff_info fail");
 			}
@@ -323,11 +270,11 @@ static int vmgr_decode_alloc_framebuffer(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv
 }
 
 #if defined(ENABLE_RINGBUFFER_MODE)
-static int vmgr_ringbuffer_getinfo(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info, vdec_v3_ringbuff_get_info_t* get_info)
+static int vmgr_ringbuffer_getinfo(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info, vdec_v3_ringbuff_get_info_t *get_info)
 {
 	int ret = 0;
 	vpu_cmd_t tmp_cmd;
-	vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
+	vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
 	vetc_memcpy(&tmp_cmd, cmd, sizeof(vpu_cmd_t), 0);
 
 	//get buffer info
@@ -338,11 +285,11 @@ static int vmgr_ringbuffer_getinfo(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_i
 	return ret;
 }
 
-static int vmgr_ringbuffer_setinfo(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info, vdec_v3_ringbuff_set_info_t* set_info)
+static int vmgr_ringbuffer_setinfo(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info, vdec_v3_ringbuff_set_info_t *set_info)
 {
 	int ret = 0;
 	vpu_cmd_t tmp_cmd;
-	vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
+	vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
 
 	vetc_memcpy(&tmp_cmd, cmd, sizeof(vpu_cmd_t), 0);
 
@@ -355,159 +302,35 @@ static int vmgr_ringbuffer_setinfo(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_i
 }
 #endif //defined(ENABLE_RINGBUFFER_MODE)
 
-#if defined(ENABLE_INTERLACE_FRAME_MERGE)
-static void vmgr_interlace_reset(vpu_mgr_t* mgr_ctx, vpu_drv_info_t* drv_info)
-{
-	//initialze interlace buffer info
-	drv_info->interlace_first_field_info.size = 0;
-	drv_info->interlace_first_field_info.addr[VPU_PA] = 0;
-	drv_info->interlace_first_field_info.addr[VPU_KVA] = 0;
-
-	drv_info->is_interlace_need_merge = 0;
-}
-
-static int vmgr_interlace_pre_proc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_init_preproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
-	vdec_v3_decode_t* cmd_decode = (vdec_v3_decode_t*)cmd->args;
-
-	//If a frame done is detected instead of an interlace field in 'vmgr_dec_decode_postproc()', it will be set to 1
-	if(drv_info->is_interlace_process_start == 1)
-	{
-		if ((drv_info->is_interlace_need_merge == 1) && (drv_info->interlace_first_field_info.size > 0) && (drv_info->interlace_first_field_info.addr[VPU_PA] != 0))
-		{
-			//Enables the merging of stored bitstream data for the first field to facilitate decoding
-			cmd_decode->input.bitstream_size += (drv_info->interlace_first_field_info.size);
-			cmd_decode->input.bitstream_addr[VPU_PA] = drv_info->interlace_first_field_info.addr[VPU_PA];
-			cmd_decode->input.bitstream_addr[VPU_KVA] = drv_info->interlace_first_field_info.addr[VPU_KVA];
-
-			dlog_info("merge with stored interlace information, after addr:0x%x, size:%d", cmd_decode->input.bitstream_addr[VPU_PA], cmd_decode->input.bitstream_size);
-		}
-		else
-		{
-			//In preparation for the next merge, the information of the first field is being stored
-			drv_info->interlace_first_field_info.size = cmd_decode->input.bitstream_size;
-			drv_info->interlace_first_field_info.addr[VPU_PA] = cmd_decode->input.bitstream_addr[VPU_PA];
-			drv_info->interlace_first_field_info.addr[VPU_KVA] = cmd_decode->input.bitstream_addr[VPU_KVA];
-			dlog_info("store interlace info, addr:0x%x, size:%d", drv_info->interlace_first_field_info.addr[VPU_PA], drv_info->interlace_first_field_info.size);
-
-			//handle without performing decoding, each ip should return error if input size is zero
-			cmd_decode->input.bitstream_size = 0;
-		}
-	}
-
-	return ret;
-}
-
-static int vmgr_interlace_post_proc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
-{
-	int ret = 0;
-	vdec_v3_decode_t* cmd_decode = (vdec_v3_decode_t*)cmd->args;
-	vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
-
-	if ((cmd_decode->output.out_info.decoded_status == VPU_DEC_STAT_SUCCESS_FIELD_PICTURE) && (drv_info->is_interlace_video == 0))
-	{
-		drv_info->is_interlace_video = 1;
-		detail_info("Interlace video detected");
-	}
-
-	if (drv_info->is_interlace_video == 1)
-	{
-		if (cmd_decode->output.out_info.decoded_status == VPU_DEC_STAT_SUCCESS_FIELD_PICTURE)
-		{
-			if (drv_info->is_interlace_process_start == 1)
-			{
-				//When the interlace process begins, the subsequent decoding outcome should result in a merged frame, referred to as 'frame done.'
-				//If the decoding status indicates a field picture, it suggests an issue with the merged frame, prompting the execution of exception handling for failure
-				if(drv_info->is_interlace_need_merge == 1)
-				{
-					detail_info("interlace merge failed");
-				}
-				else
-				{
-					detail_info("interlace merge success");
-				}
-
-				//After the decoding of one field is completed, the data of the next field in the queue is decoded immediately
-				detail_info("Interlace field decode, need merge frame, drv_id:%d, decoded status:%d", drv_info->drv_id, cmd_decode->output.out_info.decoded_status);
-				drv_info->is_interlace_need_merge = 1;
-			}
-		}
-		else
-		{
-			if(drv_info->is_interlace_process_start == 1)
-			{
-				//After completion of decoding one frame, both the top and bottom fields must be present for the subsequent decoding
-				//drv_info->interlace_poll_wake_up = 0;
-				detail_info("Interlace frame done, drv_id:%d, decoded status:%d", drv_info->drv_id, cmd_decode->output.out_info.decoded_status);
-				drv_info->is_interlace_need_merge = 0;
-			}
-
-			//only once
-			if(drv_info->is_interlace_process_start == 0)
-			{
-				drv_info->is_interlace_process_start = 1;
-				detail_info("start interlace process, drv_id:%d, decoded status:%d", drv_info->drv_id, cmd_decode->output.out_info.decoded_status);
-			}
-		}
-	}
-
-	detail_info("is_interlace_process_start:%d, cmd_decode->result:%d", drv_info->is_interlace_process_start, cmd->result);
-
-	if(drv_info->is_interlace_process_start == 1)
-	{
-		//calculate next bitstream address continuosly
-		if(cmd->result == VPU_RETCODE_FRAME_NOT_COMPLETE)
-		{
-			//decode_preproc set cmd_decode->input.bitstream_size to 0, so need to use drv_info->interlace_first_field_info.size
-			//first field buffer info use drv_info->interlace_first_field_info.addr[VPU_PA]
-			cmd_decode->output.next_bitstream_buf_addr[VPU_PA] = ALIGNED_BUFF((drv_info->interlace_first_field_info.addr[VPU_PA] + drv_info->interlace_first_field_info.size), 4096u);
-			cmd_decode->output.next_bitstream_buf_addr[VPU_KVA] = ALIGNED_BUFF((drv_info->interlace_first_field_info.addr[VPU_KVA] + drv_info->interlace_first_field_info.size), 4096u);
-			cmd_decode->output.next_bitstream_buf_size = alloc_info->size_of_bitstream_buffer;
-		}
-		else
-		{
-			//when a pair of frames is decoded, set the buffer's starting position to the beginning of the buffer
-			//That way, space is created to append the data from the next field at the end.
-			cmd_decode->output.next_bitstream_buf_addr[VPU_PA] = alloc_info->bitstream_buf.addr[VPU_PA];
-			cmd_decode->output.next_bitstream_buf_addr[VPU_KVA] = alloc_info->bitstream_buf.addr[VPU_KVA];
-			cmd_decode->output.next_bitstream_buf_size = alloc_info->size_of_bitstream_buffer;
-			dlog_info("set next to beins of buffer:0x%x, size:%d", cmd_decode->output.next_bitstream_buf_addr[VPU_PA], cmd_decode->output.next_bitstream_buf_size);
-		}
-	}
-
-	return ret;
-}
-#endif //defined(ENABLE_INTERLACE_FRAME_MERGE)
-
-static int vmgr_dec_init_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
-{
-	int ret = 0;
-	vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
-	vdec_v3_init_t* cmd_init = (vdec_v3_init_t*)cmd->args;
+	vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
+	vdec_v3_init_t *cmd_init = (vdec_v3_init_t *)cmd->args;
 
 	drv_info->handle = 0x00;
 
 #if defined(USE_ACCESS_POINT)
-	if (vmgr_accesspoint_check_addr_valid(mgr_ctx->access_point) != 0)
-	{
+	if (vmgr_accesspoint_check_addr_valid(mgr_ctx->access_point) != 0) {
 		err_info("Invalid Access address!!");
 		ret = -1;
 	}
 #endif
 
-	if (ret != -1)
-	{
+	if (ret != -1) {
+		if (cmd_init->input.enable_interlace_processing == 1U) {
+			drv_info->enable_interlace_delay_proc = 1U;
+			dlog_info("enable interlace delay processing");
+		}
+
 		ret = vmgr_decode_alloc_init_buffer(mgr_ctx, drv_info, cmd_init);
-		if(ret != 0)
-		{
+		if (ret != 0) {
 			cmd->result = VPU_RETCODE_INSUFFICIENT_MEMORY;
 			err_info("failed to allocate vmgr_decode_alloc_init_buffer()");
 		}
 
 		ret = vmgr_alloc_ip_parameter(drv_info, each_ip->dec_param_size);
-		if(ret != 0)
-		{
+		if (ret != 0) {
 			cmd->result = VPU_RETCODE_INSUFFICIENT_MEMORY;
 			err_info("failed to allocate vmgr_alloc_ip_parameter() for decoder");
 		}
@@ -516,19 +339,17 @@ static int vmgr_dec_init_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_inf
 	return ret;
 }
 
-static int vmgr_dec_seqhead_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_seqhead_preproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
-	vdec_v3_seqheader_t* cmd_seqheader = (vdec_v3_seqheader_t*)cmd->args;
+	vdec_v3_seqheader_t *cmd_seqheader = (vdec_v3_seqheader_t *)cmd->args;
 
-	if (cmd_seqheader->input.enable_user_register_framebuffer == 1U)
-	{
+	if (cmd_seqheader->input.enable_user_register_framebuffer == 1U) {
 		drv_info->enable_user_register_framebuffer = 1U;
 		dlog_info("enable_user_register_framebuffer");
 	}
 
-	if(drv_info->enabled_ringbuffer_mode == 1U)
-	{
+	if (drv_info->enabled_ringbuffer_mode == 1U) {
 #if defined(ENABLE_RINGBUFFER_MODE)
 		vdec_v3_ringbuff_set_info_t setinfo;
 
@@ -536,8 +357,7 @@ static int vmgr_dec_seqhead_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_
 		setinfo.is_flush = 0;
 		//dlog_info("SEQ_HEADER written : %d, flush:%d", setinfo.written_byte, setinfo.is_flush);
 		ret = vmgr_ringbuffer_setinfo(mgr_ctx, cmd, drv_info, &setinfo);
-		if(ret != VPU_RETCODE_SUCCESS)
-		{
+		if (ret != VPU_RETCODE_SUCCESS) {
 			err_info("failed to setinfo in ringbuffer mode, ret:%d", ret);
 		}
 #endif //defined(ENABLE_RINGBUFFER_MODE)
@@ -546,16 +366,13 @@ static int vmgr_dec_seqhead_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_
 	return ret;
 }
 
-static int vmgr_dec_reg_framebuffer_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_reg_framebuffer_preproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 
-	if (drv_info->enable_user_register_framebuffer == 1U)
-	{
+	if (drv_info->enable_user_register_framebuffer == 1U) {
 
-	}
-	else
-	{
+	} else {
 		err_info("User framebuffer registration is not enabled, but attempting to register framebuffer from user");
 		ret = -1;
 	}
@@ -564,50 +381,39 @@ static int vmgr_dec_reg_framebuffer_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, 
 }
 
 
-static int vmgr_dec_decode_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_decode_preproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 
-	vdec_v3_decode_t* cmd_decode = (vdec_v3_decode_t*)cmd->args;
+	vdec_v3_decode_t *cmd_decode = (vdec_v3_decode_t *)cmd->args;
 
 #if defined(ENABLE_AUTO_FRAMESKIP)
 	//frame skip control
-	if(cmd_decode->input.skip_mode == VPU_FRAMESKIP_AUTO)
-	{
+	if (cmd_decode->input.skip_mode == VPU_FRAMESKIP_AUTO) {
 		//auto frameskip
 		detail_info("internal_skip_mode:%d", drv_info->internal_skip_mode);
 
-		if(drv_info->internal_skip_mode == VPU_FRAMESKIP_DISABLED)
-		{
+		if (drv_info->internal_skip_mode == VPU_FRAMESKIP_DISABLED) {
 			cmd_decode->input.skip_mode = (int)VPU_FRAMESKIP_DISABLED;
-		}
-		else if(drv_info->internal_skip_mode == VPU_FRAMESKIP_NON_I)
-		{
+		} else if (drv_info->internal_skip_mode == VPU_FRAMESKIP_NON_I) {
 			cmd_decode->input.skip_mode = (int)VPU_FRAMESKIP_NON_I;
-		}
-		else if(drv_info->internal_skip_mode == VPU_FRAMESKIP_B)
-		{
+		} else if (drv_info->internal_skip_mode == VPU_FRAMESKIP_B) {
 			cmd_decode->input.skip_mode = (int)VPU_FRAMESKIP_B;
-		}
-		else
-		{
+		} else {
 			cmd_decode->input.skip_mode = (int)VPU_FRAMESKIP_DISABLED;
 		}
 
 		dlog_info("input.skip_mode:%d", cmd_decode->input.skip_mode);
-	}
-	else
-	{
+	} else {
 		//user manually control
 		drv_info->internal_skip_mode = VPU_FRAMESKIP_DISABLED;
 		dlog_info("internal_skip_mode:%d", drv_info->internal_skip_mode);
 	}
 #endif //defined(ENABLE_AUTO_FRAMESKIP)
 
-	if(drv_info->enabled_ringbuffer_mode == 1U)
-	{
+	if (drv_info->enabled_ringbuffer_mode == 1U) {
 #if defined(ENABLE_RINGBUFFER_MODE)
-		vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
+		vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
 		vdec_v3_ringbuff_set_info_t setinfo;
 		int vpu_bitstream_size;
 		vpu_addr_t bistream_end_addr = 0;
@@ -617,53 +423,41 @@ static int vmgr_dec_decode_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_i
 
 		dlog_info("decode input size:%d", setinfo.written_byte);
 
-		if (setinfo.written_byte > 0)
-		{
+		if (setinfo.written_byte > 0) {
 			//dlog_info("DECODE written : %d(%d + %d), flush:%d", setinfo.written_byte, cmd_decode->input.bitstream_size, cmd_decode->input.bitstream_size_2, setinfo.is_flush);
 			ret = vmgr_ringbuffer_setinfo(mgr_ctx, cmd, drv_info, &setinfo);
-			if(ret != VPU_RETCODE_SUCCESS)
-			{
+			if (ret != VPU_RETCODE_SUCCESS) {
 				detail_info("failed to setinfo in ringbuffer mode, ret:%d", ret);
 				detail_info("DECODE written : %d, flush:%d", setinfo.written_byte, setinfo.is_flush);
 			}
 
 			vpu_bitstream_size = alloc_info->bitstream_buf.size - alloc_info->bitstream_safearea_size; //vpu known bitstream buffer size
 			bistream_end_addr = alloc_info->bitstream_buf.addr[VPU_PA] + vpu_bitstream_size; //vpu kneown end address
-			dlog_info("vpu known, bitstream_size:%d, end addr:0x%x", (alloc_info->bitstream_buf.size - alloc_info->bitstream_safearea_size), bistream_end_addr);
+			dlog_info("vpu known, bitstream_size:%d, end addr:0x%llx", (alloc_info->bitstream_buf.size - alloc_info->bitstream_safearea_size), bistream_end_addr);
 
 			//if bitstream buffer in save area, copy to begins of bitstream buffer with that size
-			if ((cmd_decode->input.bitstream_addr[VPU_PA] + cmd_decode->input.bitstream_size) > bistream_end_addr)
-			{
+			if ((cmd_decode->input.bitstream_addr[VPU_PA] + cmd_decode->input.bitstream_size) > bistream_end_addr) {
 				int overflow_size;
 				int offset;
 
 				overflow_size = (cmd_decode->input.bitstream_addr[VPU_PA] + cmd_decode->input.bitstream_size) - bistream_end_addr;
 				offset = cmd_decode->input.bitstream_size - overflow_size;
-				detail_info("overflow_size:%d, offset:%d, src addr[KVA]:0x%x", overflow_size, offset, (cmd_decode->input.bitstream_addr[VPU_KVA] + offset));
+				detail_info("overflow_size:%d, offset:%d, src addr[KVA]:0x%llx", overflow_size, offset, (cmd_decode->input.bitstream_addr[VPU_KVA] + offset));
 
 				//Copy to the front of the buffer
-				memcpy((void*)alloc_info->bitstream_buf.addr[VPU_KVA], (void*)(cmd_decode->input.bitstream_addr[VPU_KVA] + offset), overflow_size);
+				memcpy((void *)(uintptr_t)alloc_info->bitstream_buf.addr[VPU_KVA], (void *)(uintptr_t)(cmd_decode->input.bitstream_addr[VPU_KVA] + offset), overflow_size);
 				detail_info("overflow copy done");
 			}
-		}
-		else
-		{
+		} else {
 			dlog_info("input size 0");
 		}
 #endif //defined(ENABLE_RINGBUFFER_MODE)
-	}
-	else
-	{
-#if defined(ENABLE_INTERLACE_FRAME_MERGE)
-		//interlace process
-		(void)vmgr_interlace_pre_proc(mgr_ctx, cmd, drv_info);
-#endif //#if defined(ENABLE_INTERLACE_FRAME_MERGE)
 	}
 
 	return ret;
 }
 
-static int vmgr_dec_flush_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_flush_preproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 
@@ -672,84 +466,77 @@ static int vmgr_dec_flush_preproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_in
 	return ret;
 }
 
-static int vmgr_decode_pre_proc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_decode_pre_proc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 
-	switch (cmd->cmd_type)
+	switch (cmd->cmd_type) {
+	case VPU_CMD_DEC_INIT:
 	{
-		case VPU_CMD_DEC_INIT:
-		{
-			vmgr_dec_init_preproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+		vmgr_dec_init_preproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_SEQ_HEADER:
-		{
-			vmgr_dec_seqhead_preproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_SEQ_HEADER:
+	{
+		vmgr_dec_seqhead_preproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_REG_USER_FRAME_BUFFER:
-		{
-			vmgr_dec_reg_framebuffer_preproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_REG_USER_FRAME_BUFFER:
+	{
+		vmgr_dec_reg_framebuffer_preproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_DECODE:
-		{
-			vmgr_dec_decode_preproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_DECODE:
+	{
+		vmgr_dec_decode_preproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_FLUSH:
-		{
-			vmgr_dec_flush_preproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_FLUSH:
+	{
+		vmgr_dec_flush_preproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		default:
-			ret = 0;
-		break;
+	default:
+		ret = 0;
+	break;
 	}
 
 	return ret;
 }
 
-static int vmgr_dec_init_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_init_postproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
-	vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
+	vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
 
-	if (cmd->result != VPU_RETCODE_SUCCESS)
-	{
-		if (cmd->result != VPU_RETCODE_CODEC_EXIT)
-		{
+	if (cmd->result != VPU_RETCODE_SUCCESS) {
+		if (cmd->result != VPU_RETCODE_CODEC_EXIT) {
 			vetc_dump_reg_all(mgr_ctx->base_addr, "dec init failure");
 		}
 	}
 
-	if (cmd->result != VPU_RETCODE_CODEC_EXIT)
-	{
-		vdec_v3_init_t* cmd_init = (vdec_v3_init_t*)cmd->args;
+	if (cmd->result != VPU_RETCODE_CODEC_EXIT) {
+		vdec_v3_init_t *cmd_init = (vdec_v3_init_t *)cmd->args;
 
 		drv_info->opened = true;
 
 #if defined(ENABLE_RINGBUFFER_MODE)
-		if(cmd_init->output.is_ringbuffer_mode == 1U)
-		{
+		if (cmd_init->output.is_ringbuffer_mode == 1U) {
 			drv_info->enabled_ringbuffer_mode = 1U;
 		}
 #endif
 
-		if(drv_info->enabled_ringbuffer_mode == 1U)
-		{
+		if (drv_info->enabled_ringbuffer_mode == 1U) {
 #if defined(ENABLE_RINGBUFFER_MODE)
 			vdec_v3_ringbuff_get_info_t getinfo;
 
 			ret = vmgr_ringbuffer_getinfo(mgr_ctx, cmd, drv_info, &getinfo);
-			if(ret == 0)
-			{
+			if (ret == 0) {
 				int writable_size;
 				int offset;
 
@@ -770,9 +557,7 @@ static int vmgr_dec_init_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_in
 				dlog_info("addr:0x%x, size:%d", cmd_init->output.next_bitstream_buf_addr[VPU_PA], cmd_init->output.next_bitstream_buf_size);
 			}
 #endif //defined(ENABLE_RINGBUFFER_MODE)
-		}
-		else
-		{
+		} else {
 			cmd_init->output.next_bitstream_buf_addr[VPU_PA] = alloc_info->bitstream_buf.addr[VPU_PA];
 			cmd_init->output.next_bitstream_buf_addr[VPU_KVA] = alloc_info->bitstream_buf.addr[VPU_KVA];
 			cmd_init->output.next_bitstream_buf_size = alloc_info->bitstream_buf.size;
@@ -782,40 +567,32 @@ static int vmgr_dec_init_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_in
 		cmd_init->output.userdata_buf_addr[VPU_KVA] = alloc_info->userdata_buf.addr[VPU_KVA];
 		cmd_init->output.userdata_buf_size = alloc_info->userdata_buf.size;
 
-#if defined(ENABLE_INTERLACE_FRAME_MERGE)
-		vmgr_interlace_reset(mgr_ctx, drv_info);
-#endif //#if defined(ENABLE_INTERLACE_FRAME_MERGE)
-
-		dlog_info("Init Done with ret(0x%x), bitstream pa:0x%x, kva:0x%x, size:%d, buffer index:%d, userdata pa:0x%x, kva:0x%x, size:%d, ringbuffer mode:%u",
+		dlog_info("Init Done with ret(0x%x), bitstream pa:0x%llx, kva:0x%llx, size:%d, buffer index:%d, userdata pa:0x%llx, kva:0x%llx, size:%d, ringbuffer mode:%u",
 				cmd->result,
 				cmd_init->output.next_bitstream_buf_addr[VPU_PA], cmd_init->output.next_bitstream_buf_addr[VPU_KVA],
 				alloc_info->size_of_bitstream_buffer, alloc_info->bitstream_buffer_index,
 				cmd_init->output.userdata_buf_addr[VPU_PA], cmd_init->output.userdata_buf_addr[VPU_KVA], cmd_init->output.userdata_buf_size,
 				cmd_init->output.is_ringbuffer_mode);
-	}
-	else
-	{
+	} else {
 		vmem_proc_free_memory(cmd->pmap_type);
 	}
 
 	return ret;
 }
 
-static int vmgr_dec_update_bitstream_buffer(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_update_bitstream_buffer(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 
-	vdec_v3_seqheader_t* cmd_seqheader = (vdec_v3_seqheader_t*)cmd->args;
-	vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
+	vdec_v3_seqheader_t *cmd_seqheader = (vdec_v3_seqheader_t *)cmd->args;
+	vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
 
-	if(drv_info->enabled_ringbuffer_mode == 1U)
-	{
+	if (drv_info->enabled_ringbuffer_mode == 1U) {
 #if defined(ENABLE_RINGBUFFER_MODE)
 		vdec_v3_ringbuff_get_info_t getinfo;
 
 		ret = vmgr_ringbuffer_getinfo(mgr_ctx, cmd, drv_info, &getinfo);
-		if(ret == 0)
-		{
+		if (ret == 0) {
 			int writable_size;
 			//int writable_size_2; //from the front address
 			int offset;
@@ -831,16 +608,13 @@ static int vmgr_dec_update_bitstream_buffer(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, 
 					empty, getinfo.available_space, getinfo.read_physical_addr, getinfo.write_physical_addr);
 
 
-			if(getinfo.write_physical_addr >= getinfo.read_physical_addr)
-			{
+			if (getinfo.write_physical_addr >= getinfo.read_physical_addr) {
 				//	   vpu read    write	 safe
 				// |----------------------|-------| bitstream buffer
 				//					 |------------| writable size
 				writable_size = alloc_info->bitstream_buf.size - offset; //including safe area size
 				dlog_info("write > read, writable_size:%d, write - read:%d", writable_size,  getinfo.write_physical_addr - getinfo.read_physical_addr);
-			}
-			else
-			{
+			} else {
 				//	  write 	 vpu read	 safe
 				// |----------------------|-------|  bitstream buffer
 				//		 |-----------| writable size
@@ -859,9 +633,7 @@ static int vmgr_dec_update_bitstream_buffer(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, 
 			dlog_info("seq header output, next bitstream addr:0x%x, size:%d", cmd_seqheader->output.next_bitstream_buf_addr[VPU_PA], cmd_seqheader->output.next_bitstream_buf_size);
 		}
 #endif //#if defined(ENABLE_RINGBUFFER_MODE)
-	}
-	else
-	{
+	} else {
 		int offset = 0;
 		offset = vmgr_decode_get_bitstream_offset_update_index(alloc_info);
 
@@ -869,7 +641,7 @@ static int vmgr_dec_update_bitstream_buffer(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, 
 		cmd_seqheader->output.next_bitstream_buf_addr[VPU_KVA] = alloc_info->bitstream_buf.addr[VPU_KVA] + offset;
 		cmd_seqheader->output.next_bitstream_buf_size = alloc_info->size_of_bitstream_buffer;
 
-		dlog_info("sequence header init done with ret(0x%x), bitstream pa:0x%x, kva:0x%x, size:%d, buffer index:%d",
+		dlog_info("sequence header init done with ret(0x%x), bitstream pa:0x%llx, kva:0x%llx, size:%d, buffer index:%d",
 			cmd->result,
 			cmd_seqheader->output.next_bitstream_buf_addr[VPU_PA], cmd_seqheader->output.next_bitstream_buf_addr[VPU_KVA],
 			alloc_info->size_of_bitstream_buffer, alloc_info->bitstream_buffer_index);
@@ -878,12 +650,12 @@ static int vmgr_dec_update_bitstream_buffer(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, 
 	return ret;
 }
 
-static int vmgr_dec_seqheader_update_buffer_size(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_seqheader_update_buffer_size(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
-	vdec_v3_seqheader_t* cmd_seqheader = (vdec_v3_seqheader_t*)cmd->args;
-	vdec_v3_buffer_size_info_t* size_info = &cmd_seqheader->output.buffer_size_info;
-	vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
+	vdec_v3_seqheader_t *cmd_seqheader = (vdec_v3_seqheader_t *)cmd->args;
+	vdec_v3_buffer_size_info_t *size_info = &cmd_seqheader->output.buffer_size_info;
+	vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
 
 	size_info->framebuffer_size[VPU_FRAMEBUFFER_Y] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_Y, drv_info);
 	size_info->framebuffer_size[VPU_FRAMEBUFFER_CB] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_CB, drv_info);
@@ -891,53 +663,59 @@ static int vmgr_dec_seqheader_update_buffer_size(vpu_mgr_t* mgr_ctx, vpu_cmd_t* 
 	size_info->framebuffer_size[VPU_FRAMEBUFFER_MVCOL] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_MVCOL, drv_info);
 	size_info->framebuffer_size[VPU_FRAMEBUFFER_FBCY] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_FBCY, drv_info);
 	size_info->framebuffer_size[VPU_FRAMEBUFFER_FBCC] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_FBCC, drv_info);
+	size_info->framebuffer_size[VPU_FRAMEBUFFER_COMP_Y] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_COMP_Y, drv_info);
+	size_info->framebuffer_size[VPU_FRAMEBUFFER_COMP_C] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_COMP_C, drv_info);
 
 	size_info->framebuffer_ext_size[VPU_FRAMEBUFFER_EXT_AVC_SLICE] = each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_SLICE, drv_info);
 	size_info->framebuffer_ext_size[VPU_FRAMEBUFFER_EXT_VP8_MBDATA] =  each_ip->proc_get_buffer_size(mgr_ctx, VMGR_BUF_MBDATA, drv_info);
 
-	detail_info("vmgr_dec_seqheader buffer size Y:%d, CB:%d, CR:%d, MVCOL:%d, FBCY:%d, FBCC:%d, AVC Slice:%d, VP8 MBData:%d",
+	detail_info("vmgr_dec_seqheader buffer size Y:%d, CB:%d, CR:%d, MVCOL:%d, FBCY:%d, FBCC:%d, COMP_Y:%d, COMP_C:%d, AVC Slice:%d, VP8 MBData:%d",
 				size_info->framebuffer_size[VPU_FRAMEBUFFER_Y],
 				size_info->framebuffer_size[VPU_FRAMEBUFFER_CB],
 				size_info->framebuffer_size[VPU_FRAMEBUFFER_CR],
 				size_info->framebuffer_size[VPU_FRAMEBUFFER_MVCOL],
 				size_info->framebuffer_size[VPU_FRAMEBUFFER_FBCY],
 				size_info->framebuffer_size[VPU_FRAMEBUFFER_FBCC],
+				size_info->framebuffer_size[VPU_FRAMEBUFFER_COMP_Y],
+				size_info->framebuffer_size[VPU_FRAMEBUFFER_COMP_C],
 				size_info->framebuffer_ext_size[VPU_FRAMEBUFFER_EXT_AVC_SLICE],
 				size_info->framebuffer_ext_size[VPU_FRAMEBUFFER_EXT_VP8_MBDATA]);
 
 	return ret;
 }
 
-static int vmgr_dec_seqhead_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_seqhead_postproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
+	vdec_v3_seqheader_t *cmd_seqheader = (vdec_v3_seqheader_t *)cmd->args;
+	vdec_v3_initial_info_t *init_info = &cmd_seqheader->output.initial_info;
 
 	dlog_info("VPU_DEC_SEQ_HEADER post proc");
 
-	if (drv_info->enable_user_register_framebuffer == 0U)
-	{
-		vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
-		vdec_v3_seqheader_t* cmd_seqheader = (vdec_v3_seqheader_t*)cmd->args;
-		vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
+	//sequence header info
+	detail_vmgr("[id:%u] pic %d x %d, frame_rate %u/%u, buffer count min:%d, size:%d, format:%d",
+		drv_info->drv_id, init_info->pic_width, init_info->pic_height, init_info->frame_rate_res, init_info->frame_rate_div, init_info->min_frame_buffer_count, init_info->min_frame_buffer_size, init_info->frame_buffer_format);
+	detail_vmgr("[id:%u] crop l:%d, r:%d, t:%d, b:%d, delay:%d, profile:%d, level:%d, interlace:%d, aspectratio:%d, bitdepth:%d",
+		drv_info->drv_id, init_info->pic_crop.left, init_info->pic_crop.right, init_info->pic_crop.top, init_info->pic_crop.bottom, init_info->frame_buf_delay, init_info->profile, init_info->level, init_info->interlace, init_info->aspectratio, init_info->bitdepth);
+
+	if (drv_info->enable_user_register_framebuffer == 0U) {
+		vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
+		vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
 
 		detail_info("vmgr_decode_alloc_framebuffer ---");
 		ret = vmgr_decode_alloc_framebuffer(mgr_ctx, drv_info, cmd_seqheader);
 		detail_info("vmgr_decode_alloc_framebuffer +++ ret:%d", ret);
-		if(ret == 0)
-		{
+		if (ret == 0) {
 			//framebuffer register
 			detail_info("call VPU_DEC_REG_FRAME_BUFFER");
 			cmd->result = each_ip->proc_decode(mgr_ctx, VPU_CMD_DEC_REG_FRAME_BUFFER, cmd, drv_info);
 			detail_info("call VPU_DEC_REG_FRAME_BUFFER, result:%d", cmd->result);
-			if(cmd->result == VPU_RETCODE_SUCCESS)
-			{
+			if (cmd->result == VPU_RETCODE_SUCCESS) {
 				cmd_seqheader->output.framebuf_addr[VPU_PA] = alloc_info->frame_buf.addr[VPU_PA];
 				cmd_seqheader->output.framebuf_addr[VPU_KVA] = alloc_info->frame_buf.addr[VPU_KVA];
 				cmd_seqheader->output.framebuf_size = alloc_info->frame_buf.size;
 			}
-		}
-		else
-		{
+		} else {
 			err_info("VPU_DEC_REG_FRAME_BUFFER failed, result:%d", cmd->result);
 			cmd->result = VPU_RETCODE_INSUFFICIENT_MEMORY;
 		}
@@ -954,7 +732,7 @@ static int vmgr_dec_seqhead_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv
 	return ret;
 }
 
-static int vmgr_dec_reg_framebuffer_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_reg_framebuffer_postproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 	//dlog_info("VPU_CMD_DEC_REG_USER_FRAME_BUFFER post proc");
@@ -963,7 +741,7 @@ static int vmgr_dec_reg_framebuffer_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd,
 	return ret;
 }
 
-static int vmgr_dec_decode_set_dma_buf_id(vpu_drv_info_t* drv_info, vdec_v3_decode_out_t* dec_output)
+static int vmgr_dec_decode_set_dma_buf_id(vpu_drv_info_t *drv_info, vdec_v3_decode_out_t *dec_output)
 {
 	int ret = 0;
 
@@ -972,59 +750,50 @@ static int vmgr_dec_decode_set_dma_buf_id(vpu_drv_info_t* drv_info, vdec_v3_deco
 	mem_info.phys = (unsigned long)dec_output->display_out[VPU_PA][VPU_COMP_Y];
 	mem_info.size = 0UL;
 
-	switch(drv_info->dec_init_info.output_format)
-	{
-		case VPU_OUTPUT_LINEAR_YUV420:
-			if(drv_info->initial_info.bitdepth == 8)  // 8 or 10
-			{
-				mem_info.size = (unsigned long)(dec_output->out_info.dma_buf_align_width * dec_output->out_info.dma_buf_align_height * 3) / 2;
-			}
-			else
-			{
-				ret = -1;
-			}
-		break;
-
-		case VPU_OUTPUT_LINEAR_NV12:
-			if(drv_info->initial_info.bitdepth == 8)
-			{
-				mem_info.size = (unsigned long)(dec_output->out_info.dma_buf_align_width * dec_output->out_info.dma_buf_align_height) +
-					((dec_output->out_info.dma_buf_align_width/2) * (dec_output->out_info.dma_buf_align_height/2));
-			}
-			else
-			{
-				ret = -1;
-			}
-		break;
-
-		case VPU_OUTPUT_LINEAR_10_TO_8_BIT_YUV420:
+	switch (drv_info->dec_init_info.output_format) {
+	case VPU_OUTPUT_LINEAR_YUV420:
+		if (drv_info->initial_info.bitdepth == 8) {
 			mem_info.size = (unsigned long)(dec_output->out_info.dma_buf_align_width * dec_output->out_info.dma_buf_align_height * 3) / 2;
-		break;
+		} else {
+			ret = -1;
+		}
+	break;
 
-		case VPU_OUTPUT_LINEAR_10_TO_8_BIT_NV12:
+	case VPU_OUTPUT_LINEAR_NV12:
+		if (drv_info->initial_info.bitdepth == 8) {
 			mem_info.size = (unsigned long)(dec_output->out_info.dma_buf_align_width * dec_output->out_info.dma_buf_align_height) +
-					((dec_output->out_info.dma_buf_align_width/2) * (dec_output->out_info.dma_buf_align_height/2));
-		break;
-
-		case VPU_OUTPUT_COMPRESSED_MAPCONV:
+				((dec_output->out_info.dma_buf_align_width/2) * (dec_output->out_info.dma_buf_align_height/2));
+		} else {
 			ret = -1;
-		break;
+		}
+	break;
 
-		case VPU_OUTPUT_COMPRESSED_AFBC:
-			ret = -1;
-		break;
+	case VPU_OUTPUT_LINEAR_10_TO_8_BIT_YUV420:
+		mem_info.size = (unsigned long)(dec_output->out_info.dma_buf_align_width * dec_output->out_info.dma_buf_align_height * 3) / 2;
+	break;
 
-		default:
-			ret = -1;
-		break;
+	case VPU_OUTPUT_LINEAR_10_TO_8_BIT_NV12:
+		mem_info.size = (unsigned long)(dec_output->out_info.dma_buf_align_width * dec_output->out_info.dma_buf_align_height) +
+				((dec_output->out_info.dma_buf_align_width/2) * (dec_output->out_info.dma_buf_align_height/2));
+	break;
+
+	case VPU_OUTPUT_COMPRESSED_MAPCONV:
+		ret = -1;
+	break;
+
+	case VPU_OUTPUT_COMPRESSED_AFBC:
+		ret = -1;
+	break;
+
+	default:
+		ret = -1;
+	break;
 	}
 
 	mem_info.fd = -1;
-	if(mem_info.size != 0)
-	{
+	if (mem_info.size != 0) {
 		ret = tcc_mem_create_dma_buf(&mem_info);
-		if(ret == 0)
-		{
+		if (ret == 0) {
 			dec_output->dma_buf_id = mem_info.fd;
 		}
 	}
@@ -1032,20 +801,18 @@ static int vmgr_dec_decode_set_dma_buf_id(vpu_drv_info_t* drv_info, vdec_v3_deco
 	return ret;
 }
 
-int vmgr_dec_decode_update_bitstream_addr(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+int vmgr_dec_decode_update_bitstream_addr(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
-	vdec_v3_decode_t* cmd_decode = (vdec_v3_decode_t*)cmd->args;
-	vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
+	vdec_v3_decode_t *cmd_decode = (vdec_v3_decode_t *)cmd->args;
+	vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
 
-	if(drv_info->enabled_ringbuffer_mode == 1U)
-	{
+	if (drv_info->enabled_ringbuffer_mode == 1U) {
 #if defined(ENABLE_RINGBUFFER_MODE)
 		vdec_v3_ringbuff_get_info_t getinfo;
 
 		ret = vmgr_ringbuffer_getinfo(mgr_ctx, cmd, drv_info, &getinfo);
-		if(ret == 0)
-		{
+		if (ret == 0) {
 			int writable_size;
 			//int writable_size_2; //from the front address
 			int offset;
@@ -1061,16 +828,13 @@ int vmgr_dec_decode_update_bitstream_addr(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vp
 					empty, getinfo.available_space, getinfo.read_physical_addr, getinfo.write_physical_addr);
 
 
-			if(getinfo.write_physical_addr >= getinfo.read_physical_addr)
-			{
+			if (getinfo.write_physical_addr >= getinfo.read_physical_addr) {
 				//	   vpu read    write	 safe
 				// |----------------------|-------| bitstream buffer
 				//					 |------------| writable size
 				writable_size = alloc_info->bitstream_buf.size - offset; //including safe area size
 				dlog_info("write > read, writable_size:%d, write - read(buffered):%d", writable_size,  getinfo.write_physical_addr - getinfo.read_physical_addr);
-			}
-			else
-			{
+			} else {
 				//	  write 	 vpu read	 safe
 				// |----------------------|-------|  bitstream buffer
 				//		 |-----------| writable size
@@ -1085,100 +849,89 @@ int vmgr_dec_decode_update_bitstream_addr(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vp
 			cmd_decode->output.next_bitstream_buf_size = writable_size;
 
 			dlog_info("decode output, next bitstream addr:0x%x, size:%d", cmd_decode->output.next_bitstream_buf_addr[VPU_PA], cmd_decode->output.next_bitstream_buf_size);
-		}
-		else
-		{
+		} else {
 			err_info("vmgr_ringbuffer_getinfo error, ret:%d, handle:0x%x", ret, drv_info->handle);
 		}
 #endif //defined(ENABLE_RINGBUFFER_MODE)
-	}
-	else
-	{
+	} else {
 		int offset = 0;
 
-#if defined(ENABLE_INTERLACE_FRAME_MERGE)
-		(void)vmgr_interlace_post_proc(mgr_ctx, cmd, drv_info);
+		offset = vmgr_decode_get_bitstream_offset_update_index(alloc_info);
 
-		if(drv_info->is_interlace_process_start != 1)
-#endif //defined(ENABLE_INTERLACE_FRAME_MERGE)
-		{
-			offset = vmgr_decode_get_bitstream_offset_update_index(alloc_info);
+		cmd_decode->output.next_bitstream_buf_addr[VPU_PA] = alloc_info->bitstream_buf.addr[VPU_PA] + offset;
+		cmd_decode->output.next_bitstream_buf_addr[VPU_KVA] = alloc_info->bitstream_buf.addr[VPU_KVA] + offset;
+		cmd_decode->output.next_bitstream_buf_size = alloc_info->size_of_bitstream_buffer;
 
-			cmd_decode->output.next_bitstream_buf_addr[VPU_PA] = alloc_info->bitstream_buf.addr[VPU_PA] + offset;
-			cmd_decode->output.next_bitstream_buf_addr[VPU_KVA] = alloc_info->bitstream_buf.addr[VPU_KVA] + offset;
-			cmd_decode->output.next_bitstream_buf_size = alloc_info->size_of_bitstream_buffer;
-
-			dlog_info("linear set next to beins of buffer:0x%x, end:0x%x, size:%d, index:%d, nb buffer:%d",
-				cmd_decode->output.next_bitstream_buf_addr[VPU_PA],
-				alloc_info->bitstream_buf.addr[VPU_PA] + alloc_info->bitstream_buf.size,
-				cmd_decode->output.next_bitstream_buf_size,
-				alloc_info->bitstream_buffer_index,
-				alloc_info->num_of_bitstream_buffers
-				);
-		}
+		dlog_info("linear set next to beins of buffer:0x%x, end:0x%x, size:%d, index:%d, nb buffer:%d",
+			cmd_decode->output.next_bitstream_buf_addr[VPU_PA],
+			alloc_info->bitstream_buf.addr[VPU_PA] + alloc_info->bitstream_buf.size,
+			cmd_decode->output.next_bitstream_buf_size,
+			alloc_info->bitstream_buffer_index,
+			alloc_info->num_of_bitstream_buffers
+			);
 	}
 
 	return ret;
 }
 
-static int vmgr_dec_decode_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_decode_postproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
-	vdec_v3_decode_t* cmd_decode = (vdec_v3_decode_t*)cmd->args;
-	vpu_pmap_alloc_info_t* alloc_info = &drv_info->pmap_alloc_info;
+	vdec_v3_decode_t *cmd_decode = (vdec_v3_decode_t *)cmd->args;
+	vpu_pmap_alloc_info_t *alloc_info = &drv_info->pmap_alloc_info;
 
 #if defined(ENABLE_INTERLACE_DELAY_PROCESS)
-	bool detecting_field;
-	detecting_field = drv_info->enabled_ringbuffer_mode == 1U
-						? (cmd_decode->result == VPU_RETCODE_INFO_INSUFFICIENT_DATA)
-						: ((cmd_decode->result == VPU_RETCODE_SUCCESS) && (cmd_decode->output.out_info.decoded_status == VPU_DEC_STAT_SUCCESS_FIELD_PICTURE));
+	if (drv_info->enable_interlace_delay_proc == 1U) {
+		bool detecting_field;
+		detecting_field = drv_info->enabled_ringbuffer_mode == 1U
+							? (cmd_decode->result == VPU_RETCODE_INFO_INSUFFICIENT_DATA)
+							: ((cmd_decode->result == VPU_RETCODE_SUCCESS) && (cmd_decode->output.out_info.decoded_status == VPU_DEC_STAT_SUCCESS_FIELD_PICTURE));
 
 
-	if (detecting_field == true)
-	{
-		if (drv_info->detected_interlace == 0U)
-		{
-			//enable_avoid_pending starts only after the VPU_DEC_STAT_SUCCESS, set only once
-			drv_info->detected_interlace = 1U;
-		}
+		if (detecting_field == true) {
+			if (drv_info->detected_interlace == 0U) {
+				//enable_avoid_pending starts only after the VPU_DEC_STAT_SUCCESS, set only once
+				drv_info->detected_interlace = 1U;
 
-		if (mgr_ctx->enable_avoid_pending == 1U)
-		{
-			mgr_ctx->pending_drv_id = drv_info->drv_id;
-			mgr_ctx->field_processed_timestamp = jiffies;
-			dlog_info("set interlace pending, id:%d, timestamp:%lu", mgr_ctx->pending_drv_id, mgr_ctx->field_processed_timestamp);
+				alloc_info->num_of_bitstream_buffers = 3; //number of buffers used for interlace processing
+				dlog_info("change number of bitstream buffers:%d for interlace processing", alloc_info->num_of_bitstream_buffers);
 
-			if (cmd->drv_info->temp_decoding_result != NULL)
-			{
-				//replace output
-				vpu_cmd_t* temp_cmd = (vpu_cmd_t*)cmd->drv_info->temp_decoding_result;
-				vdec_v3_decode_t* tmp_result = (vdec_v3_decode_t*)temp_cmd->args;
-
-				dlog_info("tmp result id:%d, replace output", temp_cmd->drv_id);
-
-				vetc_memcpy(&cmd_decode->output, &tmp_result->output, sizeof(vdec_v3_decode_out_t), 0);
-
-				//delete cmd
-				VPU_free(temp_cmd->args);
-				VPU_free(temp_cmd);
-				cmd->drv_info->temp_decoding_result = NULL;
+				alloc_info->size_of_bitstream_buffer = alloc_info->bitstream_buf.size / alloc_info->num_of_bitstream_buffers;
+				alloc_info->size_of_bitstream_buffer = ALIGNED_BUFF(alloc_info->size_of_bitstream_buffer, 4096u);
 			}
-		}
-	}
-	else
-	{
-		if (drv_info->detected_interlace == 1U)
-		{
-			if (mgr_ctx->enable_avoid_pending == 0U)
-			{
-				drv_info->enable_avoid_pending = 1U;
-				mgr_ctx->enable_avoid_pending = 1U;
-				dlog_info("drv_id:%d set avoid pending enable", cmd->drv_id);
-			}
-		}
 
-		//mgr_ctx->pending_drv_id = INVALID_DRV_ID;
-		dlog_info("frame decoding done, id:%d", cmd->drv_id);
+			if (mgr_ctx->enable_avoid_pending == 1U) {
+				mgr_ctx->pending_drv_id = drv_info->drv_id;
+				mgr_ctx->field_processed_timestamp = jiffies;
+				dlog_info("set interlace pending, id:%d, timestamp:%lu", mgr_ctx->pending_drv_id, mgr_ctx->field_processed_timestamp);
+
+				if (cmd->drv_info->temp_decoding_result != NULL) {
+					//replace output
+					vpu_cmd_t *temp_cmd = (vpu_cmd_t *)cmd->drv_info->temp_decoding_result;
+					vdec_v3_decode_t *tmp_result = (vdec_v3_decode_t *)temp_cmd->args;
+
+					dlog_info("tmp result id:%d, replace output", temp_cmd->drv_id);
+
+					vetc_memcpy(&cmd_decode->output, &tmp_result->output, sizeof(vdec_v3_decode_out_t), 0);
+
+					//delete cmd
+					VPU_free(temp_cmd->args);
+					VPU_free(temp_cmd);
+					cmd->drv_info->temp_decoding_result = NULL;
+				}
+			}
+		} else {
+			if (drv_info->detected_interlace == 1U) {
+				if (mgr_ctx->enable_avoid_pending == 0U) {
+					drv_info->enable_avoid_pending = 1U;
+					mgr_ctx->enable_avoid_pending = 1U;
+					dlog_info("drv_id:%d set avoid pending enable", cmd->drv_id);
+				}
+			}
+
+			//mgr_ctx->pending_drv_id = INVALID_DRV_ID;
+			dlog_info("frame decoding done, id:%d", cmd->drv_id);
+		}
 	}
 #endif
 
@@ -1186,8 +939,7 @@ static int vmgr_dec_decode_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_
 
 	cmd_decode->output.dma_buf_id = -1;
 
-	if(drv_info->dec_init_info.enable_dma_buf_id == 1U)
-	{
+	if (drv_info->dec_init_info.enable_dma_buf_id == 1U) {
 		(void)vmgr_dec_decode_set_dma_buf_id(drv_info, &cmd_decode->output);
 	}
 
@@ -1202,11 +954,10 @@ static int vmgr_dec_decode_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_
 				cmd_decode->output.out_info.display_crop.right, cmd_decode->output.out_info.display_crop.bottom,
 				cmd_decode->output.out_info.interlaced_frame);
 
-	if((drv_info->display_width != 0) && (drv_info->display_height != 0) &&
+	if ((drv_info->display_width != 0) && (drv_info->display_height != 0) &&
 		(cmd_decode->output.out_info.display_width != 0) && (cmd_decode->output.out_info.display_height != 0) &&
 		((drv_info->display_width != cmd_decode->output.out_info.display_width) ||
-			(drv_info->display_height != cmd_decode->output.out_info.display_height)))
-	{
+			(drv_info->display_height != cmd_decode->output.out_info.display_height))) {
 		dlog_info("------------------------------------------------");
 		dlog_info("resolution changed %d x %d  ->  %d x %d",
 				drv_info->display_width, drv_info->display_height,
@@ -1221,42 +972,33 @@ static int vmgr_dec_decode_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_
 	//frameskip control
 	if ((cmd_decode->output.out_info.decoded_idx >= 0) &&
 		(cmd_decode->output.out_info.decoded_status == VPU_DEC_STAT_SUCCESS ||
-		cmd_decode->output.out_info.decoded_status == VPU_DEC_STAT_SUCCESS_FIELD_PICTURE) )
-	{
-		if(drv_info->internal_skip_mode == VPU_FRAMESKIP_NON_I)
-		{
+		cmd_decode->output.out_info.decoded_status == VPU_DEC_STAT_SUCCESS_FIELD_PICTURE)) {
+		if (drv_info->internal_skip_mode == VPU_FRAMESKIP_NON_I) {
 			drv_info->internal_skip_mode = VPU_FRAMESKIP_B;
 			detail_info("set next auto skip mode:%d", drv_info->internal_skip_mode);
-		}
-		else if(drv_info->internal_skip_mode == VPU_FRAMESKIP_B)
-		{
+		} else if (drv_info->internal_skip_mode == VPU_FRAMESKIP_B) {
 			drv_info->internal_skip_mode = VPU_FRAMESKIP_DISABLED;
 			detail_info("set next auto skip mode:%d", drv_info->internal_skip_mode);
 		}
 	}
 #endif //defined(ENABLE_AUTO_FRAMESKIP)
 
-	if(ret != 0)
-	{
+	if (ret != 0) {
 		err_info("ret:%d", ret);
 	}
 	//dlog_info("resolution %d x %d",	cmd_decode->output.out_info.display_width, cmd_decode->output.out_info.display_height);
 	return ret;
 }
 
-static int vmgr_dec_buf_clear_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_buf_clear_postproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
-	vdec_v3_buf_clear_t* cmd_buf_clear = (vdec_v3_buf_clear_t*)cmd->args;
+	vdec_v3_buf_clear_t *cmd_buf_clear = (vdec_v3_buf_clear_t *)cmd->args;
 
-	if(drv_info->dec_init_info.enable_dma_buf_id == 1U)
-	{
-		if(cmd_buf_clear->dma_buf_id >= 0)
-		{
+	if (drv_info->dec_init_info.enable_dma_buf_id == 1U) {
+		if (cmd_buf_clear->dma_buf_id >= 0) {
 			(void)tcc_mem_release_dma_buf(cmd_buf_clear->dma_buf_id);
-		}
-		else
-		{
+		} else {
 			dlog_info("invalid dma_buf_id:%d, clear index:%d", cmd_buf_clear->dma_buf_id, cmd_buf_clear->index);
 		}
 	}
@@ -1264,7 +1006,7 @@ static int vmgr_dec_buf_clear_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_d
 	return ret;
 }
 
-static int vmgr_dec_flush_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_dec_flush_postproc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 
@@ -1272,11 +1014,6 @@ static int vmgr_dec_flush_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_i
 	//frame skip control for auto skip mode
 	drv_info->internal_skip_mode = VPU_FRAMESKIP_NON_I;
 #endif //defined(ENABLE_AUTO_FRAMESKIP)
-
-#if defined(ENABLE_INTERLACE_FRAME_MERGE)
-	//initialze interlace buffer info
-	(void)vmgr_interlace_reset(mgr_ctx, drv_info);
-#endif //defined(ENABLE_INTERLACE_FRAME_MERGE)
 
 #if defined(ENABLE_INTERLACE_DELAY_PROCESS)
 	cmd->drv_info->initial_wakeup_poll = 0U;
@@ -1288,76 +1025,73 @@ static int vmgr_dec_flush_postproc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_i
 	return ret;
 }
 
-static int vmgr_decode_post_proc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd, vpu_drv_info_t* drv_info)
+static int vmgr_decode_post_proc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd, vpu_drv_info_t *drv_info)
 {
 	int ret = 0;
 
-	switch (cmd->cmd_type)
+	switch (cmd->cmd_type) {
+	case VPU_CMD_DEC_INIT:
 	{
-		case VPU_CMD_DEC_INIT:
-		{
-			ret = vmgr_dec_init_postproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+		ret = vmgr_dec_init_postproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_SEQ_HEADER:
-		{
-			ret = vmgr_dec_seqhead_postproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_SEQ_HEADER:
+	{
+		ret = vmgr_dec_seqhead_postproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_REG_USER_FRAME_BUFFER:
-		{
-			ret = vmgr_dec_reg_framebuffer_postproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_REG_USER_FRAME_BUFFER:
+	{
+		ret = vmgr_dec_reg_framebuffer_postproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_DECODE:
-		{
-			ret = vmgr_dec_decode_postproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_DECODE:
+	{
+		ret = vmgr_dec_decode_postproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_BUF_FLAG_CLEAR:
-		{
-			ret = vmgr_dec_buf_clear_postproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_BUF_FLAG_CLEAR:
+	{
+		ret = vmgr_dec_buf_clear_postproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_FLUSH:
-		{
-			ret = vmgr_dec_flush_postproc(mgr_ctx, cmd, drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_FLUSH:
+	{
+		ret = vmgr_dec_flush_postproc(mgr_ctx, cmd, drv_info);
+	}
+	break;
 
-		case VPU_CMD_DEC_CLOSE:
-		{
-			drv_info->handle = 0x00;
-			drv_info->opened = false;
-			(void)vmem_proc_free_memory(cmd->drv_id);
-			(void)vmgr_release_ip_parameter(drv_info);
-		}
-		break;
+	case VPU_CMD_DEC_CLOSE:
+	{
+		drv_info->handle = 0x00;
+		drv_info->opened = false;
+		(void)vmem_proc_free_memory(cmd->drv_id);
+		(void)vmgr_release_ip_parameter(drv_info);
+	}
+	break;
 
-		default:
-		break;
+	default:
+	break;
 	}
 
 	return ret;
 }
 
-int vmgr_decode_proc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd)
+int vmgr_decode_proc(vpu_mgr_t *mgr_ctx, vpu_cmd_t *cmd)
 {
 	int ret = 0;
-	vpu_ip_module_t* each_ip = mgr_ctx->each_ip;
-	vpu_drv_info_t* drv_info = cmd->drv_info;
+	vpu_ip_module_t *each_ip = mgr_ctx->each_ip;
+	vpu_drv_info_t *drv_info = cmd->drv_info;
 
 	dlog_info("decode proc - cmd type:%s(%d)", vmgr_cmd_name(cmd->cmd_type), cmd->cmd_type);
 
-	if (cmd->cmd_type != VPU_CMD_DEC_INIT)
-	{
-		if ((drv_info->opened == false)  || (drv_info->handle == 0x00))
-		{
+	if (cmd->cmd_type != VPU_CMD_DEC_INIT) {
+		if ((drv_info->opened == false)  || (drv_info->handle == 0x00)) {
 			cmd->result = VPU_RETCODE_MULTI_CODEC_EXIT_TIMEOUT;
 			ret = -1;
 		}
@@ -1365,14 +1099,12 @@ int vmgr_decode_proc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd)
 
 	detail_info("decode proc - proc_decode:%p, result:%d, pmap_type:%d", each_ip->proc_decode, cmd->result, cmd->pmap_type);
 
-	if((each_ip->proc_decode != NULL) && (cmd->result != VPU_RETCODE_MULTI_CODEC_EXIT_TIMEOUT))
-	{
+	if ((each_ip->proc_decode != NULL) && (cmd->result != VPU_RETCODE_MULTI_CODEC_EXIT_TIMEOUT)) {
 		//pre-processing
 		ret = vmgr_decode_pre_proc(mgr_ctx, cmd, drv_info);
 		detail_info("vmgr_decode_pre_proc, ret:%d", ret);
 
-		if(ret == 0)
-		{
+		if (ret == 0) {
 			detail_info("- cmd:%s", vmgr_cmd_name(cmd->cmd_type));
 
 			cmd->result = each_ip->proc_decode(mgr_ctx, cmd->cmd_type, cmd, drv_info);
@@ -1384,8 +1116,7 @@ int vmgr_decode_proc(vpu_mgr_t* mgr_ctx, vpu_cmd_t* cmd)
 		}
 	}
 
-	if(ret != 0)
-	{
+	if (ret != 0) {
 		cmd->result = VPU_RETCODE_FAILURE;
 	}
 

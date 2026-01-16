@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef TCC_VPU_V3_DECODER_H
 #define TCC_VPU_V3_DECODER_H
@@ -61,7 +62,14 @@
 #define VDEC_V3_AVOID_PENDING (1<<6)
 
 
-#define VDEC_V3_MAX_REG_BUFFER_COUNT			(32)
+/**
+ * @brief Maximum registered buffer count.
+ *
+ * The maximum buffer count is 32. When using a codec that supports compression
+ * and requires linear output, the count needs to be doubled, so the maximum is set to 64.
+ */
+#define VDEC_V3_MAX_REG_BUFFER_COUNT			(64)
+
 
 
 /**
@@ -82,8 +90,7 @@
  * @struct vdec_v3_init_in_t
  * @brief Structure for configuring VPU decoder initialization parameters.
  */
-typedef struct vdec_v3_init_in_t
-{
+typedef struct vdec_v3_init_in_t {
 	/**
 	 * @brief The codec type to be used (e.g., VCODEC_ID_AVC).
 	 */
@@ -110,12 +117,12 @@ typedef struct vdec_v3_init_in_t
 	unsigned int additional_frame_count;
 
 	/**
- 	 * @brief Whether to use a forced PMAP index.
- 	 *
- 	 * If set to a non-zero value, the decoder will use the specified PMAP index
- 	 * (forced_pmap_idx) for decoding.
- 	 * If not used, the decoder will automatically allocate PMAP indices.
- 	 */
+	 * @brief Whether to use a forced PMAP index.
+	 *
+	 * If set to a non-zero value, the decoder will use the specified PMAP index
+	 * (forced_pmap_idx) for decoding.
+	 * If not used, the decoder will automatically allocate PMAP indices.
+	 */
 	unsigned int use_forced_pmap_idx;
 
 	/**
@@ -170,15 +177,24 @@ typedef struct vdec_v3_init_in_t
 	 */
 	int user_userdata_buf_size;
 
-	int reserved[1];  /**< Reserved padding for future use. */
-}vdec_v3_init_in_t;
+	/**
+	 * @brief Determines whether to force the use of the VPU IP specified by force_vpu_ip_index.
+	 */
+	int enable_force_vpu_ip;
+
+	/**
+	 * @brief Forces the use of a specific VPU IP by specifying its index.
+	 */
+	int force_vpu_ip_index;
+
+	int reserved[5];  /**< Reserved padding for future use. */
+} vdec_v3_init_in_t;
 
 /**
  * @struct vdec_v3_init_out_t
  * @brief Structure containing initialization output information for VPU decoder.
  */
-typedef struct vdec_v3_init_out_t
-{
+typedef struct vdec_v3_init_out_t {
 	/**
 	 * @brief An array of VPU addresses representing the base addresses
 	 *        for the bitstream buffers.
@@ -214,14 +230,13 @@ typedef struct vdec_v3_init_out_t
 	unsigned int is_ringbuffer_mode;
 
 	int reserved[5];  /**< Reserved padding for future use. */
-}vdec_v3_init_out_t;
+} vdec_v3_init_out_t;
 
 /**
  * @struct vdec_v3_init_t
  * @brief Structure containing initialization parameters for VPU decoder.
  */
-typedef struct vdec_v3_init_t
-{
+typedef struct vdec_v3_init_t {
 	/**
 	 * @brief The result of the sequence header processing.
 	 *
@@ -270,8 +285,7 @@ typedef struct vdec_v3_init_t
 * @brief The following structures contain information used for initializing sequence headers.
 */
 
-typedef struct vdec_v3_avc_vui_info_t
-{
+typedef struct vdec_v3_avc_vui_info_t {
 	/**
 	 * @brief Flag indicating whether AVC video full range is used.
 	 */
@@ -292,15 +306,31 @@ typedef struct vdec_v3_avc_vui_info_t
 	 */
 	int avc_vui_matrix_coefficients;
 
-	int reserved[12];  /**< Reserved padding for future use. */
+	/**
+	 * @brief Video format information for AVC VUI.
+	 */
+	int avc_vui_video_format;
+
+	/**
+	* @brief Video_signal_type_present_flag and color_description_present_flag for AVC VUI.
+	*   Bit [0] video_signal_type_present_flag
+	*    0 : If the 'video_signal_type_present_flag' equals zero, there's no VUI in SPS.
+	*    1 : encode vui info.
+	*   Bit [2] color_description_present_flag
+	*    0 : If the 'color_description_present_flag' equals zero, there's no color description info.
+	*        (color_primaries, transfer_characteristics, matrix_coeffs).
+	*    1 : encode color description info.
+	*/
+	int avc_vui_video_signal_present_flags;
+
+	int reserved[10];  /**< Reserved padding for future use. */
 } vdec_v3_avc_vui_info_t;
 
 /**
  * @struct vdec_v3_mpeg2_seq_display_ext_info_t
  * @brief Structure containing additional display information for MPEG-2 sequence.
  */
-typedef struct vdec_v3_mpeg2_seq_display_ext_info_t
-{
+typedef struct vdec_v3_mpeg2_seq_display_ext_info_t {
 	/**
 	 * @brief Colour primaries information for MPEG-2 sequence display extension.
 	 */
@@ -323,8 +353,7 @@ typedef struct vdec_v3_mpeg2_seq_display_ext_info_t
  * @struct vdec_v3_mjpeg_specific_info_t
  * @brief Structure containing specific information for MJPEG decoding.
  */
-typedef struct vdec_v3_mjpeg_specific_info_t
-{
+typedef struct vdec_v3_mjpeg_specific_info_t {
 	/**
 	 * @brief MJPEG source chroma format.
 	 */
@@ -355,8 +384,7 @@ typedef struct vdec_v3_mjpeg_specific_info_t
  * @struct vdec_v3_initial_info_t
  * @brief Structure containing initial information for VPU decoding.
  */
-typedef struct vdec_v3_initial_info_t
-{
+typedef struct vdec_v3_initial_info_t {
 	/**
 	 * @brief Picture width.
 	 */
@@ -478,8 +506,7 @@ typedef struct vdec_v3_initial_info_t
  * @struct vdec_v3_seqheader_in_t
  * @brief Structure containing sequence header input information for VPU decoding.
  */
-typedef struct vdec_v3_seqheader_in_t
-{
+typedef struct vdec_v3_seqheader_in_t {
 	/**
 	 * @brief Array of VPU addresses representing the bitstream buffers.
 	 *
@@ -518,33 +545,32 @@ typedef struct vdec_v3_seqheader_in_t
  * @struct vdec_v3_buffer_size_info_t
  * @brief Structure containing buffer size information for VPU decoding.
  */
-typedef struct vdec_v3_buffer_size_info_t
-{
-    /**
-     * @brief Sizes of each framebuffer.
-     *
-     * This array represents the sizes of each framebuffer used in the decoding process.
-     * It specifies the amount of memory allocated for each framebuffer.
-     * The array size is defined by VPU_FRAMEBUFFER_MAX, indicating the maximum number of framebuffers.
-     */
-    int framebuffer_size[VPU_FRAMEBUFFER_MAX];
+typedef struct vdec_v3_buffer_size_info_t {
+	/**
+	 * @brief Sizes of each framebuffer.
+	 *
+	 * This array represents the sizes of each framebuffer used in the decoding process.
+	 * It specifies the amount of memory allocated for each framebuffer.
+	 * The array size is defined by VPU_FRAMEBUFFER_MAX, indicating the maximum number of framebuffers.
+	 */
+	int framebuffer_size[VPU_FRAMEBUFFER_MAX];
 
-    /**
-     * @brief Sizes of extended framebuffers.
-     *
-     * This array represents the sizes of extended framebuffers used in the decoding process.
-     * It specifies the amount of memory allocated for each extended framebuffer.
-     * The array size is defined by VPU_FRAMEBUFFER_EXT_MAX, indicating the maximum number of extended framebuffers.
-     */
-    int framebuffer_ext_size[VPU_FRAMEBUFFER_EXT_MAX];
+	/**
+	 * @brief Sizes of extended framebuffers.
+	 *
+	 * This array represents the sizes of extended framebuffers used in the decoding process.
+	 * It specifies the amount of memory allocated for each extended framebuffer.
+	 * The array size is defined by VPU_FRAMEBUFFER_EXT_MAX, indicating the maximum number of extended framebuffers.
+	 */
+	int framebuffer_ext_size[VPU_FRAMEBUFFER_EXT_MAX];
 
-    /**
-     * @brief Reserved padding for 64-byte alignment.
-     *
-     * This field is used to pad the structure to ensure 64-byte alignment.
-     * This padding can be used for future extensions or reserved for alignment purposes.
-     */
-    int reserved[5]; /**< Reserved padding for future use and 64-byte alignment. */
+	/**
+	 * @brief Reserved padding for 64-byte alignment.
+	 *
+	 * This field is used to pad the structure to ensure 64-byte alignment.
+	 * This padding can be used for future extensions or reserved for alignment purposes.
+	 */
+	int reserved[5]; /**< Reserved padding for future use and 64-byte alignment. */
 
 } vdec_v3_buffer_size_info_t;
 
@@ -553,8 +579,7 @@ typedef struct vdec_v3_buffer_size_info_t
  * @struct vdec_v3_seqheader_out_t
  * @brief Structure containing sequence header output information for VPU decoding.
  */
-typedef struct vdec_v3_seqheader_out_t
-{
+typedef struct vdec_v3_seqheader_out_t {
 	/**
 	 * @brief Initial information obtained from the sequence header.
 	 *
@@ -564,11 +589,11 @@ typedef struct vdec_v3_seqheader_out_t
 	vdec_v3_initial_info_t initial_info;
 
 	/**
-     * @brief Buffer size information for VPU decoding.
-     *
-     * This structure contains the sizes of various buffers required for VPU decoding,
-     * including the size of each framebuffer, AVC slice, and VP8 macroblock data.
-     */
+	 * @brief Buffer size information for VPU decoding.
+	 *
+	 * This structure contains the sizes of various buffers required for VPU decoding,
+	 * including the size of each framebuffer, AVC slice, and VP8 macroblock data.
+	 */
 	vdec_v3_buffer_size_info_t buffer_size_info;
 
 	/**
@@ -604,8 +629,7 @@ typedef struct vdec_v3_seqheader_out_t
  * @struct vdec_v3_seqheader_t
  * @brief Structure containing sequence header processing information for VPU decoding.
  */
-typedef struct vdec_v3_seqheader_t
-{
+typedef struct vdec_v3_seqheader_t {
 	/**
 	 * @brief The result of the sequence header processing.
 	 *
@@ -648,83 +672,81 @@ typedef struct vdec_v3_seqheader_t
  * This structure holds the addresses and sizes of the individual buffer types within the framebuffers
  * used in VPU decoding.
  */
-typedef struct vdec_v3_framebuffer_info_t
-{
-    /**
-     * @brief Array of addresses for different types of framebuffers.
-     *
-     * An array storing the addresses for various types of buffers used in the VPU decoding process.
-     * The size of the array is defined by VPU_ADDR_MAX.
-     */
-    vpu_addr_t framebuffer[VPU_ADDR_MAX];
+typedef struct vdec_v3_framebuffer_info_t {
+	/**
+	 * @brief Array of addresses for different types of framebuffers.
+	 *
+	 * An array storing the addresses for various types of buffers used in the VPU decoding process.
+	 * The size of the array is defined by VPU_ADDR_MAX.
+	 */
+	vpu_addr_t framebuffer[VPU_ADDR_MAX];
 
-    /**
-     * @brief Size of the framebuffer.
-     *
-     * This member indicates the size of the individual buffer types within the framebuffer.
-     */
-    unsigned int size;
+	/**
+	 * @brief Size of the framebuffer.
+	 *
+	 * This member indicates the size of the individual buffer types within the framebuffer.
+	 */
+	unsigned int size;
 
-    /**
-     * @brief Aligned width of the framebuffer.
-     *
-     * This member indicates the width of the framebuffer, aligned to the required boundary.
-     */
-    int aligned_width;
+	/**
+	 * @brief Aligned width of the framebuffer.
+	 *
+	 * This member indicates the width of the framebuffer, aligned to the required boundary.
+	 */
+	int aligned_width;
 
-    /**
-     * @brief Aligned height of the framebuffer.
-     *
-     * This member indicates the height of the framebuffer, aligned to the required boundary.
-     */
-    int aligned_height;
+	/**
+	 * @brief Aligned height of the framebuffer.
+	 *
+	 * This member indicates the height of the framebuffer, aligned to the required boundary.
+	 */
+	int aligned_height;
 
-    /**
-     * @brief Framebuffer format.
-     *
-     * This member specifies the format of the framebuffer.
-     */
-    int format;
+	/**
+	 * @brief Framebuffer format.
+	 *
+	 * This member specifies the format of the framebuffer.
+	 */
+	int format;
 
-    /**
-     * @brief Reserved padding for future use.
-     *
-     * This member is reserved for future use and ensures the structure is 64-byte aligned.
-     */
-    int reserved[5];  /**< Reserved padding to ensure 64-byte alignment. */
+	/**
+	 * @brief Reserved padding for future use.
+	 *
+	 * This member is reserved for future use and ensures the structure is 64-byte aligned.
+	 */
+	int reserved[5];  /**< Reserved padding to ensure 64-byte alignment. */
 
 } vdec_v3_framebuffer_info_t;
 
-typedef struct vdec_v3_reg_framebuffer_in_t
-{
+typedef struct vdec_v3_reg_framebuffer_in_t {
 	/**
-     * @brief The count of framebuffers to be registered.
-     *
-     * Specifies the number of framebuffers that are registered for the VPU decoding process.
-     * This count should not exceed the maximum buffer count specified by VDEC_V3_MAX_REG_BUFFER_COUNT.
-     */
-    unsigned int frame_buffer_count;
+	 * @brief The count of framebuffers to be registered.
+	 *
+	 * Specifies the number of framebuffers that are registered for the VPU decoding process.
+	 * This count should not exceed the maximum buffer count specified by VDEC_V3_MAX_REG_BUFFER_COUNT.
+	 */
+	unsigned int frame_buffer_count;
 
-    /**
-     * @brief Addresses of the framebuffers.
-     *
-     * A multi-dimensional array that stores the addresses for different types of data within the framebuffers.
-     * The dimensions are organized as follows:
-     * [Buffer Count][Buffer Type].
-     * The types of buffers are defined by the vpu_framebuffer_type enumeration, and the size of each type of buffer
-     * within a framebuffer is specified. The types include Y, Cr, Cb, MVCol, CompressedY, CompressedCb, FbcYOffsetAddr,
-     * and FbcCOffsetAddr.
-     */
-    vdec_v3_framebuffer_info_t frameBuffer[VDEC_V3_MAX_REG_BUFFER_COUNT][VPU_FRAMEBUFFER_MAX];
+	/**
+	 * @brief Addresses of the framebuffers.
+	 *
+	 * A multi-dimensional array that stores the addresses for different types of data within the framebuffers.
+	 * The dimensions are organized as follows:
+	 * [Buffer Count][Buffer Type].
+	 * The types of buffers are defined by the vpu_framebuffer_type enumeration, and the size of each type of buffer
+	 * within a framebuffer is specified. The types include Y, Cr, Cb, MVCol, CompressedY, CompressedCb, FbcYOffsetAddr,
+	 * and FbcCOffsetAddr.
+	 */
+	vdec_v3_framebuffer_info_t frameBuffer[VDEC_V3_MAX_REG_BUFFER_COUNT][VPU_FRAMEBUFFER_MAX];
 
-    /**
-     * @brief Additional buffer information.
-     *
-     * This member holds additional buffer information that may be required for specific use cases or future extensions.
-     * The types of additional buffers are defined by the vpu_framebuffer_ext_type enumeration, including
-     * AvcSliceSaveBuffer and Vp8MbDataSaveBuffer.
-     */
-    vdec_v3_framebuffer_info_t framebuffer_ext[VPU_FRAMEBUFFER_EXT_MAX];
+	/**
+	 * @brief Additional buffer information.
+	 *
+	 * This member holds additional buffer information that may be required for specific use cases or future extensions.
+	 * The types of additional buffers are defined by the vpu_framebuffer_ext_type enumeration, including
+	 * AvcSliceSaveBuffer and Vp8MbDataSaveBuffer.
+	 */
+	vdec_v3_framebuffer_info_t framebuffer_ext[VPU_FRAMEBUFFER_EXT_MAX];
 } vdec_v3_reg_framebuffer_in_t;
 
 /**
@@ -734,20 +756,19 @@ typedef struct vdec_v3_reg_framebuffer_in_t
  * This structure is used to register framebuffers with the VPU decoder, specifying
  * the count and types of buffers, along with their sizes and addresses.
  */
-typedef struct vdec_v3_reg_framebuffer_t
-{
-    /**
-     * @brief The result of the framebuffer registration process.
-     *
-     * This member indicates the result of the framebuffer registration. It returns VPU_RETURN_SUCCESS
-     * if the registration is successful. If the registration fails, it returns an appropriate error code
-     * defined in tcc_vpu_v3_common.h.
-     */
-    enum vpu_return_code result;
+typedef struct vdec_v3_reg_framebuffer_t {
+	/**
+	 * @brief The result of the framebuffer registration process.
+	 *
+	 * This member indicates the result of the framebuffer registration. It returns VPU_RETURN_SUCCESS
+	 * if the registration is successful. If the registration fails, it returns an appropriate error code
+	 * defined in tcc_vpu_v3_common.h.
+	 */
+	enum vpu_return_code result;
 
 	vdec_v3_reg_framebuffer_in_t input;
 
-    int reserved[2];   /**< Reserved padding for future use. */
+	int reserved[2];   /**< Reserved padding for future use. */
 } vdec_v3_reg_framebuffer_t;
 
 
@@ -769,8 +790,7 @@ typedef struct vdec_v3_reg_framebuffer_t
 * @brief The following structures contain information used for decoding.
 */
 
-typedef struct vdec_v3_decode_in_t
-{
+typedef struct vdec_v3_decode_in_t {
 	/**
 	 * @brief Array of VPU addresses representing the primary bitstream buffer.
 	 *
@@ -826,8 +846,7 @@ typedef struct vdec_v3_decode_in_t
  * @struct vdec_v3_specific_info_t
  * @brief Structure containing specific information for VPU decoding.
  */
-typedef struct vdec_v3_specific_info_t
-{
+typedef struct vdec_v3_specific_info_t {
 	/**
 	 * @brief MPEG-2 specific field sequence information.
 	 */
@@ -855,75 +874,73 @@ typedef struct vdec_v3_specific_info_t
  * @struct vdec_v3_mapconv_info_t
  * @brief Structure containing specific information for map convertor in VPU decoding.
  */
-typedef struct vdec_v3_mapconv_info_t
-{
+typedef struct vdec_v3_mapconv_info_t {
 	/**
 	 *  @brief Array of addresses for compressed Y data (2 planes).
 	 */
-    vpu_addr_t compressed_y[VPU_ADDR_MAX];
+	vpu_addr_t compressed_y[VPU_ADDR_MAX];
 
 	/**
 	 * @brief Array of addresses for compressed Cb data (2 planes).
 	 */
-    vpu_addr_t compressed_cb[VPU_ADDR_MAX];
+	vpu_addr_t compressed_cb[VPU_ADDR_MAX];
 
 	/**
 	 * @brief Array of addresses for FBC Y offset data (2 planes).
 	 */
-    vpu_addr_t fbc_y_offset_addr[VPU_ADDR_MAX];
+	vpu_addr_t fbc_y_offset_addr[VPU_ADDR_MAX];
 
 	/**
 	 * @brief Array of addresses for FBC C offset data (2 planes).
 	 */
-    vpu_addr_t fbc_c_offset_addr[VPU_ADDR_MAX];
+	vpu_addr_t fbc_c_offset_addr[VPU_ADDR_MAX];
 
 	/**
 	 * @brief Size of compression table for luma data.
 	 */
-    unsigned int compression_table_luma_size;
+	unsigned int compression_table_luma_size;
 
 	/**
 	 * @brief Size of compression table for chroma data.
 	 */
-    unsigned int compression_table_chroma_size;
+	unsigned int compression_table_chroma_size;
 
 	/**
 	 * @brief Stride of luma data.
 	 */
-    unsigned int luma_stride;
+	unsigned int luma_stride;
 
 	/**
 	 * @brief Stride of chroma data.
 	 */
-    unsigned int chroma_stride;
+	unsigned int chroma_stride;
 
 	/**
 	 * @brief Bit depth of luma data.
 	 */
-    unsigned int luma_bit_depth;
+	unsigned int luma_bit_depth;
 
 	/**
 	 * @brief Bit depth of chroma data.
 	 */
-    unsigned int chroma_bit_depth;
+	unsigned int chroma_bit_depth;
 
 	 /**
 	  * @brief Endianness of the frame.
 	  */
-    unsigned int frame_endian;
+	unsigned int frame_endian;
 
 	/**
 	 * @brief Reserved padding for future use.
 	 */
-    unsigned int reserved[17];
+	unsigned int reserved[17];
 } vdec_v3_mapconv_info_t;
 
 /**
  * @struct vdec_v3_output_info_t
  * @brief Structure containing output information for vdec_v3 decoding.
  */
-typedef struct vdec_v3_output_info_t
-{
+typedef struct vdec_v3_output_info_t {
 	/**
 	 * @brief Type of the picture.
 	 * @details Refers to the values of enum vpu_picture_type.
@@ -1033,8 +1050,7 @@ typedef struct vdec_v3_output_info_t
  * @brief Structure containing output information for vdec_v3 decoding.
  */
 
-typedef struct vdec_v3_decode_out_t
-{
+typedef struct vdec_v3_decode_out_t {
 	/**
 	 * @brief Array of pointers to the display output buffers.
 	 *
@@ -1080,8 +1096,7 @@ typedef struct vdec_v3_decode_out_t
  * @struct vdec_v3_decode_t
  * @brief Structure containing decode result, input, and output for vdec_v3.
  */
-typedef struct vdec_v3_decode_t
-{
+typedef struct vdec_v3_decode_t {
 	/**
 	 * @brief The result of the decoding operation.
 	 *
@@ -1134,8 +1149,7 @@ typedef struct vdec_v3_decode_t
  * @struct vdec_v3_buf_clear_t
  * @brief Structure for buffer clearing information in VPU decoding.
  */
-typedef struct vdec_v3_buf_clear_t
-{
+typedef struct vdec_v3_buf_clear_t {
 	/**
 	 * @brief The result of the buffer clearing operation.
 	 *
@@ -1182,8 +1196,7 @@ typedef struct vdec_v3_buf_clear_t
  * @struct vdec_v3_drain_t
  * @brief Structure for draining the VPU decoder's buffer.
  */
-typedef struct vdec_v3_drain_t
-{
+typedef struct vdec_v3_drain_t {
 	/**
 	 * @brief The result of the draining operation.
 	 *
@@ -1232,8 +1245,7 @@ typedef struct vdec_v3_drain_t
  * @struct vdec_v3_flush_t
  * @brief Structure for flushing the VPU decoder's buffer.
  */
-typedef struct vdec_v3_flush_t
-{
+typedef struct vdec_v3_flush_t {
 	/**
 	 * @brief The result of the flushing operation.
 	 *
@@ -1274,8 +1286,7 @@ typedef struct vdec_v3_flush_t
  * @struct vdec_v3_close_t
  * @brief Structure for closing VPU decoding.
  */
-typedef struct vdec_v3_close_t
-{
+typedef struct vdec_v3_close_t {
 	/**
 	 * @brief The result of the closing operation.
 	 *
@@ -1308,8 +1319,7 @@ typedef struct vdec_v3_close_t
  * @struct vdec_v3_get_next_result_t
  * @brief Structure containing information about the result of getting the next output from VPU decoder.
  */
-typedef struct vdec_v3_get_next_result_t
-{
+typedef struct vdec_v3_get_next_result_t {
 	/**
 	 * @brief The result of the "get next output" operation.
 	 *

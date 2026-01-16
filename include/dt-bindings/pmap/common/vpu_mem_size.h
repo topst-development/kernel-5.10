@@ -1,7 +1,9 @@
-/* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (C) 2020 Telechips Inc.
- */
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc.
+* Contact: jayhouse@telechips.com
+*/
+
 #ifndef DT_BINDINGS_PMAP_VPU_MEM_SIZE_H
 #define DT_BINDINGS_PMAP_VPU_MEM_SIZE_H
 
@@ -29,13 +31,13 @@
 #define TC_SZ_1MB              (1024*1024)
 
 #undef ARRAY_16MBYTE
-#define ARRAY_16MBYTE(x)    ((((x) + ((16*TC_SZ_1MB)-1))>> 24) << 24)
+#define ARRAY_16MBYTE(x)    ((((x) + ((16*TC_SZ_1MB)-1)) >> 24) << 24)
 
 #undef ARRAY_MBYTE
-#define ARRAY_MBYTE(x)      ((((x) + (TC_SZ_1MB-1))>> 20) << 20)
+#define ARRAY_MBYTE(x)      ((((x) + (TC_SZ_1MB-1)) >> 20) << 20)
 
 #undef ARRAY_256KBYTE
-#define ARRAY_256KBYTE(x)   ((((x) + ((TC_SZ_1MB/4)-1))>> 18) << 18)
+#define ARRAY_256KBYTE(x)   ((((x) + ((TC_SZ_1MB/4)-1)) >> 18) << 18)
 
 #undef ALIGNED_BUF256
 #define ALIGNED_BUF256(x)   (((x) + 255) & ~(255))
@@ -43,32 +45,51 @@
 #undef ALIGNED_BUF64
 #define ALIGNED_BUF64(x)    (((x) + 63) & ~(63))
 
+#if USE_EXTERNAL_FRAMEBUFFER_IN_DECODER
+	#define USE_INTERNAL_FB (0)
+#else
+	#define USE_INTERNAL_FB (1)
+#endif
+
 //for HEVC/VPU framebuffer_size Calculation
 #ifdef CONFIG_SUPPORT_TCC_WAVE512_4K_D2
-#define WAVE_CAL_PROCBUFFER(use,w,h,f) \
-	(((0x1400000 \
-	/*the rest except framebuffer, userdatabuffer and workbuffer*/) \
-	+ (ARRAY_MBYTE(((w*h*2)+((w*h*38)/100)+((w*h*9)/1000))*(f+10))))*use)
+
+#define WAVE_CAL_CORE_BUFFER_SIZE	(0x1400000) /*bitstream buffer, userdata buffer, work buffer*/
+#define WAVE_CAL_ADD_FB	(10)
+#define WAVE_CAL_FRAMEBUFFER(w, h, f) (ARRAY_MBYTE(((w*h*2)+((w*h*38)/100)+((w*h*9)/1000))*(f+WAVE_CAL_ADD_FB))*USE_INTERNAL_FB)
+#define WAVE_CAL_PROCBUFFER(use, w, h, f) \
+	((WAVE_CAL_CORE_BUFFER_SIZE + WAVE_CAL_FRAMEBUFFER(w, h, f))*use)
+
 #else
-#define WAVE_CAL_PROCBUFFER(use,w,h,f) \
-	(((0x1400000 \
-	/*the rest except framebuffer, userdatabuffer and workbuffer*/) \
-	+ (ARRAY_MBYTE(((w*h*2)+((w*h*37)/100))*(f+10))))*use)
-#endif
-#define VPU_CAL_PROCBUFFER(use,w,h,f) \
-	(((0x400000 \
-	/*the rest except framebuffer and workbuffer*/) \
-	+ ARRAY_MBYTE(((w*h*182)/100)*(f+7)))*use)
-#define VPU_CAL_ENC_PROCBUFFER(use,w,h,f) \
-	(((0x300000 \
-	/*the rest except framebuffer and workbuffer*/) \
-	+ ARRAY_MBYTE(w*h*3/2) \
-	+ ARRAY_MBYTE((((w+15)/16*16)*((h+15)/16*16)*3/2)*f))*use)
-#define VPU_HEVC_ENC_CAL_PROCBUFFER(use,w,h,f) \
-	(((0x00C00000 \
-	/*the rest except framebuffer, userdatabuffer and workbuffer*/) \
-	+(f*ARRAY_MBYTE(ALIGNED_BUF256(w)*ALIGNED_BUF64(h)*69/32+(20*1024)))) \
-	*use) /*f=2*/
+
+//wave410
+#define WAVE_CAL_CORE_BUFFER_SIZE	(0x1400000)
+#define WAVE_CAL_ADD_FB	(10)
+#define WAVE_CAL_FRAMEBUFFER(w, h, f) (ARRAY_MBYTE(((w*h*2)+((w*h*37)/100))*(f+WAVE_CAL_ADD_FB))*USE_INTERNAL_FB)
+#define WAVE_CAL_PROCBUFFER(use, w, h, f) \
+	((WAVE_CAL_CORE_BUFFER_SIZE + WAVE_CAL_FRAMEBUFFER(w, h, f))*use)
+
+#endif //CONFIG_SUPPORT_TCC_WAVE512_4K_D2
+
+#define VPU_CAL_CORE_BUFFER_SIZE	(0x400000)
+#define VPU_CAL_ADD_FB	(7)
+#define VPU_CAL_FRAMEBUFFER(w, h, f) (ARRAY_MBYTE(((w*h*182)/100)*(f+VPU_CAL_ADD_FB))*USE_INTERNAL_FB)
+#define VPU_CAL_PROCBUFFER(use, w, h, f) \
+	((VPU_CAL_CORE_BUFFER_SIZE + VPU_CAL_FRAMEBUFFER(w, h, f))*use)
+
+
+//Encoder
+#define VPU_CAL_ENC_CORE_BUFFER_SIZE (0x300000) /*bitstream buffer, work buffer*/
+#define VPU_CAL_ENC_FRAMEBUFFER(w, h, f) (ARRAY_MBYTE(w*h*3/2) 	+ ARRAY_MBYTE((((w+15)/16*16)*((h+15)/16*16)*3/2)*f))
+#define VPU_CAL_ENC_PROCBUFFER(use, w, h, f) \
+	((VPU_CAL_ENC_CORE_BUFFER_SIZE + VPU_CAL_ENC_FRAMEBUFFER(w, h, f))*use)
+
+
+#define VPU_HEVC_ENC_CAL_CORE_BUFFER_SIZE (0x00C00000)
+#define VPU_HEVC_ENC_CAL_ENC_FRAMEBUFFER(w, h, f) (ARRAY_MBYTE(ALIGNED_BUF256(w)*ALIGNED_BUF64(h)*69/32+(20*1024))*f)
+#define VPU_HEVC_ENC_CAL_PROCBUFFER(use, w, h, f) \
+	((VPU_HEVC_ENC_CAL_CORE_BUFFER_SIZE + VPU_HEVC_ENC_CAL_ENC_FRAMEBUFFER(w, h, f))*use)
+
 
 /************************* SYNC WITH tcc_vpu_wbuffer.h ************************/
 
@@ -181,6 +202,16 @@
 #define USER_DATA_BUF_SIZE (64*1024)
 #endif
 
+/*
+ * VPU FW
+ */
+#define ENABLE_VPU_FW_LOADING
+#if defined (ENABLE_VPU_FW_LOADING)
+#define VPU_FW_SIZE (8 * 512 * 1024)
+#else
+#define VPU_FW_SIZE (0)
+#endif
+
 
 #define VPU_SW_ACCESS_REGION_SIZE (ARRAY_MBYTE( \
 						VPU_WORK_BUF_SIZE + \
@@ -189,7 +220,8 @@
 						JPU_WORK_BUF_SIZE + \
 						VPU_HEVC_ENC_WORK_BUF_SIZE + \
 						(VPU_ENC_HEADER_BUF_SIZE * VPU_ENC_MAX_CNT) + \
-						(USER_DATA_BUF_SIZE * VPU_INST_MAX)))
+						(USER_DATA_BUF_SIZE * VPU_INST_MAX)) + \
+						VPU_FW_SIZE)
 
 
 // Decoder

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef VPU_INTERNAL_TYPE_H
 #define VPU_INTERNAL_TYPE_H
@@ -10,12 +11,6 @@
 
 #define VPU_DRV_ID_MAX			(32U)
 #define INVALID_DRV_ID			(0xFF) //An ID value used to represent uninitialized driver IDs or invalid IDs.
-
-//internal feature
-//Either ENABLE_INTERLACE_FRAME_MERGE or ENABLE_INTERLACE_DELAY_PROCESS must be used exclusively.
-
-//A feature that internally merges data from the first and second fields within the driver to decode as a single frame
-//#define ENABLE_INTERLACE_FRAME_MERGE
 
 //A feature to avoid pending issues with interlace frame
 #define ENABLE_INTERLACE_DELAY_PROCESS //default enabled
@@ -36,7 +31,7 @@
 
 enum vpu_ip_type {
 	VPU_IP_UNKNOWN = 0,
-	VPU_IP_C7, //Coda960 => mpeg1/2, mpeg4, DivX, H.263, h264, VC-1, AVS
+	VPU_IP_C7, //Coda960 => mpeg1/2, mpeg4, DivX, H.263, h264, VC-1, AVS, Boda950 => In vpu_c7, the encoder is excluded, and AVS is removed from the decoder
 	VPU_IP_4KD2, //Wave512 => hevc, vp9 decode
 	VPU_IP_HEVC_ENC, //Wave420L0 hevc encoder
 	VPU_IP_HEVC_ENC2, //Wave420L1 hevc encoder2
@@ -89,8 +84,7 @@ enum vpu_cmd_type {
 	VPU_CMD_TYPE_BOUND = 0x7FFFFFFF,
 };
 
-enum vmgr_buffer_type
-{
+enum vmgr_buffer_type {
 	VMGR_BUF_BITSTREAM = 0,
 	VMGR_BUF_NUM_OF_BITSTREAM,
 	VMGR_BUF_BITWORK,
@@ -103,12 +97,14 @@ enum vmgr_buffer_type
 	VMGR_BUF_SLICEINFO,
 
 	//add for user framebuffer register
-	VMGR_BUF_Y,
+	VMGR_BUF_Y, //linear
     VMGR_BUF_CB,
     VMGR_BUF_CR,
     VMGR_BUF_MVCOL,
     VMGR_BUF_FBCY,
     VMGR_BUF_FBCC,
+    VMGR_BUF_COMP_Y, //compressed
+    VMGR_BUF_COMP_C,
 
 	VMGR_BUF_MAX,
 	VMRR_BUF_BOUND = 0x7FFFFFFF
@@ -162,16 +158,14 @@ typedef struct vpu_drv_shared_t {
 	struct miscdevice misc;
 	atomic_t reference_count; //how many en/decoders are opened
 	struct mutex shared_mutex;
-}vpu_drv_shared_t;
+} vpu_drv_shared_t;
 
-typedef struct vpu_pmap_info_t
-{
+typedef struct vpu_pmap_info_t {
 	int size;
 	vpu_addr_t addr[VPU_ADDR_MAX];
-}vpu_pmap_info_t;
+} vpu_pmap_info_t;
 
-typedef struct vpu_pmap_alloc_info_t
-{
+typedef struct vpu_pmap_alloc_info_t {
 	//from init
 	vpu_pmap_info_t bitstream_buf;
 	int num_of_bitstream_buffers;
@@ -192,11 +186,10 @@ typedef struct vpu_pmap_alloc_info_t
 	vpu_pmap_info_t userdata_buf;
 	vpu_pmap_info_t slice_buf; //avc, mvc only
 	vpu_pmap_info_t mbdata_buf; //for vp8
-}vpu_pmap_alloc_info_t;
+} vpu_pmap_alloc_info_t;
 
 //a structure in which VPU enc/dec, vpu_mgr, and each vpu's IP managers share information
-typedef struct vpu_drv_info_t
-{
+typedef struct vpu_drv_info_t {
 	/**
 	 * @brief Structure representing a node in the VPU linked list.
 	 */
@@ -274,7 +267,7 @@ typedef struct vpu_drv_info_t
 	/**
 	 * @brief Represents the driver allocated in each IP's manager, allocated upon opening and released upon closing.
 	 */
-	void* ip_param;
+	void *ip_param;
 
 	/**
 	 * @brief pixel_product
@@ -303,34 +296,10 @@ typedef struct vpu_drv_info_t
 	 */
 	int display_height;
 
-#if defined(ENABLE_INTERLACE_FRAME_MERGE)
-	/**
-	 * @brief When starting decoding, if the decode result of the first frame is VPU_DEC_STAT_SUCCESS_FIELD_PICTURE,
-	 *        it sets the video as interlaced.
-	 */
-	int is_interlace_video;
-
-	/**
-	 * @brief Interlace is detected from the first frame, and the interlace process starts after the decoding of the second frame onwards.
-	 *        It remains set until the termination of the video.
-	 */
-	int is_interlace_process_start;
-
-	/**
-	 * @brief Sets to 1 when a field picture is decoded for merging the second field.
-	 */
-	int is_interlace_need_merge;
-
-	/**
-	 * @brief Stores the start address and size for the first field when processing interlaced video.
-	 */
-	vpu_pmap_info_t interlace_first_field_info;
-
-#endif //defined(ENABLE_INTERLACE_FRAME_MERGE)
-
 #if defined(ENABLE_INTERLACE_DELAY_PROCESS)
+	unsigned int enable_interlace_delay_proc; //Whether delay processing for interlace handling is enabled or disabled is determined based on the user's choice.
 	unsigned int detected_interlace; //when interlace decoding is detected, it is set to 1.
-	unsigned int enable_avoid_pending;
+	unsigned int enable_avoid_pending; //If detected_interlace is 1, the process for avoid_pending starts from the first field of the next interlace.
 	unsigned int avoid_pending; //if forced decoding is initiated to resolve the pending state, it is set to 1
 
 	//At the initiation of the initial delay processing, the first input triggers a wake-up poll
@@ -338,7 +307,7 @@ typedef struct vpu_drv_info_t
 	unsigned int initial_wakeup_poll;
 
 	vpu_dllist_t *delay_queue;
-	void* temp_decoding_result; //Temporary storage of results after the pending state is resolved.
+	void *temp_decoding_result; //Temporary storage of results after the pending state is resolved.
 #endif
 
 	/**
@@ -360,7 +329,7 @@ typedef struct vpu_drv_info_t
 	 * @brief For debugging purposes: command processing time.
 	 */
 	long cmd_proc_time_us;
-}vpu_drv_info_t;
+} vpu_drv_info_t;
 
 //command structure from enc/dec driver to vpu_mgr
 typedef struct vpu_cmd_t {
@@ -377,12 +346,11 @@ typedef struct vpu_cmd_t {
 	void *args;		//vpu argument!!
 	int result;
 
-	vpu_drv_poll_t* poll_data;
-	vpu_drv_info_t* drv_info; //each driver's information
+	vpu_drv_poll_t *poll_data;
+	vpu_drv_info_t *drv_info; //each driver's information
 } vpu_cmd_t;
 
-typedef struct vdec_v3_ringbuff_get_info_t
-{
+typedef struct vdec_v3_ringbuff_get_info_t {
 	int result;
 
 	unsigned int available_space;
@@ -392,8 +360,7 @@ typedef struct vdec_v3_ringbuff_get_info_t
 	int reserved[32];
 } vdec_v3_ringbuff_get_info_t;
 
-typedef struct vdec_v3_ringbuff_set_info_t
-{
+typedef struct vdec_v3_ringbuff_set_info_t {
 	int result;
 
 	int written_byte;

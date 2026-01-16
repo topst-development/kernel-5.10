@@ -1,11 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_comm.h"
 
-#ifdef ENABLE_VPU_DRV_VPU_C7
+#if defined(ENABLE_VPU_DRV_VPU_C7) || defined(ENABLE_VPU_DRV_VPU_D6)
 #include "vpu_devices.h"
 #include "vpu_c7_mgr.h"
 
@@ -40,11 +41,11 @@ static void __exit vpu_c7_cleanup(void)
 
 static int vpu_c7_init(void)
 {
-	(void)pr_info("VPU C7 device drivers initializing!! %s\n", VPU_V3_DRIVER_VERSION);
+	(void)pr_info("VPU C7(D6) device drivers initializing!! %s\n", VPU_V3_DRIVER_VERSION);
 
 	platform_driver_register(&vmgr_c7_driver);
 
-	(void)pr_info("VPU C7 device drivers initialize Done!!\n");
+	(void)pr_info("VPU C7(D6) device drivers initialize Done!!\n");
 	return 0;
 }
 
@@ -55,6 +56,6 @@ module_exit(vpu_c7_cleanup);
 MODULE_VERSION(VPU_V3_DRIVER_VERSION);
 MODULE_AUTHOR("Telechips.");
 MODULE_DESCRIPTION("TCC VPU c7 devices driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("Dual BSD/GPL"); 
 
 

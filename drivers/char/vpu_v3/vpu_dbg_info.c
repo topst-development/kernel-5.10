@@ -1,17 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_dbg_info.h"
 
-int gs_iDebugTimeMeasure = 0;
-int gs_iDebugCqCount = 0;
-int gs_iDebugLogInfo = 0;
+int gs_iDebugTimeMeasure = INITIAL_ZERO;
+int gs_iDebugCqCount = INITIAL_ZERO;
+int gs_iDebugLogInfo = INITIAL_ZERO;
 
 #define KERN_LOCAL_LOG_LEVEL KERN_WARNING
 
-static struct kobject *vpudebug_kobj = NULL;
+static struct kobject *vpudebug_kobj = INITIAL_NULL;
 static atomic_t atomicVpuTimeMeasure;
 static atomic_t atomicVpuCqCount;
 static atomic_t atomicVpuLogInfo;

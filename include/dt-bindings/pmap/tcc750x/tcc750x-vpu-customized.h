@@ -1,7 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later
- *
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
+
 #ifndef DT_PMAP_TCC750X_CUSTOMIZED_H
 #define DT_PMAP_TCC750X_CUSTOMIZED_H
 
@@ -38,6 +40,13 @@
 #define SUPPORT_VIDEO_MAX_WIDTH         (1920)
 #define SUPPORT_VIDEO_MAX_HEIGHT        (1088)
 #endif
+
+/*
+   allows the VPU decoder to use user-registered contiguous physical memory as its framebuffer;
+   in this case, the framebuffer size is excluded from the physical memory used by the VPU decoder.
+   note: user framebuffers must be registered for all VPU decoders; individual control per decoder is not supported
+*/
+#define USE_EXTERNAL_FRAMEBUFFER_IN_DECODER		(0)
 
 /*
  * DECODER on VPU

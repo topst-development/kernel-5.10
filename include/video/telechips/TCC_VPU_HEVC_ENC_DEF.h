@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- * FileName   : TCC_VPU_HEVC_ENC_DEF.h
- * Description: TCC VPU h/w block
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: shkim@telechips.com
+*/
 
 #ifndef TCC_VPU_HEVC_ENC_DEF_H
 #define TCC_VPU_HEVC_ENC_DEF_H
@@ -48,14 +47,14 @@
 // example) 3840x2160:36MB  2560x1920:22MB  2560x1440:16MB  1920x1088:10MB  1920x720:8MB  1280x720:6MB  1024x768:4MB
 
 #if !defined(ALIGNED_SIZE_VPU_HEVC_ENC)
-#define ALIGNED_SIZE_VPU_HEVC_ENC( buffer_size, align) ( ( (unsigned int)(buffer_size) + ((align)-1) ) & ~((align)-1) )
+#define ALIGNED_SIZE_VPU_HEVC_ENC(buffer_size, align) (((unsigned int)(buffer_size) + ((align)-1)) & ~((align)-1))
 #endif
-#define VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) ALIGNED_SIZE_VPU_HEVC_ENC( (ALIGNED_SIZE_VPU_HEVC_ENC((width), 256)*ALIGNED_SIZE_VPU_HEVC_ENC((height), 64)*69/32 + (20*1024)), (1024*1024))
-#define VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE(width, height, frame_count)   ( VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) * (frame_count) )
+#define VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) ALIGNED_SIZE_VPU_HEVC_ENC((ALIGNED_SIZE_VPU_HEVC_ENC((width), 256)*ALIGNED_SIZE_VPU_HEVC_ENC((height), 64)*69/32 + (20*1024)), (1024*1024))
+#define VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE(width, height, frame_count)   (VPU_CAL_HEVC_ENC_ONE_FRAME_BUF_SIZE(width, height) * (frame_count))
 
 #define VPU_HEVC_ENC_STREAM_BUF_SIZE			0x00BDEC00 //!< A maximum bitstream buffer size is the same size of uncompressed frame size.
-                                                                                 //!< HD - 1080p @ L4.1 Main Profile : 2.97 Mbytes  (0x002F8800)
-                                                                                 //!< 4K - 3840x2160 @ L5.0 Main Profile : 11.87 Mbytes (0x00BDEC00)
+																				 //!< HD - 1080p @ L4.1 Main Profile : 2.97 Mbytes  (0x002F8800)
+																				 //!< 4K - 3840x2160 @ L5.0 Main Profile : 11.87 Mbytes (0x00BDEC00)
 
 #define VPU_CAL_HEVC_ENC_PROCBUFFER(width, height, frame_count)  (ALIGNED_SIZE_VPU_HEVC_ENC(VPU_HEVC_ENC_STREAM_BUF_SIZE, (1024*1024)) + VPU_CAL_HEVC_ENC_FRAME_BUF_SIZE(width, height, frame_count)) //frame_count = 2;
 

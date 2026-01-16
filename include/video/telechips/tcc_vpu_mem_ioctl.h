@@ -1,7 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ WITH Linux-syscall-note */
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
+
 #ifndef VPU_MEM_IOCTL_H
 #define VPU_MEM_IOCTL_H
 
@@ -20,7 +22,7 @@
 #define TCC_GET_HDMI_INFO                   0x30
 #define TCC_SET_HDMI_OUT_TYPE               0x31
 
-#ifdef CONFIG_ANDROID
+#if defined(__ANDROID_COMMON_KERNEL__) || defined(CONFIG_ANDROID)
 #define USE_UMP_RESERVED_SW_PMAP
 #endif
 #ifdef USE_UMP_RESERVED_SW_PMAP

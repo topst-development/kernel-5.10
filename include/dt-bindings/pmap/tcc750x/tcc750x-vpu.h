@@ -1,7 +1,9 @@
-/* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
-/*
- * Copyright (C) 2020 Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
+
 #ifndef DT_PMAP_TCC750X_VPU_H
 #define DT_PMAP_TCC750X_VPU_H
 

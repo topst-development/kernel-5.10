@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- * FileName   : tcc_vpu_hevc_enc_ioctl.h
- * Description: Manager module for TCC HEVC ENC
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef VPU_HEVC_ENC_IOCTL_H_
 #define VPU_HEVC_ENC_IOCTL_H_

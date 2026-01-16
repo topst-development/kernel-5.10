@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- * FileName   : TCC_VPU_C5_CODEC.h
- * Description: TCC VPU h/w block
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: shkim@telechips.com
+*/
 
 #ifndef _TCC93_88XX_VPU_CODEC_H_
 #define _TCC93_88XX_VPU_CODEC_H_

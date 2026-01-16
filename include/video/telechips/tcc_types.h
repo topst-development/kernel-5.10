@@ -150,8 +150,6 @@ enum {
 };
 #endif
 
-
-/* COVERITY_CERT_INT30_C */
 #if 1
 #define check_wrap(x) ({ \
 	((x) > MAX_A)    \
@@ -172,7 +170,6 @@ enum {
 #define ALIGN_BIT  (0x8U - 1U)
 #define BIT_0      (3U)
 
-/* coverity[misra_c_2012_rule_5_9_violation : FALSE] */
 static inline unsigned int GET_ADDR_YUV42X_spY(unsigned int Base_addr)
 {
 	/* #define GET_ADDR_YUV42X_spY(Base_addr) \
@@ -191,7 +188,6 @@ static inline unsigned int GET_ADDR_YUV42X_spY(unsigned int Base_addr)
 	return ret;
 }
 
-/* coverity[misra_c_2012_rule_5_9_violation : FALSE] */
 static inline unsigned int GET_ADDR_YUV42X_spU(unsigned int Yaddr, unsigned int x, unsigned int y)
 {
 	/* #define GET_ADDR_YUV42X_spU(Yaddr, x, y) \
@@ -214,7 +210,6 @@ static inline unsigned int GET_ADDR_YUV42X_spU(unsigned int Yaddr, unsigned int 
 	return ret;
 }
 
-/* coverity[misra_c_2012_rule_5_9_violation : FALSE] */
 static inline unsigned int GET_ADDR_YUV420_spV(unsigned int Uaddr, unsigned int x, unsigned int y)
 {
 	/* #define GET_ADDR_YUV420_spV(Uaddr, x, y) \
@@ -237,7 +232,6 @@ static inline unsigned int GET_ADDR_YUV420_spV(unsigned int Uaddr, unsigned int 
 	return ret;
 }
 
-/* coverity[misra_c_2012_rule_5_9_violation : FALSE] */
 static inline unsigned int GET_ADDR_YUV422_spV(unsigned int Uaddr, unsigned int x, unsigned int y)
 {
 	/* #define GET_ADDR_YUV422_spV(Uaddr, x, y) \
@@ -261,7 +255,6 @@ static inline unsigned int GET_ADDR_YUV422_spV(unsigned int Uaddr, unsigned int 
 }
 #endif //ADDRESS_ALIGNED
 
-/* coverity[misra_c_2012_rule_5_9_violation : FALSE] */
 static inline void tcc_get_addr_yuv(unsigned int format, unsigned int base_Yaddr,
 	unsigned int src_imgx, unsigned int src_imgy,
 	unsigned int start_x, unsigned int start_y,

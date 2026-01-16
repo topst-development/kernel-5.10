@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef TCC_VPU_V3_ENCODER_H
 #define TCC_VPU_V3_ENCODER_H
@@ -27,8 +28,7 @@
  * @details This structure defines the initialization parameters for configuring the rate control settings
  *          of the Video Processing Unit (VPU) encoder.
  */
-typedef struct venc_v3_rc_init_t
-{
+typedef struct venc_v3_rc_init_t {
 	int deblk_disable;           /**< Disable deblocking filter. */
 	int deblk_alpha;             /**< Deblocking filter alpha value. */
 	int deblk_beta;              /**< Deblocking filter beta value. */
@@ -47,6 +47,7 @@ typedef struct venc_v3_rc_init_t
 	int slice_size_mode;         /**< Slice size mode. */
 	int slice_size;              /**< Size of each slice. */
 	int enc_quality_level;       /**< Encoding quality level. */
+	int enc_profile_level;       /**< Encoding profile level overriding */
 
 	int initial_qp;              /**< Initial quantization parameter. */
 	int intra_qp_min;            /**< Minimum quantization parameter for intra frames. */
@@ -54,7 +55,7 @@ typedef struct venc_v3_rc_init_t
 	int inter_qp_min;            /**< Minimum quantization parameter for inter frames. */
 	int inter_qp_max;            /**< Maximum quantization parameter for inter frames. */
 
-	int reserved[16];            /**< Reserved padding for future use. */
+	int reserved[15];            /**< Reserved padding for future use. */
 } venc_v3_rc_init_t;
 
 
@@ -66,8 +67,7 @@ typedef struct venc_v3_rc_init_t
 /**
  * @brief Structure for providing input parameters for VPU encoder initialization.
  */
-typedef struct venc_v3_init_in_t
-{
+typedef struct venc_v3_init_in_t {
 	/**
 	 * @brief Codec ID to be used for encoding.
 	 */
@@ -155,14 +155,23 @@ typedef struct venc_v3_init_in_t
 	 */
 	int user_bitstream_buf_size;
 
-	int reserved[26];
+	/**
+	 * @brief Determines whether to force the use of the VPU IP specified by force_vpu_ip_index.
+	 */
+	int enable_force_vpu_ip;
+
+	/**
+	 * @brief Forces the use of a specific VPU IP by specifying its index.
+	 */
+	int force_vpu_ip_index;
+
+	int reserved[24];
 } venc_v3_init_in_t;
 
 /**
  * @brief Structure for getting output information after VPU encoder initialization.
  */
-typedef struct venc_v3_init_out_t
-{
+typedef struct venc_v3_init_out_t {
 	/**
 	 * @brief Minimum required frame buffer count.
 	 */
@@ -189,8 +198,7 @@ typedef struct venc_v3_init_out_t
 /**
  * @brief Overall structure for VPU encoder initialization.
  */
-typedef struct venc_v3_init_t
-{
+typedef struct venc_v3_init_t {
 	/**
 	 * @brief The result of the encoder initialization.
 	 *
@@ -234,8 +242,7 @@ typedef struct venc_v3_init_t
 /**
  * @brief Structure for putting headers in the VPU encoder.
  */
-typedef struct venc_v3_putheader_t
-{
+typedef struct venc_v3_putheader_t {
 	/**
 	 * @brief The result of the header insertion.
 	 *
@@ -313,8 +320,7 @@ typedef struct venc_v3_putheader_t
 /**
  * @brief Structure for providing input parameters for VPU encoder encoding.
  */
-typedef struct venc_v3_encode_in_t
-{
+typedef struct venc_v3_encode_in_t {
 	/**
 	 * @brief Base address of the Y component of the input picture.
 	 */
@@ -384,27 +390,25 @@ typedef struct venc_v3_encode_in_t
 	unsigned int bitstream_buffer_size;
 
 	int reserved[27]; /**< Reserved padding for future use. */
-}venc_v3_encode_in_t;
+} venc_v3_encode_in_t;
 
 
 /**
  * @brief Structure for getting information about the encoded stream.
  */
-typedef struct venc_v3_encoded_info_t
-{
+typedef struct venc_v3_encoded_info_t {
 	/**
 	 * @brief Average quantization parameter used for encoding.
 	 */
 	int avg_qp;
 
 	int reserved[15]; /**< Reserved padding for future use. */
-}venc_v3_encoded_info_t;
+} venc_v3_encoded_info_t;
 
 /**
  * @brief Structure for getting output information after VPU encoder encoding.
  */
-typedef struct venc_v3_encode_out_t
-{
+typedef struct venc_v3_encode_out_t {
 	/**
 	 * @brief Type of the encoded picture (I-picture, P-picture, B-picture, etc.).
 	 */
@@ -431,8 +435,7 @@ typedef struct venc_v3_encode_out_t
 /**
  * @brief Overall structure for VPU encoder encoding.
  */
-typedef struct venc_v3_encode_t
-{
+typedef struct venc_v3_encode_t {
 	/**
 	 * @brief The result of the encoding process.
 	 *
@@ -476,8 +479,7 @@ typedef struct venc_v3_encode_t
 /**
  * @brief Structure for closing the VPU encoder.
  */
-typedef struct venc_v3_close_t
-{
+typedef struct venc_v3_close_t {
 	/**
 	 * @brief The result of closing the VPU encoder.
 	 *

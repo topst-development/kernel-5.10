@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_comm.h"
 
@@ -26,62 +27,53 @@ enum HEVCENC2_RESET {
 	VBUS_HEVC_ENC_RESET,
 };
 
-void vmgr_hevc_enc2_enable_clock(vmgr_clock_t* vmgr_clk, int vbus_no_ctrl)
+static void vmgr_hevc_enc2_enable_clock(vmgr_clock_t *vmgr_clk, int vbus_no_ctrl)
 {
 	V_DBG(VPU_DBG_RSTCLK, "vmgr_hevc_enc_enable_clock");
 
-	if ((vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL) && (vbus_no_ctrl == 0))
-	{
+	if ((vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL) && (vbus_no_ctrl == 0)) {
 		clk_prepare_enable(vmgr_clk->vpu_clk[FBUS_VBUS_CLK]);
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL) {
 		clk_prepare_enable(vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK]);
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL) {
 		clk_prepare_enable(vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK]);
 	}
 
-	if (vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK] != NULL) {
 		clk_prepare_enable(vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK]);
 	}
 }
 
-void vmgr_hevc_enc2_disable_clock(vmgr_clock_t* vmgr_clk, int vbus_no_ctrl)
+static void vmgr_hevc_enc2_disable_clock(vmgr_clock_t *vmgr_clk, int vbus_no_ctrl)
 {
 	V_DBG(VPU_DBG_RSTCLK, "vmgr_hevc_enc_disable_clock");
 
-	if (vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK] != NULL) {
 		clk_disable_unprepare(vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK]);
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL) {
 		clk_disable_unprepare(vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK]);
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL) {
 		clk_disable_unprepare(vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK]);
 	}
 
 #if !defined(VBUS_CLK_ALWAYS_ON)
-	if ((vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL) && (vbus_no_ctrl == 0))
-	{
+	if ((vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL) && (vbus_no_ctrl == 0)) {
 		clk_disable_unprepare(vmgr_clk->vpu_clk[FBUS_VBUS_CLK]);
 	}
 #endif
 }
 
-void vmgr_hevc_enc2_get_clock(vmgr_clock_t* vmgr_clk, struct device_node *node)
+static void vmgr_hevc_enc2_get_clock(vmgr_clock_t *vmgr_clk, struct device_node *node)
 {
-	if (node == NULL)
-	{
+	if (node == NULL) {
 		V_DBG(VPU_DBG_ERROR, "device node is null");
 	}
 
@@ -98,34 +90,30 @@ void vmgr_hevc_enc2_get_clock(vmgr_clock_t* vmgr_clk, struct device_node *node)
 	VPU_BUG_ON(vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK]);
 }
 
-void vmgr_hevc_enc2_put_clock(vmgr_clock_t* vmgr_clk)
+static void vmgr_hevc_enc2_put_clock(vmgr_clock_t *vmgr_clk)
 {
-	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL) {
 		clk_put(vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK]);
 		vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] = NULL;
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL) {
 		clk_put(vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK]);
 		vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] = NULL;
 	}
 
-	if (vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK] != NULL) {
 		clk_put(vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK]);
 		vmgr_clk->vpu_clk[VBUS_HEVC_ENC_CLK] = NULL;
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL) {
 		clk_put(vmgr_clk->vpu_clk[FBUS_VBUS_CLK]);
 		vmgr_clk->vpu_clk[FBUS_VBUS_CLK] = NULL;
 	}
 }
 
-void vmgr_hevc_enc2_change_clock(vmgr_clock_t* vmgr_clk, unsigned int width, unsigned int height)
+static void vmgr_hevc_enc2_change_clock(vmgr_clock_t *vmgr_clk, unsigned int width, unsigned int height)
 {
 #ifdef USE_CLK_DYNAMIC_CTRL
 	static unsigned int prev_resolution;	// = 0x0;
@@ -143,73 +131,53 @@ void vmgr_hevc_enc2_change_clock(vmgr_clock_t* vmgr_clk, unsigned int width, uns
 	tcc_set_pll(PLL_VIDEO_1, ENABLE, 1500000000, 2);
 #endif
 
-	if (prev_resolution == curr_resolution)
-	{
+	if (prev_resolution == curr_resolution) {
 		return;
 	}
 
 	prev_resolution = curr_resolution;
 
-	if (curr_resolution > 1920 * 1088)
-	{
+	if (curr_resolution > 1920 * 1088) {
 		vbus_clk_value = 800000000;
 		bhevc_clk_value = 500000000;
 		chevc_clk_value = 800000000;
-	}
-	else if (curr_resolution > 1280 * 720)
-	{
+	} else if (curr_resolution > 1280 * 720) {
 		vbus_clk_value = 500000000;
 		bhevc_clk_value = 250000000;
 		chevc_clk_value = 500000000;
-	}
-	else if (curr_resolution > 720 * 480)
-	{
+	} else if (curr_resolution > 720 * 480) {
 		vbus_clk_value = 300000000;
 		bhevc_clk_value = 200000000;
 		chevc_clk_value = 300000000;
-	}
-	else
-	{	//curr_resolution > 0
+	} else {	//curr_resolution > 0
 		vbus_clk_value = 200000000;
 		bhevc_clk_value = 150000000;
 		chevc_clk_value = 200000000;
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_VBUS_CLK] != NULL) {
 		err = clk_set_rate(vmgr_clk->vpu_clk[FBUS_VBUS_CLK], vbus_clk_value);
-		if (err)
-		{
+		if (err) {
 			pr_err("cannot change vmgr_clk->vpu_clk[FBUS_VBUS_CLK] rate to %ld: %d\n", vbus_clk_value, err);
-		}
-		else
-		{
+		} else {
 			bclk_changed |= 0x1;
 		}
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] != NULL) {
 		err = clk_set_rate(vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK], bhevc_clk_value);
-		if (err)
-		{
+		if (err) {
 			pr_err("cannot change vmgr_clk->vpu_clk[FBUS_BHEVCENC_CLK] rate to %ld: %d\n", bhevc_clk_value, err);
-		}
-		else
-		{
+		} else {
 			bclk_changed |= 0x2;
 		}
 	}
 
-	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL)
-	{
+	if (vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] != NULL) {
 		err = clk_set_rate(vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK], chevc_clk_value);
-		if (err)
-		{
+		if (err) {
 			pr_err("cannot change vmgr_clk->vpu_clk[FBUS_CHEVCENC_CLK] rate to %ld: %d\n", chevc_clk_value, err);
-		}
-		else
-		{
+		} else {
 			bclk_changed |= 0x4;
 		}
 	}
@@ -223,11 +191,10 @@ void vmgr_hevc_enc2_change_clock(vmgr_clock_t* vmgr_clk, unsigned int width, uns
 #endif
 }
 
-void vmgr_hevc_enc2_get_reset(vmgr_clock_t* vmgr_clk, struct device_node *node)
+static void vmgr_hevc_enc2_get_reset(vmgr_clock_t *vmgr_clk, struct device_node *node)
 {
 #if defined(VIDEO_IP_DIRECT_RESET_CTRL)
-	if (node == NULL)
-	{
+	if (node == NULL) {
 		(void)pr_info("device node is null");
 	}
 
@@ -236,18 +203,17 @@ void vmgr_hevc_enc2_get_reset(vmgr_clock_t* vmgr_clk, struct device_node *node)
 #endif
 }
 
-void vmgr_hevc_enc2_put_reset(vmgr_clock_t* vmgr_clk)
+static void vmgr_hevc_enc2_put_reset(vmgr_clock_t *vmgr_clk)
 {
 #if defined(VIDEO_IP_DIRECT_RESET_CTRL)
-	if (vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET] != NULL)
-	{
+	if (vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET] != NULL) {
 		reset_control_put(vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET]);
 		vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET] = NULL;
 	}
 #endif
 }
 
-int vmgr_hevc_enc2_get_reset_register(vmgr_clock_t* vmgr_clk)
+int vmgr_hevc_enc2_get_reset_register(vmgr_clock_t *vmgr_clk)
 {
 #ifdef ENABLE_LOG_RESET_REGISTER
 	return vetc_reg_read(vbus, 0x4);
@@ -256,13 +222,12 @@ int vmgr_hevc_enc2_get_reset_register(vmgr_clock_t* vmgr_clk)
 #endif
 }
 
-void vmgr_hevc_enc2_hw_assert(vmgr_clock_t* vmgr_clk)
+static void vmgr_hevc_enc2_hw_assert(vmgr_clock_t *vmgr_clk)
 {
 #if defined(VIDEO_IP_DIRECT_RESET_CTRL)
 	V_DBG(VPU_DBG_RSTCLK, "enter");
 
-	if (vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET] != NULL)
-	{
+	if (vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET] != NULL) {
 		V_DBG(VPU_DBG_RSTCLK, "Video bus hevc encoder reset: assert (rsr:0x%x)",
 			vmgr_hevc_enc2_get_reset_register(vmgr_clk));
 		(void)reset_control_assert(vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET]);
@@ -272,13 +237,12 @@ void vmgr_hevc_enc2_hw_assert(vmgr_clock_t* vmgr_clk)
 #endif
 }
 
-void vmgr_hevc_enc2_hw_deassert(vmgr_clock_t* vmgr_clk)
+static void vmgr_hevc_enc2_hw_deassert(vmgr_clock_t *vmgr_clk)
 {
 #if defined(VIDEO_IP_DIRECT_RESET_CTRL)
 	V_DBG(VPU_DBG_RSTCLK, "enter");
 
-	if (vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET] != NULL)
-	{
+	if (vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET] != NULL) {
 		V_DBG(VPU_DBG_RSTCLK, "Video bus hevc encoder reset: deassert (rsr:0x%x)",
 			vmgr_hevc_enc2_get_reset_register(vmgr_clk));
 		(void)reset_control_deassert(vmgr_clk->bus_reset[VBUS_HEVC_ENC_RESET]);
@@ -288,7 +252,7 @@ void vmgr_hevc_enc2_hw_deassert(vmgr_clock_t* vmgr_clk)
 #endif
 }
 
-void vmgr_hevc_enc2_hw_reset(vmgr_clock_t* vmgr_clk)
+static void vmgr_hevc_enc2_hw_reset(vmgr_clock_t *vmgr_clk)
 {
 #if defined(VIDEO_IP_DIRECT_RESET_CTRL)
 	V_DBG(VPU_DBG_RSTCLK, "enter");
@@ -308,7 +272,7 @@ void vmgr_hevc_enc2_hw_reset(vmgr_clock_t* vmgr_clk)
 #endif
 }
 
-void vmgr_hevc_enc2_restore_clock(vmgr_clock_t* vmgr_clk, int vbus_no_ctrl, int opened_cnt)
+static void vmgr_hevc_enc2_restore_clock(vmgr_clock_t *vmgr_clk, int vbus_no_ctrl, int opened_cnt)
 {
 #if 1 // unnecessary process: recommended by soc
 	int opened_count = opened_cnt;
@@ -319,8 +283,7 @@ void vmgr_hevc_enc2_restore_clock(vmgr_clock_t* vmgr_clk, int vbus_no_ctrl, int 
 
 	udelay(1000); //1ms
 
-	while (opened_count > 0)
-	{
+	while (opened_count > 0) {
 		vmgr_hevc_enc2_disable_clock(vmgr_clk, vbus_no_ctrl);
 		opened_count--;
 	}
@@ -328,8 +291,7 @@ void vmgr_hevc_enc2_restore_clock(vmgr_clock_t* vmgr_clk, int vbus_no_ctrl, int 
 	udelay(1000); //1ms
 
 	opened_count = opened_cnt;
-	while (opened_count > 0)
-	{
+	while (opened_count > 0) {
 		vmgr_hevc_enc2_enable_clock(vmgr_clk, vbus_no_ctrl);
 		opened_count--;
 	}
@@ -342,8 +304,7 @@ void vmgr_hevc_enc2_restore_clock(vmgr_clock_t* vmgr_clk, int vbus_no_ctrl, int 
 #endif
 }
 
-vmgr_clock_t vpu_hevc_enc2_clock =
-{
+vmgr_clock_t vpu_hevc_enc2_clock = {
 	.vpu_clk = {NULL, },
 	.bus_reset = {NULL, },
 	.enable_clock = vmgr_hevc_enc2_enable_clock,

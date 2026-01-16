@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_comm.h"
 
@@ -58,6 +59,6 @@ module_exit(vpu_hevc_dec_cleanup);
 MODULE_VERSION(VPU_V3_DRIVER_VERSION);
 MODULE_AUTHOR("Telechips.");
 MODULE_DESCRIPTION("TCC hevc devices driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("Dual BSD/GPL"); 
 
 

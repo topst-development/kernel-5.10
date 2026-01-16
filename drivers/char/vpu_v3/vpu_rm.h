@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #ifndef VPU_RM_H
 #define VPU_RM_H
@@ -85,7 +86,7 @@ int vrm_check_index_availability(s32 idx);
 void vrm_clear_instance(s32 idx);
 
 int vrm_probe(struct platform_device *pdev);
-int vrm_remove(struct platform_device *pdev);
+VREMOVE_RET_TYPE vrm_remove(struct platform_device *pdev);
 
 int vmem_proc_alloc_memory(int codec_type, MEM_ALLOC_INFO_t *alloc_info, vputype type);
 int vmem_proc_free_memory(vputype type);

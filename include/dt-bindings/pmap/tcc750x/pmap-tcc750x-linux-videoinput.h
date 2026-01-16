@@ -6,13 +6,13 @@
 #define DT_BINDINGS_PMAP_TCC750X_LINUX_SUBCORE_VIDEOINPUT_H
 
 #undef SZ_1MB
-#define SZ_1MB				(1024*1024)
+#define SZ_1MB				(1024*1024) 
 #undef ARRAY_MBYTE
 #define ARRAY_MBYTE(x)			((((x) + (SZ_1MB-1)) >> 20) << 20)
 
 /* Output resolution for video capture memory */
 #define CAMERA_OUTPUT_WIDTH		1920
-#define CAMERA_OUTPUT_HEIGHT		1080
+#define CAMERA_OUTPUT_HEIGHT		720
 
 /* The number of buffers */
 #define FRAMES_CAMERA_PREVIEW0		4

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_comm.h"
 #include "vpu_devices.h"
@@ -16,7 +17,7 @@
 #endif
 
 #if DEFINED_CONFIG_VDEC
-static void vdec_device_release(struct device* dev)
+static void vdec_device_release(struct device *dev)
 {
 
 }
@@ -51,7 +52,7 @@ static struct platform_driver vdec_driver = {
 #endif //#if DEFINED_CONFIG_VDEC
 
 #if DEFINED_CONFIG_VENC
-static void venc_device_release(struct device* dev)
+static void venc_device_release(struct device *dev)
 {
 
 }
@@ -128,4 +129,4 @@ module_exit(vpu_drv_dev_cleanup);
 MODULE_VERSION(VPU_V3_DRIVER_VERSION);
 MODULE_AUTHOR("Telechips.");
 MODULE_DESCRIPTION("TCC vpu devices driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("Dual BSD/GPL"); 

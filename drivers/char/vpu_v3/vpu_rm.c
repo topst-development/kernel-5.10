@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -32,7 +33,7 @@
 #include <linux/time.h>
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
 
@@ -44,6 +45,8 @@ MODULE_IMPORT_NS(DMA_BUF);
 
 // This header must located after "vpu_comm.h".
 #include <dt-bindings/pmap/common/vpu_mem_size.h>
+
+#define BYTE_TO_MB(byte)	((byte) >> 20)
 
 #define VRM_FREED                (~((u64)0U))
 #define VRM_DATA_NA              (~((u32)0U))
@@ -224,11 +227,7 @@ static void *vrm_get_va(phys_addr_t pa, u32 size)
 	if (size < UINT_MAX) {
 		i = size + (u64)pa;
 		V_DBG(VPU_DBG_MEMORY, "physical region [0x%x - 0x%x]!!", pa, i);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
-		va = (void *) ioremap((phys_addr_t) pa, PAGE_ALIGN(size));
-#else
-		va = (void *) ioremap_nocache((phys_addr_t) pa, PAGE_ALIGN(size));
-#endif
+		va = (void *) vetc_ioremap((phys_addr_t) pa, PAGE_ALIGN(size));
 		if (va == NULL) {
 			V_DBG(VPU_DBG_ERROR, "fail to ioremap for 0x%x w/ %u.",
 					pa, size);
@@ -263,7 +262,7 @@ static struct vpmap *vrm_find_info_by_name(const char *name)
 	struct vpmap *result = NULL;
 
 	list_for_each_entry(entry, &vpmap_list_head, list) {
-		if ( entry != NULL ) {
+		if (entry != NULL) {
 			int cmp = strncmp(name, entry->info.name, VRM_NAME_LEN);
 			if (cmp == 0) {
 				result = &entry->info;
@@ -433,9 +432,7 @@ static u32 vrm_find_vswm_size_by_idx(s32 idx)
 				size = VPU_ENC_HEADER_BUF_SIZE;
 			} else if ((uidx >= dusrdat0) && (uidx < (dusrdat0 + maxcnt_dec))) {
 				size = USER_DATA_BUF_SIZE;
-			}
-			else
-			{
+			} else {
 				VPU_DONOTHING(uidx);
 			}
 
@@ -473,7 +470,7 @@ static s32 vrm_find_ipidx_from_codec(s32 codec)
 			break;
 #endif
 #ifdef CONFIG_SUPPORT_TCC_WAVE420L_2ND_VPU_HEVC_ENC
-			case STD_HEVC_ENC2:
+		case STD_HEVC_ENC2:
 			idx = wave420l2;
 			V_DBG(VPU_DBG_DETAIL, "codec:%d(STD_HEVC_ENC2), ret index:%d", codec, idx);
 			break;
@@ -581,18 +578,15 @@ static struct vrm_entry *vrm_alloc_vswm_from_base(struct vrm *info)
 					(phys_addr_t)entry->info.base, ui_size);
 				if (entry->info.va != NULL) {
 					V_DBG(VPU_DBG_MEMORY,
-						  "%s (%d 'th) in VPU's FW memory succeeded in remapping va=0x%p w/ base=0x%lx, size=0x%u in video_sw area!!",
+						  "%s (%d 'th) in VPU's FW memory succeeded in remapping va=%p w/ base=%p, size=%p in video_sw area!!",
 						  entry->info.name, i,
 						  entry->info.va, pab,
 						  entry->info.size);
 
-					if (pab > __UINT64_MAX__ - ((u64)entry->info.size))
-					{
+					if (pab > __UINT64_MAX__ - ((u64)entry->info.size)) {
 						V_DBG(VPU_DBG_ERROR,
 						  "the info size(%d) + info base(%d) is overflowed over UINT_MAX", (u64)entry->info.size, pab);
-					}
-					else
-					{
+					} else {
 						pab += (u64)entry->info.size;
 					}
 				} else {
@@ -788,7 +782,7 @@ static s32 vrm_update_info(struct device_node *np, struct vpmap *info,
 			info->flags
 		);
 	} else {
-		if ( (ventry != NULL) &&
+		if ((ventry != NULL) &&
 		   vrm_is_vstored(info) &&
 		   vrm_is_vswed(info)) {
 			ventry->parent = vrm_alloc_vswm_from_base(infov);
@@ -826,8 +820,7 @@ static s32 vrm_get_info_internal(struct vpmap *info)
 {
 	const struct vpmap_entry *entry = vpmap_entry_of(info);
 
-	while (entry->parent != NULL)
-	{
+	while (entry->parent != NULL) {
 		info = &entry->parent->info;
 		entry = vpmap_entry_of(info);
 	}
@@ -841,16 +834,12 @@ static s32 vrm_get_info_internal(struct vpmap *info)
 
 static void vrm_release_info_internal(struct vpmap *info)
 {
-	while (info->rc != 0U)
-	{
+	while (info->rc != 0U) {
 		const struct vpmap_entry *entry = vpmap_entry_of(info);
 
-		if (entry->parent != NULL)
-		{
+		if (entry->parent != NULL) {
 			info = &entry->parent->info;
-		}
-		else
-		{
+		} else {
 			break;
 		}
 	}
@@ -911,11 +900,16 @@ EXPORT_SYMBOL(vrm_release_info);
 		)
 {
 	struct vrm *info = NULL;
+	struct vrm *info_paired = NULL;
 	MEM_ALLOC_INFO_t *uinfo = NULL;
 
 	s32 bufidx = 0;
 	s32 idx = (s32) type;
+	s32 idx_paired = -1;
 	s32 ipidx = vrm_find_ipidx_from_codec(codec);
+	s32 estimated_mem_left = 0;
+	s64 used_size = 0;
+	s64 used_size_paired = 0;
 
 	if (alloc_info == NULL) {
 		V_DBG(VPU_DBG_ERROR, "info. to allocate memory is wrong.");
@@ -968,18 +962,58 @@ EXPORT_SYMBOL(vrm_release_info);
 		return -EFAULT;
 	}
 
+	if ((bufidx != BUFFER_WORK) && (bufidx != BUFFER_USERDATA) && (bufidx != BUFFER_SEQHEADER)) {
+		switch (idx) {
+		case 0:
+			idx_paired = 1;
+		break;
+		case 1:
+			idx_paired = 0;
+		break;
+		case 2:
+			idx_paired = 3;
+		break;
+		case 3:
+			idx_paired = 2;
+		break;
+		default:
+			idx_paired = -1;
+		break;
+		}
+
+		if (idx_paired >= 0) {
+			info_paired = vrm_find_vinfo_by_vidx(idx_paired);
+			used_size_paired = info_paired->used;
+
+			V_DBG(VPU_DBG_MEMORY, "paired, idx_paired:%d, rear:%d flags:0x%x, used:0x%x(≈%d MB) , pmap size:0x%x(≈%d MB)",
+				 idx_paired, vrm_is_vrearend(info_paired), info_paired->flags, info_paired->used, BYTE_TO_MB(info_paired->used), info_paired->size, BYTE_TO_MB(info_paired->size));
+		}
+	}
+
+	used_size = info->used + used_size_paired + uinfo->request_size;
+	estimated_mem_left = (info->size - used_size);
+	V_DBG(VPU_DBG_MEMORY, "codec:%d, idx:%d, bufidx:%d, rear:%d flags:0x%x, (used:0x%x + used_size_paired:0x%x + request:0x%x(≈%d MB)):0x%x(≈%d MB), pmap size:0x%x(≈%d MB), estimated_mem_left:%d(≈%d Mb)",
+		codec, idx, bufidx, vrm_is_vrearend(info), info->flags, info->used, used_size_paired, uinfo->request_size, BYTE_TO_MB(uinfo->request_size),
+		used_size, BYTE_TO_MB(used_size), info->size, BYTE_TO_MB(info->size), estimated_mem_left, BYTE_TO_MB(estimated_mem_left));
+
+	if (bufidx != BUFFER_WORK) {
+		if (estimated_mem_left < 0) {
+			V_DBG(VPU_DBG_ERROR, "Not enough physical memory of VPU");
+			return -EFAULT;
+		}
+	}
+
 	if (vrm_is_vrearend(info)) {
 		info->ip = (u32) ipidx;
 		info->pa -= uinfo->request_size;
 		info->used += uinfo->request_size;
 
 		uinfo->phy_addr =
-			(phys_addr_t)((info->pa > UINT_MAX) ? UINT_MAX :
-									info->pa);
+			(phys_addr_t)((info->pa > UINT_MAX) ? UINT_MAX : info->pa);
+
 	} else {
 		uinfo->phy_addr =
-			(phys_addr_t)((info->pa > UINT_MAX) ? UINT_MAX :
-									info->pa);
+			(phys_addr_t)((info->pa > UINT_MAX) ? UINT_MAX : info->pa);
 
 		switch (bufidx) {
 		case (s32)BUFFER_WORK:
@@ -1033,12 +1067,10 @@ EXPORT_SYMBOL(vrm_release_info);
 				return -EFAULT;
 			}
 
-			for(i = 0; i < MAX_FREE_VA; i++)
-			{
+			for (i = 0; i < MAX_FREE_VA; i++) {
 				entry = &vfree_tb[idx][i];
 
-				if (entry->used == 0U)
-				{
+				if (entry->used == 0U) {
 					entry->used = 1U;
 					entry->addr = info->va;
 					break;
@@ -1101,16 +1133,16 @@ static s32 vrm_free_procmem(vputype type)
 	V_DBG(
 		VPU_DBG_MEM_USAGE,
 		"[DEBUG][VRM] name=%s, size=%lu, used=%lu, base=0x%lx, pa=0x%lx, va=0x%p, groups=%u, flags=%u, rc=%u, ip=%u.",
-		info ->name,
-		info ->size,
-		info ->used,
-		info ->base,
-		info ->pa,
-		info ->va,
-		info ->groups,
-		info ->flags,
-		info ->rc,
-		info ->ip
+		info->name,
+		info->size,
+		info->used,
+		info->base,
+		info->pa,
+		info->va,
+		info->groups,
+		info->flags,
+		info->rc,
+		info->ip
 	);
 
 	if (info->rc == 0U) {
@@ -1125,12 +1157,10 @@ static s32 vrm_free_procmem(vputype type)
 
 	ip = info->ip;
 
-	for(i = 0; i < (s32)MAX_FREE_VA; i++)
-	{
+	for (i = 0; i < (s32)MAX_FREE_VA; i++) {
 		entry = &vfree_tb[idx][i];
 
-		if (entry->used == 1U)
-		{
+		if (entry->used == 1U) {
 			entry->used = 0U;
 			(void) vrm_release_va(entry->addr, (phys_addr_t)((info->pa > UINT_MAX) ? UINT_MAX :
 									info->pa),
@@ -1183,16 +1213,16 @@ static s32 vrm_free_procmem(vputype type)
 	V_DBG(
 		VPU_DBG_MEM_USAGE,
 		"[[DEBUG][VRM] name=%s, size=%lu, used=%lu, base=0x%lx, pa=0x%lx, va=0x%p, groups=%u, flags=%u, rc=%u, ip=%u.",
-		swinfo ->name,
-		swinfo ->size,
-		swinfo ->used,
-		swinfo ->base,
-		swinfo ->pa,
-		swinfo ->va,
-		swinfo ->groups,
-		swinfo ->flags,
-		swinfo ->rc,
-		swinfo ->ip
+		swinfo->name,
+		swinfo->size,
+		swinfo->used,
+		swinfo->base,
+		swinfo->pa,
+		swinfo->va,
+		swinfo->groups,
+		swinfo->flags,
+		swinfo->rc,
+		swinfo->ip
 	);
 #if 0
 	if (swinfo->rc == 0U) {
@@ -1213,7 +1243,7 @@ static s32 vrm_free_procmem(vputype type)
 	swinfo->pa -= swinfo->used;
 	swinfo->used -= swinfo->size;
 
-	if ( (swinfo->base != swinfo->pa) ||
+	if ((swinfo->base != swinfo->pa) ||
 		(swinfo->used != 0U)) {
 		V_DBG(
 			VPU_DBG_ERROR,
@@ -1241,7 +1271,7 @@ static s32 vrm_free_procmem(vputype type)
 		swinfo->pa -= swinfo->used;
 		swinfo->used -= swinfo->size;
 
-		if ( (swinfo->base != swinfo->pa) ||
+		if ((swinfo->base != swinfo->pa) ||
 				(swinfo->used != 0U)) {
 			V_DBG(
 					VPU_DBG_ERROR,
@@ -1268,14 +1298,14 @@ static s32 vrm_free_procmem(vputype type)
 	V_DBG(
 		VPU_DBG_MEM_USAGE,
 		"[DEBUG][VRM] name=%s, size=%lu, base=0x%lx, va=0x%p, groups=%u, flags=%u, rc=%u, ip=%u.",
-		swinfo ->name,
-		swinfo ->size,
-		swinfo ->base,
-		swinfo ->va,
-		swinfo ->groups,
-		swinfo ->flags,
-		swinfo ->rc,
-		swinfo ->ip
+		swinfo->name,
+		swinfo->size,
+		swinfo->base,
+		swinfo->va,
+		swinfo->groups,
+		swinfo->flags,
+		swinfo->rc,
+		swinfo->ip
 	);
 #if 0
 	if (swinfo->rc == 0U) {
@@ -1295,7 +1325,7 @@ static s32 vrm_free_procmem(vputype type)
 	swinfo->pa -= swinfo->used;
 	swinfo->used -= swinfo->size;
 
-	if ( (swinfo->base != swinfo->pa) ||
+	if ((swinfo->base != swinfo->pa) ||
 	   (swinfo->used != 0U)) {
 		V_DBG(
 			VPU_DBG_ERROR,
@@ -1322,7 +1352,7 @@ static s32 vrm_free_procmem(vputype type)
 
 		swinfo->used = 0LLU;
 
-		if ( (swinfo->base != swinfo->pa) ||
+		if ((swinfo->base != swinfo->pa) ||
 				(swinfo->used != 0U)) {
 			V_DBG(
 					VPU_DBG_ERROR,
@@ -1368,17 +1398,14 @@ s32 vrm_get_freemem(s32 idx)
 			}
 		}
 
-		if (ret >= 0)
-		{
+		if (ret >= 0) {
 			if (freed < 0) {
 				ret = -ENOMEM;
-			}
-			else {
+			} else {
 				ret = (s32)freed;
 			}
 		}
-	}
-	else {
+	} else {
 		ret = -EFAULT;
 	}
 	return ret;
@@ -1416,40 +1443,28 @@ s32 vrm_set_instance(s32 idx)
 	s32 imax_vrm_vmem = (s32)MAX_VRM_VMEM;
 	struct vrm *info;
 
-	if ((idx >= 0) && (idx < imax_vrm_vmem))
-	{
-		if (vrm_get_freemem(idx) >= 0)
-		{
+	if ((idx >= 0) && (idx < imax_vrm_vmem)) {
+		if (vrm_get_freemem(idx) >= 0) {
 			info = vrm_find_vinfo_by_vidx(idx);
-			if (info != NULL)
-			{
-				if ((info->rc == 0U) && (info->reserved == 0U))
-				{
+			if (info != NULL) {
+				if ((info->rc == 0U) && (info->reserved == 0U)) {
 					nInstance = idx;
 					info->reserved = 1U;
 					ret = nInstance;
 					V_DBG(VPU_DBG_INSTANCE, "Instance-#%d is taken (required-#%d).", idx, nInstance);
-				}
-				else
-				{
+				} else {
 					V_DBG(VPU_DBG_ERROR, "name:%s, idx:%d, rc is %u, but already reversed: %u",
-							info->name,idx,info->rc,info->reserved);
+							info->name, idx, info->rc, info->reserved);
 					ret = -ENOMEM;
 				}
-			}
-			else
-			{
+			} else {
 				ret = -EFAULT;
 			}
-		}
-		else
-		{
+		} else {
 			V_DBG(VPU_DBG_ERROR, "vpu failed to get new instance for decoder.");
 			ret = -ENOMEM;
 		}
-	}
-	else
-	{
+	} else {
 		V_DBG(VPU_DBG_ERROR, "Invaild instance number.");
 		ret = -EFAULT;
 	}
@@ -1469,7 +1484,7 @@ s32 vrm_get_instance(s32 idx)
 			if (info != NULL) {
 				if ((info->rc == 0U) && (info->reserved != 0U)) {
 					V_DBG(VPU_DBG_ERROR, "name:%s, idx:%d, rc is %u, but already reserved: %u",
-							info->name,idx,info->rc,info->reserved);
+							info->name, idx, info->rc, info->reserved);
 				}
 				if ((info->rc == 0U) && (info->reserved == 0U)) {
 					nInstance = idx;
@@ -1480,7 +1495,7 @@ s32 vrm_get_instance(s32 idx)
 						if (info != NULL) {
 							if ((info->rc == 0U) && (info->reserved != 0U)) {
 								V_DBG(VPU_DBG_ERROR, "name:%s, idx:%d, rc is %u, but already reserved: %u",
-										info->name,idx,info->rc,info->reserved);
+										info->name, idx, info->rc, info->reserved);
 							}
 							if ((info->rc == 0U) && (info->reserved == 0U)) {
 								nInstance = i;
@@ -1539,27 +1554,18 @@ int vrm_check_index_availability(s32 idx)
 	struct vrm *info = NULL;
 	s32 imax_vrm_vmem = (s32)MAX_VRM_VMEM;
 
-	if ((idx >= 0) && (idx < imax_vrm_vmem))
-	{
+	if ((idx >= 0) && (idx < imax_vrm_vmem)) {
 		info = vrm_find_vinfo_by_vidx(idx);
-		if (info != NULL)
-		{
-			if ((info->rc == 0U) && (info->reserved == 0U))
-			{
+		if (info != NULL) {
+			if ((info->rc == 0U) && (info->reserved == 0U)) {
 				ret = 1; //available
-			}
-			else
-			{
+			} else {
 				ret = 0; //unavailable
 			}
-		}
-		else
-		{
+		} else {
 			ret = -1;
 		}
-	}
-	else
-	{
+	} else {
 		V_DBG(VPU_DBG_ERROR, "Invaild instance number.");
 		ret = -1;
 	}
@@ -1592,7 +1598,7 @@ void vrm_clear_instance(s32 idx)
 
 #define vrm_get_order(info) \
 	(((info)->groups == VRM_DATA_NA) ? 2 : (vrm_is_shared(info) ? 1 : 0))
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 static int vrm_compare(void *p, const struct list_head *a, const struct list_head *b)
 #else
 static int vrm_compare(void *p, struct list_head *a, struct list_head *b)
@@ -1654,7 +1660,7 @@ static int proc_vrm_show(struct seq_file *m, void *v)
 
 		u64 base = vrm_get_base(info);
 
-		if(info != NULL) {
+		if (info != NULL) {
 			is_vshared = vrm_is_vshared(info) ? 1 : 0;
 		}
 
@@ -1774,7 +1780,7 @@ static int proc_vrm_show(struct seq_file *m, void *v)
 
 static int proc_vrm_open(struct inode *st_inode, struct file *st_file)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	return single_open(st_file, &proc_vrm_show, st_inode->i_private);
 #else
 	return single_open(st_file, &proc_vrm_show, PDE_DATA(st_inode));
@@ -1834,7 +1840,7 @@ static struct miscdevice vrm_misc_device = {
 	&vdev_rm_fops,
 };
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 static const struct proc_ops vrm_fops = {
 	.proc_open = proc_vrm_open,
 	.proc_read = seq_read,
@@ -1865,7 +1871,7 @@ int vrm_probe(struct platform_device *pdev)
 	V_DBG(VPU_DBG_MEM_SEQ, "[DEBUG][VRM] enter");
 
 #if defined(CONFIG_PROC_FS)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 	dir = proc_create("vrm", 0x124, NULL, &vrm_fops);	//MISRA C-2012 Literals and Constants (MISRA C-2012 Rule 7.1) 1. misra_c_2012_rule_7_1_violation: Octal constant 0444 used.
 #else
 	dir = proc_create("vrm", 0x124, NULL, &vdev_rm_fops);	//MISRA C-2012 Literals and Constants (MISRA C-2012 Rule 7.1) 1. misra_c_2012_rule_7_1_violation: Octal constant 0444 used.
@@ -1987,9 +1993,7 @@ int vrm_probe(struct platform_device *pdev)
 				flags |= VRM_FLAG_VSHARED;
 			} else if (sort == ivideo_sw) {
 				flags |= VRM_FLAG_VSWED;
-			}
-			else
-			{
+			} else {
 				VPU_DONOTHING(sort);
 			}
 		}
@@ -2019,8 +2023,7 @@ int vrm_probe(struct platform_device *pdev)
 		string_copy_length = strlen(name) < string_max_length ? strlen(name) : string_max_length;
 
 		if (string_copy_length > 0) {
-			if (strncpy(entry->info.name, name, string_copy_length) == NULL)
-			{
+			if (strncpy(entry->info.name, name, string_copy_length) == NULL) {
 				V_DBG(VPU_DBG_ERROR,
 					"VPU failed to get %s", entry->info.name);
 				return -EFAULT;
@@ -2188,12 +2191,12 @@ int vrm_probe(struct platform_device *pdev)
 }
 EXPORT_SYMBOL(vrm_probe);
 
-int vrm_remove(struct platform_device *pdev)
+VREMOVE_RET_TYPE vrm_remove(struct platform_device *pdev)
 {
 	V_DBG(VPU_DBG_INFO, "[DEBUG][VRM] vrm_mutex destroy pt:%p", pdev);
 	(void)mutex_destroy(&vrm_mutex);
 	misc_deregister(&vrm_misc_device);
-	return 0;
+	VREMOVE_RETURN();
 }
 EXPORT_SYMBOL(vrm_remove);
 
@@ -2290,24 +2293,16 @@ int vmem_is_index_in_use(int nIdx)
 	int ret = 0;
 
 	(void)mutex_lock(&vrm_mutex);
-	if((nIdx >= 0) && (nIdx < video_sw))
-	{
+	if ((nIdx >= 0) && (nIdx < video_sw)) {
 		int isAvailable = vrm_check_index_availability(nIdx);
-		if(isAvailable == 1)
-		{
+		if (isAvailable == 1) {
 			ret = 0;
-		}
-		else if(isAvailable == 0)
-		{
+		} else if (isAvailable == 0) {
 			ret = 1;
-		}
-		else
-		{
+		} else {
 			ret = -1;
 		}
-	}
-	else
-	{
+	} else {
 		ret = -1;
 	}
 	(void)mutex_unlock(&vrm_mutex);

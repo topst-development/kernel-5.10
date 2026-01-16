@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Copyright (C) Telechips Inc.
- */
+/* 
+* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+* Copyright 2025 Telechips Inc. 
+* Contact: jayhouse@telechips.com
+*/
 
 #include "vpu_comm.h"
 #include "vpu_devices.h"
@@ -31,18 +32,12 @@ int set_displaying_index(unsigned long arg)
 
 	mutex_lock(&buff_io_mutex);
 
-	if (copy_from_user(&vBuffSt, (int *)arg, sizeof(vbuffer_manager)))
-	{
+	if (copy_from_user(&vBuffSt, (int *)arg, sizeof(vbuffer_manager))) {
 		ret = -EFAULT;
-	}
-	else
-	{
-		if (vBuffSt.istance_index >= VPU_INST_MAX)
-		{
+	} else {
+		if (vBuffSt.istance_index >= VPU_INST_MAX) {
 			ret = -1;
-		}
-		else
-		{
+		} else {
 			curr_displaying_idx[vBuffSt.istance_index] = vBuffSt.index;
 		}
 	}
@@ -76,18 +71,12 @@ int set_buff_id(unsigned long arg)
 
 	mutex_lock(&buff_io_mutex);
 
-	if (copy_from_user(&vBuffSt, (int *)arg, sizeof(vbuffer_manager)))
-	{
+	if (copy_from_user(&vBuffSt, (int *)arg, sizeof(vbuffer_manager))) {
 		ret = -EFAULT;
-	}
-	else
-	{
-		if (vBuffSt.istance_index >= VPU_INST_MAX)
-		{
+	} else {
+		if (vBuffSt.istance_index >= VPU_INST_MAX) {
 			ret = -1;
-		}
-		else
-		{
+		} else {
 			curr_displayed_buffer_id[vBuffSt.istance_index] = vBuffSt.index;
 		}
 	}
@@ -130,7 +119,7 @@ extern int tcc_video_last_frame(void *pVSyncDisp,
 //static int tcc_mem_create_dma_buf(stVpuPhysInfo *pmap_info);
 //static int tcc_mem_release_dma_buf(int ifd);
 
-long vmem_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+static long vmem_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
 	union {
@@ -295,14 +284,14 @@ static struct sg_table *tcc_dma_buf_map(struct dma_buf_attachment *attach,
 	if (WARN_ON(((int)dir == (int)DMA_NONE) | (dma_buf_priv == NULL)) != 0) {
 		V_DBG(VPU_DBG_ERROR,
 			"%s %d dir(%d) dma_buf_priv=%d dmabuf=%p\n",
-			__func__,__LINE__,dir,dma_buf_priv,attach->dmabuf);
+			__func__, __LINE__, dir, dma_buf_priv, attach->dmabuf);
 		sgt = ERR_PTR(-EINVAL);
 	} else {
 		sgt = kmalloc(sizeof(*sgt), GFP_KERNEL);
 		if (sgt != NULL) {
 			if (sg_alloc_table(sgt, 1, GFP_KERNEL) != 0)	{
 				V_DBG(VPU_DBG_ERROR,
-					"%s %d sg_alloc_table() failed \n",__func__,__LINE__);
+					"%s %d sg_alloc_table() failed \n", __func__, __LINE__);
 				kfree(sgt);
 				sgt = NULL;
 			} else {
@@ -314,7 +303,7 @@ static struct sg_table *tcc_dma_buf_map(struct dma_buf_attachment *attach,
 				}
 			}
 		} else {
-			V_DBG(VPU_DBG_ERROR,"%s %d \n",__func__,__LINE__);
+			V_DBG(VPU_DBG_ERROR, "%s %d \n", __func__, __LINE__);
 		}
 	}
 	return sgt;
@@ -324,7 +313,7 @@ static void tcc_dma_buf_unmap(struct dma_buf_attachment *attach,
 						struct sg_table *sgt,
 						enum dma_data_direction dir)
 {
-	if(sgt != NULL)	{
+	if (sgt != NULL)	{
 		sg_free_table(sgt);
 		kfree(sgt);
 	}
@@ -337,13 +326,13 @@ static void tcc_dma_buf_release(struct dma_buf *buf)
 	if (buf != NULL) {
 		dma_buf_priv = buf->priv;
 		#if 1
-		if(dma_buf_priv != NULL) {
+		if (dma_buf_priv != NULL) {
 			kfree(dma_buf_priv);
 		}
 		#endif
 		buf->priv = NULL;
 	} else {
-		V_DBG(VPU_DBG_ERROR,"%s %d buf is null\n",__func__,__LINE__);
+		V_DBG(VPU_DBG_ERROR, "%s %d buf is null\n", __func__, __LINE__);
 	}
 }
 
@@ -396,10 +385,10 @@ static int tcc_dma_buf_mmap(struct dma_buf *buf,
 						struct vm_area_struct *vma)
 {
 	int ret = -EINVAL;
-	if((vma != NULL) && (buf != NULL)) {
+	if ((vma != NULL) && (buf != NULL)) {
 		struct tcc_dma_buf_priv *dma_buf_priv = buf->priv;
 
-		if(dma_buf_priv != NULL) {
+		if (dma_buf_priv != NULL) {
 			pgprot_t prot = vm_get_page_prot(vma->vm_flags);
 			vetc_vm_flags_set(vma, (VM_IO | VM_PFNMAP | VM_DONTEXPAND | VM_DONTDUMP));
 			vma->vm_ops = &tcc_dma_buf_vm_ops;
@@ -413,12 +402,12 @@ static int tcc_dma_buf_mmap(struct dma_buf *buf,
 		} else {
 			V_DBG(VPU_DBG_ERROR,
 				"%s %d buf %p , vma %p.. dma_buf_priv is null\n",
-				__func__,__LINE__,buf,vma);
+				__func__, __LINE__, buf, vma);
 		}
 	} else {
 		V_DBG(VPU_DBG_ERROR,
 			"%s %d Invalid argument buf %p , vma %p\n"
-			,__func__,__LINE__,buf,vma);
+			, __func__, __LINE__, buf, vma);
 	}
 	return ret;
 }
@@ -451,17 +440,13 @@ int tcc_mem_create_dma_buf(VPU_PhyMemInfo_t *pmap_info)
 		/* Telechips specific code for get the reserved memory */
 		dma_buf_priv->phys = (dma_addr_t)pmap_info->phys;
 		dma_buf_priv->size = (size_t)pmap_info->size;
-		/* This allocates virtual address */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
-		dma_buf_priv->virt = ioremap(dma_buf_priv->phys, dma_buf_priv->size);
-#else
-		dma_buf_priv->virt = ioremap_nocache(dma_buf_priv->phys, dma_buf_priv->size);
-#endif
 
+		/* This allocates virtual address */
+		dma_buf_priv->virt = vetc_ioremap(dma_buf_priv->phys, dma_buf_priv->size);
 		if (dma_buf_priv->virt == NULL) {
 			V_DBG(VPU_DBG_ERROR,
 				"%s %d phys:0x%lx size:0x%lx.. ioremap failed \n",
-				__func__,__LINE__,pmap_info->phys,pmap_info->size);
+				__func__, __LINE__, pmap_info->phys, pmap_info->size);
 			ret = -ENOMEM;
 			free_obj = 1;
 		} else {
@@ -482,7 +467,7 @@ int tcc_mem_create_dma_buf(VPU_PhyMemInfo_t *pmap_info)
 
 					V_DBG(VPU_DBG_ERROR,
 						"%s %d phys:0x%lx size:0x%lx.. IS_ERR(buf)\n",
-						__func__,__LINE__,pmap_info->phys,pmap_info->size);
+						__func__, __LINE__, pmap_info->phys, pmap_info->size);
 					lret = PTR_ERR(dma_buf_priv->buf);
 					if (lret > (long)INT_MAX) {
 						ret = (int)INT_MAX;
@@ -498,7 +483,7 @@ int tcc_mem_create_dma_buf(VPU_PhyMemInfo_t *pmap_info)
 					if (pmap_info->fd < 0) {
 						V_DBG(VPU_DBG_ERROR,
 							"%s %d phys:0x%lx size:0x%lx.. dma_buf_fd(buf)\n",
-							__func__,__LINE__,pmap_info->phys,pmap_info->size);
+							__func__, __LINE__, pmap_info->phys, pmap_info->size);
 						dma_buf_put(dma_buf_priv->buf);
 						free_obj = 1;
 					} else {
@@ -508,14 +493,14 @@ int tcc_mem_create_dma_buf(VPU_PhyMemInfo_t *pmap_info)
 			} else {
 				V_DBG(VPU_DBG_ERROR,
 					"%s %d phys:0x%lx size:0x%lx.. dma_buf_export() failed\n",
-					__func__,__LINE__,pmap_info->phys,pmap_info->size);
+					__func__, __LINE__, pmap_info->phys, pmap_info->size);
 				free_obj = 1;
 			}
 		}
 	} else {
 		V_DBG(VPU_DBG_ERROR,
 			"%s %d phys:0x%lx size:0x%lx.. kzalloc() failed\n",
-			__func__,__LINE__,pmap_info->phys,pmap_info->size);
+			__func__, __LINE__, pmap_info->phys, pmap_info->size);
 	}
 
 	if (free_obj == 1) {
@@ -538,11 +523,11 @@ int tcc_mem_release_dma_buf(int ifd)
 	if (IS_ERR_OR_NULL(dmabuf)) {
 		V_DBG(VPU_DBG_ERROR,
 			"%s %d fd %d, IS_ERR_OR_NULL(dmabuf) \n",
-			__func__,__LINE__,ifd);
+			__func__, __LINE__, ifd);
 		ret = -EINVAL;
 	} else {
 		dma_buf_priv = (struct tcc_dma_buf_priv *)dmabuf->priv;
-		if(dma_buf_priv != NULL) {
+		if (dma_buf_priv != NULL) {
 			/* Unmap virtual address */
 			if (dma_buf_priv->virt != NULL)	{
 				iounmap(dma_buf_priv->virt);
@@ -551,7 +536,7 @@ int tcc_mem_release_dma_buf(int ifd)
 		} else {
 			V_DBG(VPU_DBG_ERROR,
 				"%s %d fd %d, dma_buf_priv is null\n",
-				__func__,__LINE__,ifd);
+				__func__, __LINE__, ifd);
 		}
 	}
 
@@ -573,19 +558,14 @@ static unsigned int vmem_poll(struct file *filp, poll_table *wait)
 /*
 	vpu_dec_drv_t *vdata = (vpu_dec_drv_t *)filp->private_data;
 
-	if (vpu_data == NULL)
-	{
+	if (vpu_data == NULL) {
 		ret = (unsigned int)POLLERR | (unsigned int)POLLNVAL;
-	}
-	else
-	{
-		if (vdata->drv_poll_data.count == 0U)
-		{
+	} else {
+		if (vdata->drv_poll_data.count == 0U) {
 			poll_wait(filp, &(vpu_data->wq), wait);
 		}
 
-		if (vdata->drv_poll_data.count > 0U)
-		{
+		if (vdata->drv_poll_data.count > 0U) {
 			atomic_dec(&vdata->drv_poll_data.count);
 			ret = (unsigned int)POLLIN;
 		}
@@ -610,23 +590,18 @@ static int vmem_mmap(struct file *filep, struct vm_area_struct *vma)
 	int ret = 0;
 
 #if defined(CONFIG_TCC_MEM)
-	if (range_is_allowed(vma->vm_pgoff, (vma->vm_end >= vma->vm_start) ? (vma->vm_end - vma->vm_start) : 0U) < 0)
-	{
+	if (range_is_allowed(vma->vm_pgoff, (vma->vm_end >= vma->vm_start) ? (vma->vm_end - vma->vm_start) : 0U) < 0) {
 		V_DBG(VPU_DBG_ERROR,
 			"mem_mmap: this address is not allowed");
 		ret = -EAGAIN;
 	}
 #endif
-	if (ret == 0)
-	{
+	if (ret == 0) {
 		vma->vm_page_prot = vmem_get_pgprot(vma->vm_page_prot, vma->vm_pgoff);
-		if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, (vma->vm_end - vma->vm_start), vma->vm_page_prot) != 0)
-		{
+		if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, (vma->vm_end - vma->vm_start), vma->vm_page_prot) != 0) {
 			V_DBG(VPU_DBG_ERROR, "mem_mmap :: remap_pfn_range failed");
 			ret = -EAGAIN;
-		}
-		else
-		{
+		} else {
 			vma->vm_ops = NULL;
 			vetc_vm_flags_set(vma, (VM_IO | VM_DONTEXPAND | VM_PFNMAP));
 		}
@@ -667,8 +642,9 @@ int vmem_probe(struct platform_device *pdev)
 	return ret;
 }
 
-int vmem_remove(struct platform_device *pdev)
+VREMOVE_RET_TYPE vmem_remove(struct platform_device *pdev)
 {
 	misc_deregister(&vmem_misc_device);
-	return 0;
+
+	VREMOVE_RETURN();
 }
